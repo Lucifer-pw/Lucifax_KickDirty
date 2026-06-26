@@ -64,16 +64,8 @@ class AuthWrapper extends StatelessWidget {
 
     final authService = Provider.of<AuthService>(context);
 
-    // If the user is logged in, redirect them to the correct dashboard based on role.
-    if (authService.currentUser != null) {
-      if (authService.currentUserModel == null) {
-        return const Scaffold(
-          body: Center(
-            child: CircularProgressIndicator(),
-          ),
-        );
-      }
-
+    // If the user is logged in (either Firebase or Mock), redirect them to the correct dashboard.
+    if (authService.currentUserModel != null) {
       final role = authService.currentUserModel!.role;
       if (role == 'owner' || role == 'staff') {
         return const AdminDashboard();
