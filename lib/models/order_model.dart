@@ -51,6 +51,7 @@ class OrderModel {
   final List<String> photoAfter;
   final int pointsEarned;
   final int pointsRedeemed;
+  final String estimatedCompletion;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -73,6 +74,7 @@ class OrderModel {
     this.photoAfter = const [],
     this.pointsEarned = 0,
     this.pointsRedeemed = 0,
+    this.estimatedCompletion = '',
     required this.createdAt,
     required this.updatedAt,
   });
@@ -102,6 +104,7 @@ class OrderModel {
       photoAfter: List<String>.from(map['photoAfter'] ?? []),
       pointsEarned: map['pointsEarned'] ?? 0,
       pointsRedeemed: map['pointsRedeemed'] ?? 0,
+      estimatedCompletion: map['estimatedCompletion'] ?? '',
       createdAt: (map['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       updatedAt: (map['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
     );
@@ -126,6 +129,7 @@ class OrderModel {
       'photoAfter': photoAfter,
       'pointsEarned': pointsEarned,
       'pointsRedeemed': pointsRedeemed,
+      'estimatedCompletion': estimatedCompletion,
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': Timestamp.fromDate(updatedAt),
     };

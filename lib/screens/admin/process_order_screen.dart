@@ -30,14 +30,63 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
     super.dispose();
   }
 
+  Future<String?> _showEstimationDialog(String initialEstimation) async {
+    final estimationController = TextEditingController(text: initialEstimation.isEmpty ? '3 Hari' : initialEstimation);
+    return showDialog<String>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Input Estimasi Pengerjaan'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('Masukkan estimasi waktu pengerjaan untuk pesanan ini agar customer dapat melihatnya.'),
+              const SizedBox(height: 16),
+              TextField(
+                controller: estimationController,
+                decoration: const InputDecoration(
+                  labelText: 'Estimasi Pengerjaan',
+                  hintText: 'Contoh: 2 Jam, 1 Hari, 3 Hari',
+                  prefixIcon: Icon(Icons.access_time),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, null),
+              child: const Text('Batal'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context, estimationController.text.trim());
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryBlue),
+              child: const Text('Simpan'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   Future<void> _updateStatus(String orderId, String currentStatus) async {
     final dbService = Provider.of<DatabaseService>(context, listen: false);
     String nextStatus = '';
     String successMsg = '';
 
     if (currentStatus == 'diterima') {
+      final estimation = await _showEstimationDialog('');
+      if (estimation == null || estimation.isEmpty) {
+        return; // Batal
+      }
       nextStatus = 'sedang_diproses';
       successMsg = 'Sepatu mulai diproses!';
+      await dbService.updateOrderStatusWithEstimation(orderId, nextStatus, estimation);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(successMsg)));
+      }
+      return;
     } else if (currentStatus == 'sedang_diproses') {
       String? photoAfter = await showDialog<String?>(
         context: context,
@@ -240,6 +289,7 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
   }
 
   Widget _buildOrderList(List<OrderModel> orders, String status) {
+    final dbService = Provider.of<DatabaseService>(context, listen: false);
     if (orders.isEmpty) {
       return Center(
         child: Column(
@@ -346,6 +396,44 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
                     child: Text(
                       'Catatan: "${order.notes}"',
                       style: const TextStyle(fontSize: 12, fontStyle: FontStyle.italic, color: Colors.orange),
+                    ),
+                  ),
+                ],
+                if (order.estimatedCompletion.isNotEmpty || order.status == 'sedang_diproses') ...[
+                  const SizedBox(height: 8),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 26),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.access_time, size: 14, color: Colors.orange),
+                        const SizedBox(width: 6),
+                        Text(
+                          order.estimatedCompletion.isEmpty
+                              ? 'Belum ada estimasi'
+                              : 'Estimasi: ${order.estimatedCompletion}',
+                          style: const TextStyle(fontSize: 12, color: Colors.orange, fontWeight: FontWeight.w600),
+                        ),
+                        if (order.status == 'sedang_diproses' || order.status == 'diterima') ...[
+                          const SizedBox(width: 8),
+                          InkWell(
+                            onTap: () async {
+                              final newEst = await _showEstimationDialog(order.estimatedCompletion);
+                              if (newEst != null && newEst.isNotEmpty) {
+                                await dbService.updateOrderEstimation(order.id, newEst);
+                                if (mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text('Estimasi diperbarui ke: $newEst')),
+                                  );
+                                }
+                              }
+                            },
+                            child: const Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                              child: Icon(Icons.edit, size: 14, color: AppTheme.primaryBlue),
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                   ),
                 ],

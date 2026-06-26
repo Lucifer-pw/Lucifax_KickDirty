@@ -8,6 +8,7 @@ import '../../models/service_model.dart';
 import '../../models/user_model.dart';
 import '../../services/auth_service.dart';
 import '../../services/database_service.dart';
+import '../../services/image_service.dart';
 import '../../theme.dart';
 import '../../widgets/watermark.dart';
 import '../login_screen.dart';
@@ -69,6 +70,7 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
     bool usePointsRedemption = false;
     final formKey = GlobalKey<FormState>();
     bool isSubmitting = false;
+    List<String> photoBeforeList = [];
 
     if (!mounted) return;
 
@@ -278,6 +280,107 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
                       ),
                       const SizedBox(height: 16),
 
+                      // Foto Kondisi Awal (Before)
+                      const Text(
+                        'Foto Kondisi Awal (Before) - Opsional',
+                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppTheme.darkBlueText),
+                      ),
+                      const SizedBox(height: 4),
+                      const Text(
+                        'Unggah foto kondisi sepatu saat ini sebagai dokumentasi.',
+                        style: TextStyle(color: AppTheme.textGray, fontSize: 11),
+                      ),
+                      const SizedBox(height: 12),
+                      if (photoBeforeList.isNotEmpty) ...[
+                        SizedBox(
+                          height: 80,
+                          child: ListView.builder(
+                            scrollDirection: Axis.horizontal,
+                            itemCount: photoBeforeList.length,
+                            itemBuilder: (context, index) {
+                              final img = photoBeforeList[index];
+                              return Stack(
+                                children: [
+                                  Container(
+                                    width: 80,
+                                    height: 80,
+                                    margin: const EdgeInsets.only(right: 8),
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(8),
+                                      image: DecorationImage(
+                                        image: MemoryImage(base64Decode(img.split(',')[1])),
+                                        fit: BoxFit.cover,
+                                      ),
+                                    ),
+                                  ),
+                                  Positioned(
+                                    top: 0,
+                                    right: 8,
+                                    child: GestureDetector(
+                                      onTap: () {
+                                        setStateSheet(() {
+                                          photoBeforeList.removeAt(index);
+                                        });
+                                      },
+                                      child: CircleAvatar(
+                                        radius: 10,
+                                        backgroundColor: Colors.black.withOpacity(0.5),
+                                        child: const Icon(Icons.close, size: 12, color: Colors.white),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              );
+                            },
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: () async {
+                                final img = await ImageService.pickImageFromCamera();
+                                if (img != null) {
+                                  setStateSheet(() {
+                                    photoBeforeList.add(img);
+                                  });
+                                }
+                              },
+                              icon: const Icon(Icons.camera_alt_outlined, color: AppTheme.primaryBlue, size: 18),
+                              label: const Text('Kamera', style: TextStyle(color: AppTheme.primaryBlue, fontSize: 12)),
+                              style: OutlinedButton.styleFrom(
+                                side: const BorderSide(color: AppTheme.primaryBlue),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                padding: const EdgeInsets.symmetric(vertical: 8),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: () async {
+                                final img = await ImageService.pickImageFromGallery();
+                                if (img != null) {
+                                  setStateSheet(() {
+                                    photoBeforeList.add(img);
+                                  });
+                                }
+                              },
+                              icon: const Icon(Icons.photo_outlined, color: AppTheme.primaryBlue, size: 18),
+                              label: const Text('Galeri', style: TextStyle(color: AppTheme.primaryBlue, fontSize: 12)),
+                              style: OutlinedButton.styleFrom(
+                                side: const BorderSide(color: AppTheme.primaryBlue),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                padding: const EdgeInsets.symmetric(vertical: 8),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+
                       // Order Summary Pricing
                       if (selectedService != null) ...[
                         const Divider(),
@@ -363,7 +466,7 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
                                       deliveryType: deliveryType,
                                       deliveryAddress: deliveryType == 'pickup_delivery' ? addressController.text.trim() : '',
                                       deliveryFee: deliveryFee,
-                                      photoBefore: const [],
+                                      photoBefore: photoBeforeList,
                                       photoAfter: const [],
                                       pointsEarned: (totalPrice / 10000).floor(),
                                       pointsRedeemed: usePointsRedemption ? 10 : 0,
@@ -787,6 +890,30 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
                     child: Text(
                       'Tipe: Drop-Off & Ambil Sendiri di Toko',
                       style: TextStyle(fontSize: 11, color: AppTheme.textGray),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+
+            if (order.estimatedCompletion.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  const Icon(Icons.access_time, size: 16, color: Colors.orange),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text.rich(
+                      TextSpan(
+                        text: 'Estimasi Selesai: ',
+                        style: const TextStyle(fontSize: 12, color: AppTheme.darkBlueText),
+                        children: [
+                          TextSpan(
+                            text: order.estimatedCompletion,
+                            style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.orange),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ],

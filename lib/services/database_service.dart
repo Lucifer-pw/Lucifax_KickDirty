@@ -210,6 +210,23 @@ class DatabaseService with ChangeNotifier {
     });
   }
 
+  // Update order status with estimated completion
+  Future<void> updateOrderStatusWithEstimation(String orderId, String newStatus, String estimation) async {
+    await _db.collection('orders').doc(orderId).update({
+      'status': newStatus,
+      'estimatedCompletion': estimation,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  // Update estimated completion only
+  Future<void> updateOrderEstimation(String orderId, String estimation) async {
+    await _db.collection('orders').doc(orderId).update({
+      'estimatedCompletion': estimation,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+  }
+
   // Update order payment status
   Future<void> updateOrderPaymentStatus(String orderId, String newPaymentStatus) async {
     if (newPaymentStatus == 'sudah_bayar') {
