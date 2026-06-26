@@ -1,0 +1,75 @@
+name: Build & Release APK
+
+on:
+  push:
+    branches: [ main ]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build & Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Java (JDK 17)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosiro/flutter-action@v2
+        with:
+          flutter-version: '3.19.2'
+          channel: 'stable'
+
+      - name: Install Dependencies
+        run: flutter pub get
+
+      - name: Run Tests
+        run: flutter test
+
+      - name: Build Release APK
+        run: flutter build apk --release
+
+      - name: Extract Version from pubspec.yaml
+        id: version
+        run: |
+          VERSION=$(grep 'version:' pubspec.yaml | head -1 | awk '{print $2}' | cut -d'+' -f1)
+          BUILD=$(grep 'version:' pubspec.yaml | head -1 | awk '{print $2}' | cut -d'+' -f2)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "build=$BUILD" >> $GITHUB_OUTPUT
+          echo "tag=v$VERSION+$BUILD" >> $GITHUB_OUTPUT
+
+      - name: Rename APK
+        run: |
+          mv build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/lucifax-kickdirty-v${{ steps.version.outputs.version }}.apk
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: "Lucifax KickDirty v${{ steps.version.outputs.version }}"
+          body: |
+            ## Lucifax KickDirty v${{ steps.version.outputs.version }}
+            
+            ### 📱 Download APK
+            Unduh file APK di bawah ini dan install di HP Android Anda.
+            
+            ### 📋 Catatan Rilis
+            - Build otomatis dari branch `main`
+            - Commit: ${{ github.sha }}
+            - Tanggal: ${{ github.event.head_commit.timestamp }}
+            
+            ---
+            *Powered by Lucifax*
+          files: build/app/outputs/flutter-apk/lucifax-kickdirty-v${{ steps.version.outputs.version }}.apk
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
