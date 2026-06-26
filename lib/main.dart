@@ -1,15 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'services/auth_service.dart';
 import 'services/database_service.dart';
 import 'theme.dart';
+import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/admin/admin_dashboard.dart';
 import 'screens/customer/customer_portal_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Set status bar style for splash screen
+  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+    statusBarColor: Colors.transparent,
+    statusBarIconBrightness: Brightness.light,
+  ));
   
   // Initialize Firebase.
   // Note: For a production release, you should run flutterfire configure to generate firebase_options.dart.
@@ -37,7 +45,7 @@ class MyApp extends StatelessWidget {
         title: 'Lucifax KickDirty',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.lightTheme,
-        home: const AuthWrapper(),
+        home: SplashScreen(nextScreen: const AuthWrapper()),
       ),
     );
   }
@@ -48,6 +56,12 @@ class AuthWrapper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Reset status bar for main app screens
+    SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.dark,
+    ));
+
     final authService = Provider.of<AuthService>(context);
 
     // If the user is logged in, redirect them to the correct dashboard based on role.
