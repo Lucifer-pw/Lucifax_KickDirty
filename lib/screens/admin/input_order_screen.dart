@@ -182,24 +182,14 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
   }
 
   Future<List<Map<String, String>>> _fetchAllCustomers() async {
+    Map<String, Map<String, String>> merged = {};
+
+    // 1. Fetch from 'users'
     try {
       final usersSnap = await FirebaseFirestore.instance
           .collection('users')
           .where('role', isEqualTo: 'customer')
           .get();
-
-      final customersSnap = await FirebaseFirestore.instance
-          .collection('customers')
-          .get();
-
-      final ordersSnap = await FirebaseFirestore.instance
-          .collection('orders')
-          .orderBy('createdAt', descending: true)
-          .limit(200)
-          .get();
-
-      Map<String, Map<String, String>> merged = {};
-
       for (var doc in usersSnap.docs) {
         final data = doc.data();
         final phone = data['phoneNumber']?.toString().trim() ?? '';
@@ -211,7 +201,15 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
           };
         }
       }
+    } catch (e) {
+      if (kDebugMode) print("Error fetching users: $e");
+    }
 
+    // 2. Fetch from 'customers'
+    try {
+      final customersSnap = await FirebaseFirestore.instance
+          .collection('customers')
+          .get();
       for (var doc in customersSnap.docs) {
         final data = doc.data();
         final phone = data['phone']?.toString().trim() ?? '';
@@ -223,7 +221,17 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
           };
         }
       }
+    } catch (e) {
+      if (kDebugMode) print("Error fetching customers: $e");
+    }
 
+    // 3. Fetch from 'orders'
+    try {
+      final ordersSnap = await FirebaseFirestore.instance
+          .collection('orders')
+          .orderBy('createdAt', descending: true)
+          .limit(200)
+          .get();
       for (var doc in ordersSnap.docs) {
         final data = doc.data();
         final phone = data['customerPhone']?.toString().trim() ?? '';
@@ -235,12 +243,11 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
           };
         }
       }
-
-      return merged.values.toList();
     } catch (e) {
-      if (kDebugMode) print("Error fetching customers: $e");
-      return [];
+      if (kDebugMode) print("Error fetching orders: $e");
     }
+
+    return merged.values.toList();
   }
 
   Future<void> _showCustomerSearchDialog() async {
