@@ -67,66 +67,58 @@ class DatabaseService with ChangeNotifier {
     });
   }
 
-  // Generate unique invoice ID: KD-DDMMYYYY-XXX
+  // Generate unique sequential invoice ID using Firestore transaction counter
+  // Format: KD-(nomor) — e.g. KD-1, KD-2, KD-3, ...
+  // Uses atomic transaction to prevent duplicate numbers even with concurrent orders
   Future<String> generateInvoiceId() async {
-    DateTime now = DateTime.now();
-    String day = now.day.toString().padLeft(2, '0');
-    String month = now.month.toString().padLeft(2, '0');
-    String year = now.year.toString();
-    String dateStr = "$day$month$year"; // e.g. 26062026
+    final counterRef = _db.collection('counters').doc('invoice');
 
-    // Query for orders created on this date to determine sequence
-    DateTime startOfDay = DateTime(now.year, now.month, now.day);
-    DateTime endOfDay = DateTime(now.year, now.month, now.day, 23, 59, 59);
+    String invoiceId = await _db.runTransaction<String>((transaction) async {
+      final counterDoc = await transaction.get(counterRef);
 
-    QuerySnapshot todayOrders = await _db
-        .collection('orders')
-        .where('createdAt', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
-        .where('createdAt', isLessThanOrEqualTo: Timestamp.fromDate(endOfDay))
-        .get();
-
-    int maxSeq = 0;
-    for (var doc in todayOrders.docs) {
-      String id = doc.id;
-      // Expected format: KD-DDMMYYYY-XXX
-      List<String> parts = id.split('-');
-      if (parts.length == 3) {
-        int? seq = int.tryParse(parts[2]);
-        if (seq != null && seq > maxSeq) {
-          maxSeq = seq;
-        }
+      int lastNumber = 0;
+      if (counterDoc.exists) {
+        lastNumber = (counterDoc.data()?['lastNumber'] as int?) ?? 0;
       }
-    }
 
-    int count = maxSeq + 1;
-    String sequence = count.toString().padLeft(3, '0'); // e.g. 001
+      int newNumber = lastNumber + 1;
 
-    return "KD-$dateStr-$sequence";
+      // Atomically update the counter
+      transaction.set(counterRef, {'lastNumber': newNumber});
+
+      return "KD-$newNumber";
+    });
+
+    return invoiceId;
   }
 
   // Add Order with Idempotency Mechanism
   Future<String> addOrder(OrderModel order) async {
-    // 1. Idempotency Check: Verify if an order with the same token already exists
+    // 1. Idempotency Check (may fail for customers due to rules — skip gracefully)
     if (order.idempotencyToken.isNotEmpty) {
-      QuerySnapshot check = await _db
-          .collection('orders')
-          .where('idempotencyToken', isEqualTo: order.idempotencyToken)
-          .limit(1)
-          .get();
+      try {
+        QuerySnapshot check = await _db
+            .collection('orders')
+            .where('idempotencyToken', isEqualTo: order.idempotencyToken)
+            .limit(1)
+            .get();
 
-      if (check.docs.isNotEmpty) {
-        // Order already created by a previous request, return existing ID
-        if (kDebugMode) {
-          print("Duplicate request detected. Skipping order creation for token: ${order.idempotencyToken}");
+        if (check.docs.isNotEmpty) {
+          if (kDebugMode) {
+            print("Duplicate request detected. Skipping order creation for token: ${order.idempotencyToken}");
+          }
+          return check.docs.first.id;
         }
-        return check.docs.first.id;
+      } catch (e) {
+        // Customer may not have permission to query all orders — proceed with creation
+        if (kDebugMode) print("Idempotency check skipped: $e");
       }
     }
 
     // 2. Generate a fresh invoice ID if not defined (or reuse if it's already set)
     String invoiceId = order.id.isNotEmpty ? order.id : await generateInvoiceId();
 
-    // 3. Write document to Firestore using set (which is idempotent if invoiceId is used as document key)
+    // 3. Write document to Firestore using set (idempotent if invoiceId is used as document key)
     await _db.collection('orders').doc(invoiceId).set(order.toMap());
     return invoiceId;
   }
