@@ -31,6 +31,21 @@ jobs:
       - name: Install Dependencies
         run: flutter pub get
 
+      - name: Setup Signing Keychain (keystore)
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEY_PROPERTIES: ${{ secrets.KEY_PROPERTIES }}
+        run: |
+          if [ ! -z "$KEYSTORE_BASE64" ]; then
+            echo "$KEYSTORE_BASE64" | base64 --decode > android/app/upload-keystore.jks
+            echo "$KEY_PROPERTIES" > android/key.properties
+            echo "Keystore and key.properties configured successfully."
+          else
+            echo "No signing configuration found. Reverting to debug sign configs to complete build."
+            # Temporary fallback so GitHub Action doesn't fail if secrets aren't set yet
+            sed -i 's/signingConfig signingConfigs.release/signingConfig signingConfigs.debug/g' android/app/build.gradle
+          fi
+
       - name: Run Tests
         run: flutter test
 
