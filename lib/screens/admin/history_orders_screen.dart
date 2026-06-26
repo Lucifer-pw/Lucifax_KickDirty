@@ -9,7 +9,8 @@ import '../../services/database_service.dart';
 import '../../theme.dart';
 
 class HistoryOrdersScreen extends StatefulWidget {
-  const HistoryOrdersScreen({Key? key}) : super(key: key);
+  final bool isTab;
+  const HistoryOrdersScreen({Key? key, this.isTab = false}) : super(key: key);
 
   @override
   State<HistoryOrdersScreen> createState() => _HistoryOrdersScreenState();
@@ -41,7 +42,7 @@ class _HistoryOrdersScreenState extends State<HistoryOrdersScreen> {
                 child: pw.Column(
                   children: [
                     pw.Text(
-                      'LUCIFAC KICKDIRTY',
+                      'KICK DIRTY',
                       style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold),
                     ),
                     pw.Text(
@@ -49,7 +50,7 @@ class _HistoryOrdersScreenState extends State<HistoryOrdersScreen> {
                       style: const pw.TextStyle(fontSize: 8),
                     ),
                     pw.Text(
-                      'HP/WA: ${order.customerPhone}',
+                      'HP/WA: 6281328580511',
                       style: const pw.TextStyle(fontSize: 8),
                     ),
                     pw.Text(
@@ -188,15 +189,21 @@ class _HistoryOrdersScreenState extends State<HistoryOrdersScreen> {
         'Detail sepatu:\n'
         '${order.items.map((item) => '- ${item.itemName} (${item.serviceName})').join('\n')}\n\n'
         'Total Biaya: *Rp ${order.totalAmount.toStringAsFixed(0)}* (${paymentText})\n\n'
-        'Powered by Lucifax';
+        'Powered by KickDirty';
 
-    final uri = Uri.parse('https://wa.me/${order.customerPhone}?text=${Uri.encodeComponent(message)}');
-    if (await canLaunchUrl(uri)) {
+    // Sanitize phone number (remove spaces, symbols, and convert 08xx to 628xx)
+    String cleanPhone = order.customerPhone.replaceAll(RegExp(r'[^0-9]'), '');
+    if (cleanPhone.startsWith('0')) {
+      cleanPhone = '62${cleanPhone.substring(1)}';
+    }
+
+    final uri = Uri.parse('https://wa.me/$cleanPhone?text=${Uri.encodeComponent(message)}');
+    try {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
-    } else {
+    } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Tidak dapat membuka WhatsApp')),
+          SnackBar(content: Text('Tidak dapat membuka WhatsApp: $e')),
         );
       }
     }
@@ -209,6 +216,7 @@ class _HistoryOrdersScreenState extends State<HistoryOrdersScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Riwayat Transaksi'),
+        automaticallyImplyLeading: !widget.isTab,
       ),
       body: Column(
         children: [

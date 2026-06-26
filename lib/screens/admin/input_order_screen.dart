@@ -1,13 +1,17 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import '../../models/order_model.dart';
 import '../../models/service_model.dart';
 import '../../services/database_service.dart';
 import '../../theme.dart';
 
 class InputOrderScreen extends StatefulWidget {
-  const InputOrderScreen({Key? key}) : super(key: key);
+  final bool isTab;
+  final VoidCallback? onOrderSubmitted;
+  const InputOrderScreen({Key? key, this.isTab = false, this.onOrderSubmitted}) : super(key: key);
 
   @override
   State<InputOrderScreen> createState() => _InputOrderScreenState();
@@ -131,7 +135,11 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
                     .updateOrderPaymentStatus(invoiceId, 'sudah_bayar');
                 if (mounted) {
                   Navigator.pop(context); // Close dialog
-                  Navigator.pop(context); // Go back to admin panel
+                  if (widget.onOrderSubmitted != null) {
+                    widget.onOrderSubmitted!();
+                  } else {
+                    Navigator.pop(context); // Go back to admin panel
+                  }
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text('Pesanan $invoiceId berhasil dibuat & dibayar!')),
                   );
@@ -142,7 +150,11 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
             TextButton(
               onPressed: () {
                 Navigator.pop(context); // Close dialog
-                Navigator.pop(context); // Go back to admin panel
+                if (widget.onOrderSubmitted != null) {
+                  widget.onOrderSubmitted!();
+                } else {
+                  Navigator.pop(context); // Go back to admin panel
+                }
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(content: Text('Pesanan $invoiceId disimpan (Belum Bayar)')),
                 );
@@ -150,6 +162,94 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
               child: const Text('Bayar Nanti (Belum Bayar)', style: TextStyle(color: AppTheme.textGray)),
             ),
           ],
+        );
+      },
+    );
+  }
+
+  Future<void> _showCustomerSearchDialog() async {
+    showDialog(
+      context: context,
+      builder: (context) {
+        String searchQuery = "";
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            return AlertDialog(
+              title: const Text('Cari Pelanggan Terdaftar'),
+              content: SizedBox(
+                width: double.maxFinite,
+                height: 350,
+                child: Column(
+                  children: [
+                    TextField(
+                      decoration: const InputDecoration(
+                        hintText: 'Cari nama atau nomor WA...',
+                        prefixIcon: Icon(Icons.search),
+                      ),
+                      onChanged: (val) {
+                        setStateDialog(() {
+                          searchQuery = val.toLowerCase();
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    Expanded(
+                      child: StreamBuilder<QuerySnapshot>(
+                        stream: FirebaseFirestore.instance.collection('customers').snapshots(),
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState == ConnectionState.waiting) {
+                            return const Center(child: CircularProgressIndicator());
+                          }
+                          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                            return const Center(child: Text('Belum ada pelanggan terdaftar.'));
+                          }
+
+                          final docs = snapshot.data!.docs.where((doc) {
+                            final name = (doc.data() as Map<String, dynamic>)['name']?.toString().toLowerCase() ?? '';
+                            final phone = (doc.data() as Map<String, dynamic>)['phone']?.toString() ?? '';
+                            return name.contains(searchQuery) || phone.contains(searchQuery);
+                          }).toList();
+
+                          if (docs.isEmpty) {
+                            return const Center(child: Text('Pelanggan tidak ditemukan.'));
+                          }
+
+                          return ListView.separated(
+                            itemCount: docs.length,
+                            separatorBuilder: (_, __) => const Divider(),
+                            itemBuilder: (context, index) {
+                              final data = docs[index].data() as Map<String, dynamic>;
+                              final name = data['name'] ?? '';
+                              final phone = data['phone'] ?? '';
+                              return ListTile(
+                                leading: CircleAvatar(
+                                  backgroundColor: AppTheme.primaryBlue.withOpacity(0.08),
+                                  child: const Icon(Icons.person, color: AppTheme.primaryBlue),
+                                ),
+                                title: Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
+                                subtitle: Text('WA: +$phone'),
+                                onTap: () {
+                                  _nameController.text = name;
+                                  _phoneController.text = phone;
+                                  Navigator.pop(context); // Close dialog
+                                },
+                              );
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Batal'),
+                ),
+              ],
+            );
+          },
         );
       },
     );
@@ -193,6 +293,20 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
       // Save order (idempotency token protects against duplicates)
       String finalInvoiceId = await dbService.addOrder(order);
 
+      // Save/update customer database record
+      try {
+        await FirebaseFirestore.instance
+            .collection('customers')
+            .doc(_phoneController.text.trim())
+            .set({
+          'name': _nameController.text.trim(),
+          'phone': _phoneController.text.trim(),
+          'lastOrderAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+      } catch (e) {
+        if (kDebugMode) print("Error saving customer record: $e");
+      }
+
       if (mounted) {
         _showQrisDialog(finalInvoiceId, order);
       }
@@ -216,6 +330,7 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Input Pesanan Baru'),
+        automaticallyImplyLeading: !widget.isTab,
       ),
       body: StreamBuilder<List<ServiceModel>>(
         stream: dbService.getServices(),
@@ -241,11 +356,16 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
                         children: [
                           Text('Informasi Pelanggan', style: Theme.of(context).textTheme.titleMedium),
                           const SizedBox(height: 16),
-                          TextFormField(
+                           TextFormField(
                             controller: _nameController,
-                            decoration: const InputDecoration(
+                            decoration: InputDecoration(
                               hintText: 'Nama Pelanggan',
-                              prefixIcon: Icon(Icons.person_outline),
+                              prefixIcon: const Icon(Icons.person_outline),
+                              suffixIcon: IconButton(
+                                icon: const Icon(Icons.contact_phone_outlined, color: AppTheme.primaryBlue),
+                                tooltip: 'Cari pelanggan terdaftar',
+                                onPressed: _showCustomerSearchDialog,
+                              ),
                             ),
                             validator: (v) => v == null || v.isEmpty ? 'Nama pelanggan wajib diisi' : null,
                           ),

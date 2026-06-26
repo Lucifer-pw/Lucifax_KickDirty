@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../models/user_model.dart';
+import '../../models/order_model.dart';
 import '../../services/auth_service.dart';
 import '../../services/database_service.dart';
 import '../../services/update_service.dart';
@@ -20,6 +22,8 @@ class AdminDashboard extends StatefulWidget {
 }
 
 class _AdminDashboardState extends State<AdminDashboard> {
+  int _currentIndex = 0;
+
   @override
   void initState() {
     super.initState();
@@ -53,12 +57,12 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   onPressed: () async {
                     // Open browser link to download APK
                     final uri = Uri.parse(updateInfo.downloadUrl);
-                    if (await canLaunchUrl(uri)) {
+                    try {
                       await launchUrl(uri, mode: LaunchMode.externalApplication);
-                    } else {
+                    } catch (e) {
                       if (mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Tidak dapat membuka link download')),
+                          SnackBar(content: Text('Tidak dapat membuka link download: $e')),
                         );
                       }
                     }
@@ -70,7 +74,52 @@ class _AdminDashboardState extends State<AdminDashboard> {
           },
         );
       }
-    } catch (_) {}
+    } catch (_) {
+      // Fail silently
+    }
+  }
+
+  void _onTabTapped(int index) {
+    setState(() {
+      _currentIndex = index;
+    });
+  }
+
+  Widget _buildNavItem(int index, IconData icon, String label) {
+    final isSelected = _currentIndex == index;
+    return GestureDetector(
+      onTap: () => _onTabTapped(index),
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? AppTheme.primaryBlue.withOpacity(0.1) : Colors.transparent,
+          borderRadius: BorderRadius.circular(24),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              color: isSelected ? AppTheme.primaryBlue : AppTheme.textGray,
+              size: 24,
+            ),
+            if (isSelected) ...[
+              const SizedBox(width: 8),
+              Text(
+                label,
+                style: const TextStyle(
+                  color: AppTheme.primaryBlue,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -81,15 +130,66 @@ class _AdminDashboardState extends State<AdminDashboard> {
     final currentUser = authService.currentUserModel;
     final String roleLabel = currentUser?.role == 'owner' ? 'Owner' : 'Staff';
 
+    final List<Widget> screens = [
+      _buildDashboardHome(context, dbService, currentUser, roleLabel),
+      InputOrderScreen(isTab: true, onOrderSubmitted: () => _onTabTapped(0)),
+      const ProcessOrderScreen(isTab: true),
+      const HistoryOrdersScreen(isTab: true),
+      const ServiceCrudScreen(isTab: true),
+    ];
+
+    return PopScope(
+      canPop: _currentIndex == 0,
+      onPopInvoked: (didPop) {
+        if (didPop) return;
+        if (_currentIndex != 0) {
+          _onTabTapped(0);
+        }
+      },
+      child: Scaffold(
+        body: IndexedStack(
+          index: _currentIndex,
+          children: screens,
+        ),
+        bottomNavigationBar: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: AppTheme.white,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.06),
+                blurRadius: 10,
+                offset: const Offset(0, -4),
+              ),
+            ],
+          ),
+          child: SafeArea(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildNavItem(0, Icons.grid_view, 'Dashboard'),
+                _buildNavItem(1, Icons.add_shopping_cart, 'Input'),
+                _buildNavItem(2, Icons.sync_alt, 'Proses'),
+                _buildNavItem(3, Icons.history, 'Riwayat'),
+                _buildNavItem(4, Icons.cleaning_services_outlined, 'Layanan'),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDashboardHome(BuildContext context, DatabaseService dbService, UserModel? currentUser, String roleLabel) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Lucifax KickDirty'),
+        title: const Text('KickDirty Dashboard'),
         actions: [
           IconButton(
             icon: const Icon(Icons.logout_outlined, color: Colors.redAccent),
             onPressed: () async {
-              await authService.signOut();
-              if (mounted) {
+              await Provider.of<AuthService>(context, listen: false).signOut();
+              if (context.mounted) {
                 Navigator.of(context).pushReplacement(
                   MaterialPageRoute(builder: (_) => const LoginScreen()),
                 );
@@ -98,7 +198,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
           ),
         ],
       ),
-      body: StreamBuilder(
+      body: StreamBuilder<List<OrderModel>>(
         stream: dbService.getOrders(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -112,15 +212,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Welcome Profile banner
                 _buildProfileBanner(currentUser?.name ?? 'Admin', roleLabel),
                 const SizedBox(height: 24),
-
-                // Recap Header Title
                 Text('Rekap Penjualan (Lunas)', style: Theme.of(context).textTheme.titleLarge),
                 const SizedBox(height: 16),
-
-                // Recap Grid
                 LayoutBuilder(
                   builder: (context, constraints) {
                     final double cardWidth = (constraints.maxWidth - 12) / 2;
@@ -137,16 +232,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   },
                 ),
                 const SizedBox(height: 24),
-
-                // Visual sales progress bars (custom chart simulation)
                 _buildVisualChart(recaps['monthly'] ?? 0.0, recaps['yearly'] ?? 0.0),
                 const SizedBox(height: 24),
-
-                // Main navigation buttons
                 Text('Menu Navigasi', style: Theme.of(context).textTheme.titleLarge),
                 const SizedBox(height: 16),
                 _buildMenuGrid(),
-                
                 const SizedBox(height: 32),
                 const Center(child: Watermark()),
               ],
@@ -244,7 +334,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
   }
 
   Widget _buildVisualChart(double monthly, double yearly) {
-    // Normalization ratio for chart representation
     double ratio = yearly > 0 ? (monthly / (yearly / 12)) : 0;
     if (ratio > 1.0) ratio = 1.0;
 
@@ -263,7 +352,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppTheme.darkBlueText),
           ),
           const SizedBox(height: 16),
-          // Progress bar
           Stack(
             children: [
               Container(
@@ -310,7 +398,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 'Input cucian sepatu baru',
                 Icons.add_shopping_cart,
                 Colors.blue,
-                () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const InputOrderScreen())),
+                () => _onTabTapped(1),
               ),
             ),
             const SizedBox(width: 12),
@@ -320,7 +408,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 'Update cucian real-time',
                 Icons.sync_alt,
                 Colors.orange,
-                () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ProcessOrderScreen())),
+                () => _onTabTapped(2),
               ),
             ),
           ],
@@ -334,7 +422,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 'Invoice & Cetak PDF',
                 Icons.history,
                 Colors.green,
-                () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const HistoryOrdersScreen())),
+                () => _onTabTapped(3),
               ),
             ),
             const SizedBox(width: 12),
@@ -344,7 +432,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 'CRUD tarif & layanan',
                 Icons.cleaning_services_outlined,
                 Colors.indigo,
-                () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ServiceCrudScreen())),
+                () => _onTabTapped(4),
               ),
             ),
           ],

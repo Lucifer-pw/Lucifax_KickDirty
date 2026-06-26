@@ -17,7 +17,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  
+
   // For Registration
   bool _isRegistering = false;
   final _nameController = TextEditingController();
@@ -79,7 +79,9 @@ class _LoginScreenState extends State<LoginScreen> {
       }
     } catch (e) {
       setState(() {
-        _errorMessage = e.toString().replaceAll(RegExp(r'\[.*?\]'), ''); // Clean Firebase error codes
+        _errorMessage = e
+            .toString()
+            .replaceAll(RegExp(r'\[.*?\]'), ''); // Clean Firebase error codes
       });
     } finally {
       if (mounted) {
@@ -118,7 +120,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   children: [
                     // Logo Image
                     Image.asset(
-                      'assets/logo_kickdirty2.png',
+                      'assets/logo_kickdirty.jpeg',
                       height: 100,
                       fit: BoxFit.contain,
                       errorBuilder: (context, error, stackTrace) {
@@ -134,17 +136,20 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      _isRegistering ? "Buat Akun Pelanggan" : "Masuk ke KickDirty",
-                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                            color: AppTheme.darkBlueText,
-                            fontWeight: FontWeight.bold,
-                          ),
+                      _isRegistering
+                          ? "Buat Akun Pelanggan"
+                          : "Masuk ke KickDirty",
+                      style:
+                          Theme.of(context).textTheme.headlineMedium?.copyWith(
+                                color: AppTheme.darkBlueText,
+                                fontWeight: FontWeight.bold,
+                              ),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      _isRegistering 
-                          ? "Daftar untuk memantau cucian sepatu Anda secara real-time" 
+                      _isRegistering
+                          ? "Daftar untuk memantau cucian sepatu Anda secara real-time"
                           : "Silakan masuk menggunakan email terdaftar",
                       style: Theme.of(context).textTheme.bodyMedium,
                       textAlign: TextAlign.center,
@@ -153,7 +158,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
                     if (_errorMessage.isNotEmpty) ...[
                       Container(
-                        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 12, horizontal: 16),
                         decoration: BoxDecoration(
                           color: Colors.red.shade50,
                           borderRadius: BorderRadius.circular(12),
@@ -161,12 +167,14 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         child: Row(
                           children: [
-                            const Icon(Icons.error_outline, color: Colors.redAccent),
+                            const Icon(Icons.error_outline,
+                                color: Colors.redAccent),
                             const SizedBox(width: 12),
                             Expanded(
                               child: Text(
                                 _errorMessage,
-                                style: const TextStyle(color: Colors.redAccent, fontSize: 13),
+                                style: const TextStyle(
+                                    color: Colors.redAccent, fontSize: 13),
                               ),
                             ),
                           ],
@@ -181,9 +189,12 @@ class _LoginScreenState extends State<LoginScreen> {
                         controller: _nameController,
                         decoration: const InputDecoration(
                           hintText: 'Nama Lengkap',
-                          prefixIcon: Icon(Icons.person_outline, color: AppTheme.textGray),
+                          prefixIcon: Icon(Icons.person_outline,
+                              color: AppTheme.textGray),
                         ),
-                        validator: (value) => value == null || value.isEmpty ? 'Nama tidak boleh kosong' : null,
+                        validator: (value) => value == null || value.isEmpty
+                            ? 'Nama tidak boleh kosong'
+                            : null,
                       ),
                       const SizedBox(height: 16),
 
@@ -193,11 +204,14 @@ class _LoginScreenState extends State<LoginScreen> {
                         keyboardType: TextInputType.phone,
                         decoration: const InputDecoration(
                           hintText: 'Nomor WhatsApp (Contoh: 628123456789)',
-                          prefixIcon: Icon(Icons.phone_outlined, color: AppTheme.textGray),
+                          prefixIcon: Icon(Icons.phone_outlined,
+                              color: AppTheme.textGray),
                         ),
                         validator: (value) {
-                          if (value == null || value.isEmpty) return 'Nomor WhatsApp tidak boleh kosong';
-                          if (!value.startsWith('62')) return 'Gunakan format kode negara (62...)';
+                          if (value == null || value.isEmpty)
+                            return 'Nomor WhatsApp tidak boleh kosong';
+                          if (!value.startsWith('62'))
+                            return 'Gunakan format kode negara (62...)';
                           return null;
                         },
                       ),
@@ -210,11 +224,14 @@ class _LoginScreenState extends State<LoginScreen> {
                       keyboardType: TextInputType.emailAddress,
                       decoration: const InputDecoration(
                         hintText: 'Email',
-                        prefixIcon: Icon(Icons.email_outlined, color: AppTheme.textGray),
+                        prefixIcon: Icon(Icons.email_outlined,
+                            color: AppTheme.textGray),
                       ),
                       validator: (value) {
-                        if (value == null || value.isEmpty) return 'Email tidak boleh kosong';
-                        if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                        if (value == null || value.isEmpty)
+                          return 'Email tidak boleh kosong';
+                        if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
+                            .hasMatch(value)) {
                           return 'Format email tidak valid';
                         }
                         return null;
@@ -228,10 +245,13 @@ class _LoginScreenState extends State<LoginScreen> {
                       obscureText: _obscurePassword,
                       decoration: InputDecoration(
                         hintText: 'Password',
-                        prefixIcon: const Icon(Icons.lock_outline, color: AppTheme.textGray),
+                        prefixIcon: const Icon(Icons.lock_outline,
+                            color: AppTheme.textGray),
                         suffixIcon: IconButton(
                           icon: Icon(
-                            _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                            _obscurePassword
+                                ? Icons.visibility_off_outlined
+                                : Icons.visibility_outlined,
                             color: AppTheme.textGray,
                           ),
                           onPressed: () {
@@ -242,8 +262,10 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                       validator: (value) {
-                        if (value == null || value.isEmpty) return 'Password tidak boleh kosong';
-                        if (value.length < 6) return 'Password minimal 6 karakter';
+                        if (value == null || value.isEmpty)
+                          return 'Password tidak boleh kosong';
+                        if (value.length < 6)
+                          return 'Password minimal 6 karakter';
                         return null;
                       },
                     ),
@@ -262,9 +284,11 @@ class _LoginScreenState extends State<LoginScreen> {
                             ? const SizedBox(
                                 height: 20,
                                 width: 20,
-                                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                                child: CircularProgressIndicator(
+                                    color: Colors.white, strokeWidth: 2),
                               )
-                            : Text(_isRegistering ? 'Daftar Sekarang' : 'Masuk'),
+                            : Text(
+                                _isRegistering ? 'Daftar Sekarang' : 'Masuk'),
                       ),
                     ),
                     const SizedBox(height: 16),

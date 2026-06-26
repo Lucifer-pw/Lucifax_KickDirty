@@ -5,7 +5,8 @@ import '../../services/database_service.dart';
 import '../../theme.dart';
 
 class ServiceCrudScreen extends StatefulWidget {
-  const ServiceCrudScreen({Key? key}) : super(key: key);
+  final bool isTab;
+  const ServiceCrudScreen({Key? key, this.isTab = false}) : super(key: key);
 
   @override
   State<ServiceCrudScreen> createState() => _ServiceCrudScreenState();
@@ -152,6 +153,7 @@ class _ServiceCrudScreenState extends State<ServiceCrudScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Layanan Cuci Sepatu'),
+        automaticallyImplyLeading: !widget.isTab,
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showServiceDialog(),
