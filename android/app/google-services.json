@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "103742206612",
+    "project_id": "lucifax-kickdirty",
+    "storage_bucket": "lucifax-kickdirty.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:103742206612:android:397f969390814bdf09fa81",
+        "android_client_info": {
+          "package_name": "com.Lucifax.KickDirty"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD3zf6YhWFqOKDJmwUHNakCPd5XIpLycnY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

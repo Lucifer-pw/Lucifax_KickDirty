@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:firebase_core/firebase_core.dart';
 import '../services/auth_service.dart';
 import '../theme.dart';
 import '../widgets/watermark.dart';
@@ -150,37 +149,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       style: Theme.of(context).textTheme.bodyMedium,
                       textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 16),
-
-                    if (Firebase.apps.isEmpty) ...[
-                      Container(
-                        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-                        decoration: BoxDecoration(
-                          color: AppTheme.secondaryBlue.withOpacity(0.08),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: AppTheme.secondaryBlue.withOpacity(0.25)),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.info_outline, color: AppTheme.primaryBlue, size: 20),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Text(
-                                "Mode Demo Aktif (Firebase tidak terkonfigurasi).\nMasuk dengan: owner@lucifax.com / password",
-                                style: TextStyle(
-                                  color: AppTheme.darkBlueText.withOpacity(0.85),
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                    ] else ...[
-                      const SizedBox(height: 16),
-                    ],
+                    const SizedBox(height: 24),
 
                     if (_errorMessage.isNotEmpty) ...[
                       Container(
