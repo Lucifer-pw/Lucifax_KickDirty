@@ -5,6 +5,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:open_filex/open_filex.dart';
 import '../../models/user_model.dart';
 import '../../models/order_model.dart';
+import '../../models/expense_model.dart';
 import '../../services/auth_service.dart';
 import '../../services/database_service.dart';
 import '../../services/update_service.dart';
@@ -15,6 +16,7 @@ import 'input_order_screen.dart';
 import 'process_order_screen.dart';
 import 'history_orders_screen.dart';
 import 'service_crud_screen.dart';
+import 'financial_report_screen.dart';
 
 class AdminDashboard extends StatefulWidget {
   const AdminDashboard({Key? key}) : super(key: key);
@@ -25,6 +27,7 @@ class AdminDashboard extends StatefulWidget {
 
 class _AdminDashboardState extends State<AdminDashboard> {
   int _currentIndex = 0;
+  bool _showNetProfit = false;
 
   @override
   void initState() {
@@ -184,40 +187,80 @@ class _AdminDashboardState extends State<AdminDashboard> {
           final orders = snapshot.data ?? [];
           final recaps = dbService.calculateSalesRecap(orders);
 
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildProfileBanner(currentUser?.name ?? 'Admin', roleLabel),
-                const SizedBox(height: 24),
-                Text('Rekap Penjualan (Lunas)', style: Theme.of(context).textTheme.titleLarge),
-                const SizedBox(height: 16),
-                LayoutBuilder(
-                  builder: (context, constraints) {
-                    final double cardWidth = (constraints.maxWidth - 12) / 2;
-                    return Wrap(
-                      spacing: 12,
-                      runSpacing: 12,
+          return StreamBuilder<List<ExpenseModel>>(
+            stream: dbService.getExpenses(),
+            builder: (context, expSnapshot) {
+              final expenses = expSnapshot.data ?? [];
+              final expRecaps = dbService.calculateExpensesRecap(expenses);
+
+              final displayRecaps = _showNetProfit
+                  ? {
+                      'daily': (recaps['daily'] ?? 0.0) - (expRecaps['daily'] ?? 0.0),
+                      'weekly': (recaps['weekly'] ?? 0.0) - (expRecaps['weekly'] ?? 0.0),
+                      'monthly': (recaps['monthly'] ?? 0.0) - (expRecaps['monthly'] ?? 0.0),
+                      'yearly': (recaps['yearly'] ?? 0.0) - (expRecaps['yearly'] ?? 0.0),
+                    }
+                  : recaps;
+
+              return SingleChildScrollView(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildProfileBanner(currentUser?.name ?? 'Admin', roleLabel),
+                    const SizedBox(height: 24),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        _buildRecapCard('Harian', recaps['daily'] ?? 0.0, Icons.today, Colors.blue, cardWidth),
-                        _buildRecapCard('Mingguan', recaps['weekly'] ?? 0.0, Icons.date_range, Colors.indigo, cardWidth),
-                        _buildRecapCard('Bulanan', recaps['monthly'] ?? 0.0, Icons.calendar_month, Colors.deepPurple, cardWidth),
-                        _buildRecapCard('Tahunan', recaps['yearly'] ?? 0.0, Icons.analytics, Colors.teal, cardWidth),
+                        Text(
+                          _showNetProfit ? 'Rekap Keuntungan Bersih' : 'Rekap Penjualan (Lunas)',
+                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.darkBlueText),
+                        ),
+                        Row(
+                          children: [
+                            const Text('Laba Bersih', style: TextStyle(fontSize: 11, color: AppTheme.textGray)),
+                            const SizedBox(width: 4),
+                            Switch(
+                              value: _showNetProfit,
+                              activeColor: AppTheme.primaryBlue,
+                              onChanged: (val) {
+                                setState(() {
+                                  _showNetProfit = val;
+                                });
+                              },
+                            ),
+                          ],
+                        ),
                       ],
-                    );
-                  },
+                    ),
+                    const SizedBox(height: 12),
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        final double cardWidth = (constraints.maxWidth - 12) / 2;
+                        return Wrap(
+                          spacing: 12,
+                          runSpacing: 12,
+                          children: [
+                            _buildRecapCard('Harian', displayRecaps['daily'] ?? 0.0, Icons.today, Colors.blue, cardWidth),
+                            _buildRecapCard('Mingguan', displayRecaps['weekly'] ?? 0.0, Icons.date_range, Colors.indigo, cardWidth),
+                            _buildRecapCard('Bulanan', displayRecaps['monthly'] ?? 0.0, Icons.calendar_month, Colors.deepPurple, cardWidth),
+                            _buildRecapCard('Tahunan', displayRecaps['yearly'] ?? 0.0, Icons.analytics, Colors.teal, cardWidth),
+                          ],
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 24),
+                    _buildVisualChart(displayRecaps['monthly'] ?? 0.0, displayRecaps['yearly'] ?? 0.0),
+                    const SizedBox(height: 24),
+                    Text('Menu Navigasi', style: Theme.of(context).textTheme.titleLarge),
+                    const SizedBox(height: 16),
+                    _buildMenuGrid(),
+                    const SizedBox(height: 32),
+                    const Center(child: Watermark()),
+                  ],
                 ),
-                const SizedBox(height: 24),
-                _buildVisualChart(recaps['monthly'] ?? 0.0, recaps['yearly'] ?? 0.0),
-                const SizedBox(height: 24),
-                Text('Menu Navigasi', style: Theme.of(context).textTheme.titleLarge),
-                const SizedBox(height: 16),
-                _buildMenuGrid(),
-                const SizedBox(height: 32),
-                const Center(child: Watermark()),
-              ],
-            ),
+              );
+            },
           );
         },
       ),
@@ -269,7 +312,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
   }
 
   Widget _buildRecapCard(String title, double amount, IconData icon, Color color, double width) {
-    final String formattedAmount = amount.toStringAsFixed(0).replaceAllMapped(
+    final bool isNegative = amount < 0;
+    final double absoluteAmount = amount.abs();
+    final String formattedAmount = absoluteAmount.toStringAsFixed(0).replaceAllMapped(
           RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
           (Match m) => '${m[1]}.',
         );
@@ -280,29 +325,46 @@ class _AdminDashboardState extends State<AdminDashboard> {
       decoration: BoxDecoration(
         color: AppTheme.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppTheme.lightGray),
+        border: Border.all(color: isNegative ? Colors.red.shade100 : AppTheme.lightGray),
         boxShadow: AppTheme.cardShadow,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, color: color, size: 20),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: isNegative ? Colors.red.withOpacity(0.1) : color.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, color: isNegative ? Colors.red : color, size: 20),
+              ),
+              if (isNegative)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.red.shade100,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: const Text(
+                    'RUGI',
+                    style: TextStyle(color: Colors.red, fontSize: 8, fontWeight: FontWeight.bold),
+                  ),
+                ),
+            ],
           ),
           const SizedBox(height: 12),
           Text(title, style: const TextStyle(color: AppTheme.textGray, fontSize: 12)),
           const SizedBox(height: 4),
           Text(
-            'Rp $formattedAmount',
-            style: const TextStyle(
+            '${isNegative ? "-" : ""}Rp $formattedAmount',
+            style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              color: AppTheme.darkBlueText,
+              color: isNegative ? Colors.red.shade700 : AppTheme.darkBlueText,
             ),
           ),
         ],
@@ -410,6 +472,25 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 Icons.cleaning_services_outlined,
                 Colors.indigo,
                 () => _onTabTapped(4),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _buildMenuButton(
+                'Laporan Keuangan',
+                'Pemasukan, pengeluaran & laba bersih',
+                Icons.analytics_outlined,
+                Colors.purple,
+                () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const FinancialReportScreen()),
+                  );
+                },
               ),
             ),
           ],

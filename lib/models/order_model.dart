@@ -44,6 +44,13 @@ class OrderModel {
   final String paymentStatus; // 'belum_bayar' | 'sudah_bayar'
   final String qrisImage;
   final String notes;
+  final String deliveryType; // 'drop_off_only' | 'pickup_delivery'
+  final String deliveryAddress;
+  final double deliveryFee;
+  final List<String> photoBefore;
+  final List<String> photoAfter;
+  final int pointsEarned;
+  final int pointsRedeemed;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -59,6 +66,13 @@ class OrderModel {
     required this.paymentStatus,
     required this.qrisImage,
     required this.notes,
+    this.deliveryType = 'drop_off_only',
+    this.deliveryAddress = '',
+    this.deliveryFee = 0.0,
+    this.photoBefore = const [],
+    this.photoAfter = const [],
+    this.pointsEarned = 0,
+    this.pointsRedeemed = 0,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -81,6 +95,13 @@ class OrderModel {
       paymentStatus: map['paymentStatus'] ?? 'belum_bayar',
       qrisImage: map['qrisImage'] ?? '',
       notes: map['notes'] ?? '',
+      deliveryType: map['deliveryType'] ?? 'drop_off_only',
+      deliveryAddress: map['deliveryAddress'] ?? '',
+      deliveryFee: (map['deliveryFee'] as num?)?.toDouble() ?? 0.0,
+      photoBefore: List<String>.from(map['photoBefore'] ?? []),
+      photoAfter: List<String>.from(map['photoAfter'] ?? []),
+      pointsEarned: map['pointsEarned'] ?? 0,
+      pointsRedeemed: map['pointsRedeemed'] ?? 0,
       createdAt: (map['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       updatedAt: (map['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
     );
@@ -98,6 +119,13 @@ class OrderModel {
       'paymentStatus': paymentStatus,
       'qrisImage': qrisImage,
       'notes': notes,
+      'deliveryType': deliveryType,
+      'deliveryAddress': deliveryAddress,
+      'deliveryFee': deliveryFee,
+      'photoBefore': photoBefore,
+      'photoAfter': photoAfter,
+      'pointsEarned': pointsEarned,
+      'pointsRedeemed': pointsRedeemed,
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': Timestamp.fromDate(updatedAt),
     };

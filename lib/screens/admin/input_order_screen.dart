@@ -1,4 +1,6 @@
 import 'dart:math';
+import 'dart:io';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -6,6 +8,7 @@ import 'package:flutter/foundation.dart';
 import '../../models/order_model.dart';
 import '../../models/service_model.dart';
 import '../../services/database_service.dart';
+import '../../services/image_service.dart';
 import '../../theme.dart';
 
 class InputOrderScreen extends StatefulWidget {
@@ -31,6 +34,17 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
   ServiceModel? _selectedService;
   List<ServiceModel> _availableServices = [];
 
+  // New features state
+  String _selectedCustomerId = '';
+  int _selectedCustomerPoints = 0;
+  bool _usePointsRedemption = false;
+
+  String _deliveryType = 'drop_off_only';
+  final _deliveryAddressController = TextEditingController();
+  final _deliveryFeeController = TextEditingController(text: '0');
+
+  List<String> _photoBeforeList = [];
+
   // Idempotency token generated once when screen is initialized
   late String _idempotencyToken;
   bool _isSubmitting = false;
@@ -52,6 +66,8 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
     _phoneController.dispose();
     _notesController.dispose();
     _itemNameController.dispose();
+    _deliveryAddressController.dispose();
+    _deliveryFeeController.dispose();
     super.dispose();
   }
 
@@ -94,14 +110,34 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
     _phoneController.clear();
     _notesController.clear();
     _itemNameController.clear();
+    _deliveryAddressController.clear();
+    _deliveryFeeController.text = '0';
     setState(() {
       _items.clear();
       _selectedService = null;
+      _selectedCustomerId = '';
+      _selectedCustomerPoints = 0;
+      _usePointsRedemption = false;
+      _deliveryType = 'drop_off_only';
+      _photoBeforeList = [];
       _generateIdempotencyToken();
     });
   }
 
-  double get _totalPrice => _items.fold(0, (sum, item) => sum + item.price);
+  double get _itemsPrice => _items.fold(0, (sum, item) => sum + item.price);
+  
+  double get _deliveryFee => double.tryParse(_deliveryFeeController.text) ?? 0.0;
+
+  double get _totalPrice {
+    double total = _itemsPrice;
+    if (_deliveryType == 'pickup_delivery') {
+      total += _deliveryFee;
+    }
+    if (_usePointsRedemption && _selectedCustomerPoints >= 10) {
+      total -= 25000;
+    }
+    return total < 0 ? 0.0 : total;
+  }
 
   void _showQrisDialog(String invoiceId, OrderModel order) {
     showDialog(
@@ -194,10 +230,13 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
         final data = doc.data();
         final phone = data['phoneNumber']?.toString().trim() ?? '';
         final name = data['name']?.toString().trim() ?? '';
+        final points = (data['loyaltyPoints'] ?? 0).toString();
         if (phone.isNotEmpty) {
           merged[phone] = {
             'name': name,
             'phone': phone,
+            'customerId': doc.id,
+            'loyaltyPoints': points,
           };
         }
       }
@@ -214,11 +253,27 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
         final data = doc.data();
         final phone = data['phone']?.toString().trim() ?? '';
         final name = data['name']?.toString().trim() ?? '';
+        final points = (data['loyaltyPoints'] ?? 0).toString();
+        final uid = data['uid']?.toString() ?? '';
         if (phone.isNotEmpty) {
-          merged[phone] = {
-            'name': name,
-            'phone': phone,
-          };
+          if (merged.containsKey(phone)) {
+            final existing = merged[phone]!;
+            if ((existing['customerId'] == null || existing['customerId']!.isEmpty) && uid.isNotEmpty) {
+              existing['customerId'] = uid;
+            }
+            int existingPts = int.tryParse(existing['loyaltyPoints'] ?? '0') ?? 0;
+            int newPts = int.tryParse(points) ?? 0;
+            if (newPts > existingPts) {
+              existing['loyaltyPoints'] = points;
+            }
+          } else {
+            merged[phone] = {
+              'name': name,
+              'phone': phone,
+              'customerId': uid,
+              'loyaltyPoints': points,
+            };
+          }
         }
       }
     } catch (e) {
@@ -236,11 +291,21 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
         final data = doc.data();
         final phone = data['customerPhone']?.toString().trim() ?? '';
         final name = data['customerName']?.toString().trim() ?? '';
+        final custId = data['customerId']?.toString() ?? '';
         if (phone.isNotEmpty && name.isNotEmpty) {
-          merged[phone] = {
-            'name': name,
-            'phone': phone,
-          };
+          if (merged.containsKey(phone)) {
+            final existing = merged[phone]!;
+            if ((existing['customerId'] == null || existing['customerId']!.isEmpty) && custId.isNotEmpty) {
+              existing['customerId'] = custId;
+            }
+          } else {
+            merged[phone] = {
+              'name': name,
+              'phone': phone,
+              'customerId': custId,
+              'loyaltyPoints': '0',
+            };
+          }
         }
       }
     } catch (e) {
@@ -305,16 +370,22 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
                               final item = docs[index];
                               final name = item['name'] ?? '';
                               final phone = item['phone'] ?? '';
+                              final points = int.tryParse(item['loyaltyPoints'] ?? '0') ?? 0;
                               return ListTile(
                                 leading: CircleAvatar(
                                   backgroundColor: AppTheme.primaryBlue.withOpacity(0.08),
                                   child: const Icon(Icons.person, color: AppTheme.primaryBlue),
                                 ),
                                 title: Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                                subtitle: Text('WA: +$phone'),
+                                subtitle: Text('WA: +$phone • Poin: $points'),
                                 onTap: () {
-                                  _nameController.text = name;
-                                  _phoneController.text = phone;
+                                  setState(() {
+                                    _nameController.text = name;
+                                    _phoneController.text = phone;
+                                    _selectedCustomerId = item['customerId'] ?? '';
+                                    _selectedCustomerPoints = points;
+                                    _usePointsRedemption = false; // Reset first
+                                  });
                                   Navigator.pop(context); // Close dialog
                                 },
                               );
@@ -363,13 +434,19 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
         idempotencyToken: _idempotencyToken,
         customerName: _nameController.text.trim(),
         customerPhone: _phoneController.text.trim(),
-        customerId: '', // Optionally linked
+        customerId: _selectedCustomerId,
         items: _items,
         totalAmount: _totalPrice,
         status: 'diterima',
         paymentStatus: 'belum_bayar',
         qrisImage: 'assets/qris_pembayaran.jpeg',
         notes: _notesController.text.trim(),
+        deliveryType: _deliveryType,
+        deliveryAddress: _deliveryType == 'pickup_delivery' ? _deliveryAddressController.text.trim() : '',
+        deliveryFee: _deliveryType == 'pickup_delivery' ? _deliveryFee : 0.0,
+        photoBefore: _photoBeforeList,
+        photoAfter: const [],
+        pointsRedeemed: _usePointsRedemption ? 10 : 0,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );
@@ -385,6 +462,7 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
             .set({
           'name': _nameController.text.trim(),
           'phone': _phoneController.text.trim(),
+          if (_selectedCustomerId.isNotEmpty) 'uid': _selectedCustomerId,
           'lastOrderAt': FieldValue.serverTimestamp(),
         }, SetOptions(merge: true));
       } catch (e) {
@@ -466,6 +544,224 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
                               if (!v.startsWith('62')) return 'Harus diawali dengan 62 (Kode Negara)';
                               return null;
                             },
+                          ),
+                          if (_selectedCustomerId.isNotEmpty) ...[
+                            const SizedBox(height: 8),
+                            Chip(
+                              label: Text('Pelanggan Terhubung (Poin: $_selectedCustomerPoints)'),
+                              deleteIcon: const Icon(Icons.clear, size: 18),
+                              onDeleted: () {
+                                setState(() {
+                                    _selectedCustomerId = '';
+                                    _selectedCustomerPoints = 0;
+                                    _usePointsRedemption = false;
+                                });
+                              },
+                            ),
+                          ],
+                          if (_selectedCustomerPoints >= 10) ...[
+                            const SizedBox(height: 12),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: Colors.amber.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: Colors.amber.withOpacity(0.3)),
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.stars, color: Colors.amber),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      'Loyalty Poin: $_selectedCustomerPoints\nTukarkan 10 Poin (Diskon Rp 25.000)',
+                                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.brown),
+                                    ),
+                                  ),
+                                  Switch(
+                                    value: _usePointsRedemption,
+                                    activeColor: Colors.amber,
+                                    onChanged: (val) {
+                                      setState(() {
+                                        _usePointsRedemption = val;
+                                      });
+                                    },
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Delivery & Logistics Card
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Logistik & Pengantaran', style: Theme.of(context).textTheme.titleMedium),
+                          const SizedBox(height: 16),
+                          DropdownButtonFormField<String>(
+                            value: _deliveryType,
+                            decoration: const InputDecoration(
+                              prefixIcon: Icon(Icons.local_shipping_outlined),
+                            ),
+                            items: const [
+                              DropdownMenuItem(value: 'drop_off_only', child: Text('Drop-Off & Ambil Sendiri')),
+                              DropdownMenuItem(value: 'pickup_delivery', child: Text('Penjemputan & Pengantaran (Kurir)')),
+                            ],
+                            onChanged: (val) {
+                              if (val != null) {
+                                setState(() {
+                                  _deliveryType = val;
+                                  if (val == 'pickup_delivery') {
+                                    _deliveryFeeController.text = '15000';
+                                  } else {
+                                    _deliveryFeeController.text = '0';
+                                  }
+                                });
+                              }
+                            },
+                          ),
+                          if (_deliveryType == 'pickup_delivery') ...[
+                            const SizedBox(height: 12),
+                            TextFormField(
+                              controller: _deliveryAddressController,
+                              maxLines: 2,
+                              decoration: const InputDecoration(
+                                hintText: 'Alamat lengkap penjemputan/pengantaran',
+                                prefixIcon: Icon(Icons.location_on_outlined),
+                              ),
+                              validator: (v) => _deliveryType == 'pickup_delivery' && (v == null || v.isEmpty)
+                                  ? 'Alamat wajib diisi untuk kurir'
+                                  : null,
+                            ),
+                            const SizedBox(height: 12),
+                            TextFormField(
+                              controller: _deliveryFeeController,
+                              keyboardType: TextInputType.number,
+                              decoration: const InputDecoration(
+                                hintText: 'Ongkos Kirim / Delivery Fee (Rp)',
+                                prefixIcon: Icon(Icons.monetization_on_outlined),
+                              ),
+                              onChanged: (val) {
+                                setState(() {}); // Recalculate total
+                              },
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Photo Documentation Card
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Foto Kondisi Awal (Before)', style: Theme.of(context).textTheme.titleMedium),
+                          const SizedBox(height: 8),
+                          const Text(
+                            'Ambil foto kondisi sepatu saat diserahkan (misal noda, robek, pudar) sebagai bukti.',
+                            style: TextStyle(color: AppTheme.textGray, fontSize: 11),
+                          ),
+                          const SizedBox(height: 16),
+                          if (_photoBeforeList.isNotEmpty) ...[
+                            SizedBox(
+                              height: 100,
+                              child: ListView.builder(
+                                scrollDirection: Axis.horizontal,
+                                itemCount: _photoBeforeList.length,
+                                itemBuilder: (context, index) {
+                                  final img = _photoBeforeList[index];
+                                  final isBase64 = img.startsWith('data:image');
+                                  return Stack(
+                                    children: [
+                                      Container(
+                                        width: 100,
+                                        height: 100,
+                                        margin: const EdgeInsets.only(right: 8),
+                                        decoration: BoxDecoration(
+                                          borderRadius: BorderRadius.circular(8),
+                                          image: DecorationImage(
+                                            image: isBase64
+                                                ? MemoryImage(base64Decode(img.split(',')[1]))
+                                                : FileImage(File(img)) as ImageProvider,
+                                            fit: BoxFit.cover,
+                                          ),
+                                        ),
+                                      ),
+                                      Positioned(
+                                        top: 0,
+                                        right: 8,
+                                        child: GestureDetector(
+                                          onTap: () {
+                                            setState(() {
+                                              _photoBeforeList.removeAt(index);
+                                            });
+                                          },
+                                          child: CircleAvatar(
+                                            radius: 12,
+                                            backgroundColor: Colors.black.withOpacity(0.5),
+                                            child: const Icon(Icons.close, size: 14, color: Colors.white),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  );
+                                },
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                          ],
+                          Row(
+                            children: [
+                              Expanded(
+                                child: OutlinedButton.icon(
+                                  onPressed: () async {
+                                    final img = await ImageService.pickImageFromCamera();
+                                    if (img != null) {
+                                      setState(() {
+                                        _photoBeforeList.add(img);
+                                      });
+                                    }
+                                  },
+                                  icon: const Icon(Icons.camera_alt_outlined, color: AppTheme.primaryBlue),
+                                  label: const Text('Kamera', style: TextStyle(color: AppTheme.primaryBlue)),
+                                  style: OutlinedButton.styleFrom(
+                                    side: const BorderSide(color: AppTheme.primaryBlue),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: OutlinedButton.icon(
+                                  onPressed: () async {
+                                    final img = await ImageService.pickImageFromGallery();
+                                    if (img != null) {
+                                      setState(() {
+                                        _photoBeforeList.add(img);
+                                      });
+                                    }
+                                  },
+                                  icon: const Icon(Icons.photo_outlined, color: AppTheme.primaryBlue),
+                                  label: const Text('Galeri', style: TextStyle(color: AppTheme.primaryBlue)),
+                                  style: OutlinedButton.styleFrom(
+                                    side: const BorderSide(color: AppTheme.primaryBlue),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),

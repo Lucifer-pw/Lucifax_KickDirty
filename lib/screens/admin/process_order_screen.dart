@@ -1,8 +1,10 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../models/order_model.dart';
 import '../../services/database_service.dart';
+import '../../services/image_service.dart';
 import '../../theme.dart';
 
 class ProcessOrderScreen extends StatefulWidget {
@@ -37,8 +39,93 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
       nextStatus = 'sedang_diproses';
       successMsg = 'Sepatu mulai diproses!';
     } else if (currentStatus == 'sedang_diproses') {
+      String? photoAfter = await showDialog<String?>(
+        context: context,
+        builder: (context) {
+          String? capturedBase64;
+          return StatefulBuilder(
+            builder: (context, setStateDialog) {
+              return AlertDialog(
+                title: const Text('Dokumentasi Hasil Cuci (After)'),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text('Ambil foto hasil cucian sepatu sebagai bukti sebelum diselesaikan.'),
+                    const SizedBox(height: 16),
+                    if (capturedBase64 != null)
+                      Container(
+                        width: 150,
+                        height: 150,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(8),
+                          image: DecorationImage(
+                            image: MemoryImage(base64Decode(capturedBase64!.split(',')[1])),
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                      ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () async {
+                              final img = await ImageService.pickImageFromCamera();
+                              if (img != null) {
+                                setStateDialog(() {
+                                  capturedBase64 = img;
+                                });
+                              }
+                            },
+                            icon: const Icon(Icons.camera_alt),
+                            label: const Text('Kamera'),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () async {
+                              final img = await ImageService.pickImageFromGallery();
+                              if (img != null) {
+                                setStateDialog(() {
+                                  capturedBase64 = img;
+                                });
+                              }
+                            },
+                            icon: const Icon(Icons.photo),
+                            label: const Text('Galeri'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, null),
+                    child: const Text('Lewati'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () => Navigator.pop(context, capturedBase64),
+                    style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryBlue),
+                    child: const Text('Simpan'),
+                  ),
+                ],
+              );
+            },
+          );
+        },
+      );
+
       nextStatus = 'selesai';
       successMsg = 'Servis sepatu selesai!';
+      if (photoAfter != null) {
+        await dbService.updateOrderStatusWithPhoto(orderId, nextStatus, [photoAfter]);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(successMsg)));
+        }
+        return;
+      }
     } else if (currentStatus == 'selesai') {
       nextStatus = 'diambil';
       successMsg = 'Sepatu telah diserahkan ke pelanggan!';

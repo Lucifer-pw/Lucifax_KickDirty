@@ -6,6 +6,7 @@ class UserModel {
   final String email;
   final String phoneNumber;
   final String role; // 'owner' | 'staff' | 'customer'
+  final int loyaltyPoints;
   final DateTime createdAt;
 
   UserModel({
@@ -14,6 +15,7 @@ class UserModel {
     required this.email,
     required this.phoneNumber,
     required this.role,
+    this.loyaltyPoints = 0,
     required this.createdAt,
   });
 
@@ -24,6 +26,7 @@ class UserModel {
       email: map['email'] ?? '',
       phoneNumber: map['phoneNumber'] ?? '',
       role: map['role'] ?? 'customer',
+      loyaltyPoints: map['loyaltyPoints'] ?? 0,
       createdAt: (map['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
     );
   }
@@ -34,6 +37,7 @@ class UserModel {
       'email': email,
       'phoneNumber': phoneNumber,
       'role': role,
+      'loyaltyPoints': loyaltyPoints,
       'createdAt': Timestamp.fromDate(createdAt),
     };
   }
