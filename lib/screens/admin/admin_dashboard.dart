@@ -55,16 +55,41 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   ),
                 ElevatedButton(
                   onPressed: () async {
-                    // Open browser link to download APK
+                    // Try launching the direct APK link with externalApplication
                     final uri = Uri.parse(updateInfo.downloadUrl);
+                    bool launched = false;
                     try {
-                      await launchUrl(uri, mode: LaunchMode.externalApplication);
-                    } catch (e) {
-                      if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Tidak dapat membuka link download: $e')),
-                        );
+                      launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+                    } catch (_) {}
+
+                    if (!launched) {
+                      // Try platformDefault next
+                      try {
+                        launched = await launchUrl(uri, mode: LaunchMode.platformDefault);
+                      } catch (_) {}
+                    }
+
+                    if (!launched) {
+                      // Try launching the release page HTML URL
+                      final releaseUri = Uri.parse(updateInfo.releaseUrl);
+                      try {
+                        launched = await launchUrl(releaseUri, mode: LaunchMode.externalApplication);
+                      } catch (_) {}
+
+                      if (!launched) {
+                        try {
+                          launched = await launchUrl(releaseUri, mode: LaunchMode.platformDefault);
+                        } catch (_) {}
                       }
+                    }
+
+                    if (!launched && mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Gagal membuka link. Silakan buka browser dan akses: ${updateInfo.releaseUrl}'),
+                          duration: const Duration(seconds: 8),
+                        ),
+                      );
                     }
                   },
                   child: const Text('Unduh Update'),

@@ -7,12 +7,14 @@ import 'package:flutter/foundation.dart';
 class UpdateInfo {
   final String latestVersion;
   final String downloadUrl;
+  final String releaseUrl;
   final bool isForceUpdate;
   final bool hasUpdate;
 
   UpdateInfo({
     required this.latestVersion,
     required this.downloadUrl,
+    required this.releaseUrl,
     required this.isForceUpdate,
     required this.hasUpdate,
   });
@@ -114,6 +116,7 @@ class UpdateService {
       String latestVersion = currentVersion;
       String latestBuild = currentBuild;
       String downloadUrl = '';
+      String releaseUrl = 'https://github.com/Lucifer-pw/Lucifax_KickDirty/releases/latest';
 
       // 1. Try GitHub API
       final apiRelease = await _getLatestReleaseFromApi();
@@ -140,6 +143,7 @@ class UpdateService {
         if (downloadUrl.isEmpty) {
           downloadUrl = apiRelease['html_url'] ?? '';
         }
+        releaseUrl = apiRelease['html_url'] ?? 'https://github.com/Lucifer-pw/Lucifax_KickDirty/releases/latest';
       } else {
         // 2. Try GitHub Redirect (as API fallback)
         if (kDebugMode) print("GitHub API failed or rate-limited. Trying Redirect method...");
@@ -154,8 +158,11 @@ class UpdateService {
           latestVersion = tagParts[0];
           latestBuild = tagParts.length > 1 ? tagParts[1] : '0';
 
+          // Encode tag for URL compatibility (replace '+' with '%2B')
+          String encodedTag = tag.replaceAll('+', '%2B');
           downloadUrl =
-              'https://github.com/Lucifer-pw/Lucifax_KickDirty/releases/download/$tag/lucifax-kickdirty-v$latestVersion.apk';
+              'https://github.com/Lucifer-pw/Lucifax_KickDirty/releases/download/$encodedTag/lucifax-kickdirty-v$latestVersion.apk';
+          releaseUrl = 'https://github.com/Lucifer-pw/Lucifax_KickDirty/releases/tag/$encodedTag';
         } else {
           // 3. Fallback to Firestore
           if (kDebugMode) print("GitHub methods failed. Trying Firestore fallback...");
@@ -166,6 +173,7 @@ class UpdateService {
             Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
             String firestoreLatest = data['latestVersion'] ?? currentVersion;
             downloadUrl = data['downloadUrl'] ?? '';
+            releaseUrl = data['releaseUrl'] ?? 'https://github.com/Lucifer-pw/Lucifax_KickDirty/releases/latest';
 
             // Split version and build from Firestore if in X.Y.Z+B format
             List<String> firestoreParts = firestoreLatest.split('+');
@@ -179,12 +187,13 @@ class UpdateService {
 
       if (kDebugMode) {
         print("Latest version: $latestVersion, Build: $latestBuild");
-        print("Has update: $hasUpdate, Download URL: $downloadUrl");
+        print("Has update: $hasUpdate, Download URL: $downloadUrl, Release URL: $releaseUrl");
       }
 
       return UpdateInfo(
         latestVersion: latestVersion,
         downloadUrl: downloadUrl,
+        releaseUrl: releaseUrl,
         isForceUpdate: false,
         hasUpdate: hasUpdate,
       );
@@ -196,6 +205,7 @@ class UpdateService {
     return UpdateInfo(
       latestVersion: '1.0.0',
       downloadUrl: '',
+      releaseUrl: 'https://github.com/Lucifer-pw/Lucifax_KickDirty/releases/latest',
       isForceUpdate: false,
       hasUpdate: false,
     );
