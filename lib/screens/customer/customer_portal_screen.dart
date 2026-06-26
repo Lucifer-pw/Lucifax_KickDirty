@@ -18,18 +18,49 @@ class CustomerPortalScreen extends StatefulWidget {
 }
 
 class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
-  void _showOrderServiceDialog() {
+  void _showOrderServiceDialog() async {
     final dbService = Provider.of<DatabaseService>(context, listen: false);
     final authService = Provider.of<AuthService>(context, listen: false);
     final currentUser = authService.currentUserModel;
 
     if (currentUser == null) return;
 
+    // Show loading dialog while fetching services list once
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(),
+      ),
+    );
+
+    List<ServiceModel> services = [];
+    try {
+      services = await dbService.getServices().first;
+    } catch (e) {
+      print("Error fetching services: $e");
+    }
+
+    if (mounted) {
+      Navigator.pop(context); // Close loading dialog
+    }
+
+    if (services.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Layanan tidak tersedia. Silakan hubungi admin.')),
+        );
+      }
+      return;
+    }
+
     final nameController = TextEditingController();
     final notesController = TextEditingController();
-    ServiceModel? selectedService;
+    ServiceModel? selectedService = services.first;
     final formKey = GlobalKey<FormState>();
     bool isSubmitting = false;
+
+    if (!mounted) return;
 
     showModalBottomSheet(
       context: context,
@@ -103,46 +134,25 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
                       const SizedBox(height: 16),
 
                       // Service selection dropdown
-                      StreamBuilder<List<ServiceModel>>(
-                        stream: dbService.getServices(),
-                        builder: (context, snapshot) {
-                          if (snapshot.connectionState == ConnectionState.waiting) {
-                            return const Center(child: CircularProgressIndicator());
-                          }
-                          if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                            return const Text(
-                              'Layanan tidak tersedia. Silakan hubungi admin.',
-                              style: TextStyle(color: Colors.red),
-                            );
-                          }
-
-                          final services = snapshot.data!;
-                          // Initialize selected service if not yet set
-                          if (selectedService == null && services.isNotEmpty) {
-                            selectedService = services.first;
-                          }
-
-                          return DropdownButtonFormField<ServiceModel>(
-                            value: selectedService,
-                            decoration: const InputDecoration(
-                              labelText: 'Pilih Layanan',
-                              prefixIcon: Icon(Icons.dry_cleaning),
+                      DropdownButtonFormField<ServiceModel>(
+                        value: selectedService,
+                        decoration: const InputDecoration(
+                          labelText: 'Pilih Layanan',
+                          prefixIcon: Icon(Icons.dry_cleaning),
+                        ),
+                        items: services.map((service) {
+                          return DropdownMenuItem<ServiceModel>(
+                            value: service,
+                            child: Text(
+                              '${service.name} - Rp ${service.price.toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")}',
+                              style: const TextStyle(fontSize: 14),
                             ),
-                            items: services.map((service) {
-                              return DropdownMenuItem<ServiceModel>(
-                                value: service,
-                                child: Text(
-                                  '${service.name} - Rp ${service.price.toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")}',
-                                  style: const TextStyle(fontSize: 14),
-                                ),
-                              );
-                            }).toList(),
-                            onChanged: (val) {
-                              setStateSheet(() {
-                                selectedService = val;
-                              });
-                            },
                           );
+                        }).toList(),
+                        onChanged: (val) {
+                          setStateSheet(() {
+                            selectedService = val;
+                          });
                         },
                       ),
                       const SizedBox(height: 8),
