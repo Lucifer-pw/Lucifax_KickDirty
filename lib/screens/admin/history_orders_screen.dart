@@ -399,8 +399,8 @@ class _HistoryOrdersScreenState extends State<HistoryOrdersScreen> {
                       ),
                     );
                   },
-                ),
-              ),
+                );
+              },
             ),
           ),
         ],

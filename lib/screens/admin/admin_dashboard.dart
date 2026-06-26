@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../services/auth_service.dart';
 import '../../services/database_service.dart';
 import '../../services/update_service.dart';
@@ -51,10 +52,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 ElevatedButton(
                   onPressed: () async {
                     // Open browser link to download APK
-                    // ignore: deprecated_member_use
-                    if (await canLaunch(updateInfo.downloadUrl)) {
-                      // ignore: deprecated_member_use
-                      await launch(updateInfo.downloadUrl);
+                    final uri = Uri.parse(updateInfo.downloadUrl);
+                    if (await canLaunchUrl(uri)) {
+                      await launchUrl(uri, mode: LaunchMode.externalApplication);
                     } else {
                       if (mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
