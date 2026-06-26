@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../models/order_model.dart';
+import '../../models/service_model.dart';
 import '../../services/auth_service.dart';
 import '../../services/database_service.dart';
 import '../../theme.dart';
@@ -15,6 +18,341 @@ class CustomerPortalScreen extends StatefulWidget {
 }
 
 class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
+  void _showOrderServiceDialog() {
+    final dbService = Provider.of<DatabaseService>(context, listen: false);
+    final authService = Provider.of<AuthService>(context, listen: false);
+    final currentUser = authService.currentUserModel;
+
+    if (currentUser == null) return;
+
+    final nameController = TextEditingController();
+    final notesController = TextEditingController();
+    ServiceModel? selectedService;
+    final formKey = GlobalKey<FormState>();
+    bool isSubmitting = false;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setStateSheet) {
+            return Container(
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(24),
+                  topRight: Radius.circular(24),
+                ),
+              ),
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+                top: 24,
+                left: 24,
+                right: 24,
+              ),
+              child: Form(
+                key: formKey,
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Center(
+                        child: Container(
+                          width: 40,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: AppTheme.lightGray,
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      const Text(
+                        'Pesan Layanan Cuci Sepatu',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.primaryBlue,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Silakan masukkan detail sepatu Anda dan pilih jenis layanan.',
+                        style: TextStyle(fontSize: 12, color: AppTheme.textGray),
+                      ),
+                      const SizedBox(height: 20),
+
+                      // Item Name input
+                      TextFormField(
+                        controller: nameController,
+                        decoration: const InputDecoration(
+                          labelText: 'Nama / Merek Sepatu',
+                          hintText: 'Contoh: Adidas Samba, Nike Jordan',
+                          prefixIcon: Icon(Icons.abc),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Nama/merek sepatu tidak boleh kosong';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Service selection dropdown
+                      StreamBuilder<List<ServiceModel>>(
+                        stream: dbService.getServices(),
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState == ConnectionState.waiting) {
+                            return const Center(child: CircularProgressIndicator());
+                          }
+                          if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                            return const Text(
+                              'Layanan tidak tersedia. Silakan hubungi admin.',
+                              style: TextStyle(color: Colors.red),
+                            );
+                          }
+
+                          final services = snapshot.data!;
+                          // Initialize selected service if not yet set
+                          if (selectedService == null && services.isNotEmpty) {
+                            selectedService = services.first;
+                          }
+
+                          return DropdownButtonFormField<ServiceModel>(
+                            value: selectedService,
+                            decoration: const InputDecoration(
+                              labelText: 'Pilih Layanan',
+                              prefixIcon: Icon(Icons.dry_cleaning),
+                            ),
+                            items: services.map((service) {
+                              return DropdownMenuItem<ServiceModel>(
+                                value: service,
+                                child: Text(
+                                  '${service.name} - Rp ${service.price.toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")}',
+                                  style: const TextStyle(fontSize: 14),
+                                ),
+                              );
+                            }).toList(),
+                            onChanged: (val) {
+                              setStateSheet(() {
+                                selectedService = val;
+                              });
+                            },
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 8),
+                      if (selectedService != null) ...[
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          child: Text(
+                            selectedService!.description,
+                            style: const TextStyle(fontSize: 11, color: AppTheme.textGray, fontStyle: FontStyle.italic),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+
+                      // Notes input
+                      TextFormField(
+                        controller: notesController,
+                        decoration: const InputDecoration(
+                          labelText: 'Catatan (Opsional)',
+                          hintText: 'Contoh: Kotor sekali di bagian sol, tali dilepas',
+                          prefixIcon: Icon(Icons.edit_note),
+                        ),
+                        maxLines: 2,
+                      ),
+                      const SizedBox(height: 24),
+
+                      // Submit button
+                      SizedBox(
+                        width: double.infinity,
+                        height: 48,
+                        child: ElevatedButton(
+                          onPressed: isSubmitting
+                              ? null
+                              : () async {
+                                  if (!formKey.currentState!.validate() || selectedService == null) return;
+
+                                  setStateSheet(() {
+                                    isSubmitting = true;
+                                  });
+
+                                  try {
+                                    // Generate a deterministic unique ID
+                                    String invoiceId = await dbService.generateInvoiceId();
+
+                                    OrderModel order = OrderModel(
+                                      id: invoiceId,
+                                      idempotencyToken: DateTime.now().millisecondsSinceEpoch.toString(),
+                                      customerName: currentUser.name,
+                                      customerPhone: currentUser.phoneNumber,
+                                      customerId: currentUser.uid,
+                                      items: [
+                                        OrderItem(
+                                          itemName: nameController.text.trim(),
+                                          serviceId: selectedService!.id,
+                                          serviceName: selectedService!.name,
+                                          price: selectedService!.price,
+                                        )
+                                      ],
+                                      totalAmount: selectedService!.price,
+                                      status: 'diterima',
+                                      paymentStatus: 'belum_bayar',
+                                      qrisImage: 'assets/qris_pembayaran.jpeg',
+                                      notes: notesController.text.trim(),
+                                      createdAt: DateTime.now(),
+                                      updatedAt: DateTime.now(),
+                                    );
+
+                                    // Save the order to Firestore
+                                    await dbService.addOrder(order);
+
+                                    // Save/update customer database record
+                                    try {
+                                      await FirebaseFirestore.instance
+                                          .collection('customers')
+                                          .doc(currentUser.phoneNumber)
+                                          .set({
+                                        'name': currentUser.name,
+                                        'phone': currentUser.phoneNumber,
+                                        'lastOrderAt': FieldValue.serverTimestamp(),
+                                      }, SetOptions(merge: true));
+                                    } catch (_) {}
+
+                                    if (context.mounted) {
+                                      Navigator.pop(context); // Close bottom sheet
+                                      _showCustomerQrisDialog(invoiceId, order);
+                                    }
+                                  } catch (e) {
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(content: Text('Gagal membuat pesanan: $e')),
+                                      );
+                                    }
+                                  } finally {
+                                    setStateSheet(() {
+                                      isSubmitting = false;
+                                    });
+                                  }
+                                },
+                          child: isSubmitting
+                              ? const SizedBox(
+                                  height: 20,
+                                  width: 20,
+                                  child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                                )
+                              : const Text('Buat Pesanan Sekarang'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showCustomerQrisDialog(String invoiceId, OrderModel order) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Pembayaran QRIS (Cashless)', textAlign: TextAlign.center),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('Invoice: $invoiceId', style: const TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              Text(
+                'Total: Rp ${order.totalAmount.toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")}',
+                style: const TextStyle(fontSize: 16, color: AppTheme.primaryBlue, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 16),
+              // QRIS Image
+              Image.asset(
+                'assets/qris_pembayaran.jpeg',
+                height: 250,
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) => Container(
+                  height: 150,
+                  color: AppTheme.lightGray,
+                  child: const Center(child: Icon(Icons.qr_code, size: 80, color: AppTheme.textGray)),
+                ),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'Silakan scan QRIS di atas untuk melakukan transfer pembayaran cashless.',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 12, color: AppTheme.textGray),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Setelah membayar, silakan kirim bukti transfer ke WhatsApp toko.',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 12, color: AppTheme.textGray, fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          actions: [
+            ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+                foregroundColor: Colors.white,
+              ),
+              onPressed: () async {
+                // Open WhatsApp with confirmation template
+                final message =
+                    "Halo KickDirty, saya ingin mengirimkan bukti pembayaran untuk pesanan saya:\n\n"
+                    "- Invoice: $invoiceId\n"
+                    "- Layanan: ${order.items.map((item) => "${item.itemName} (${item.serviceName})").join(', ')}\n"
+                    "- Total: Rp ${order.totalAmount.toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")}\n\n"
+                    "Berikut saya lampirkan bukti transfer pembayarannya.";
+                
+                const cleanPhone = "6281328580511";
+                final uri = Uri.parse('https://wa.me/$cleanPhone?text=${Uri.encodeComponent(message)}');
+                
+                try {
+                  await launchUrl(uri, mode: LaunchMode.externalApplication);
+                } catch (_) {
+                  try {
+                    await launchUrl(uri, mode: LaunchMode.platformDefault);
+                  } catch (e) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Tidak dapat membuka WhatsApp: $e')),
+                      );
+                    }
+                  }
+                }
+              },
+              icon: const Icon(Icons.phone),
+              label: const Text('Kirim Bukti Pembayaran'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context); // Close dialog
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Pesanan $invoiceId berhasil dibuat! Silakan pantau status pengerjaan Anda.')),
+                );
+              },
+              child: const Text('Tutup', style: TextStyle(color: AppTheme.textGray)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final authService = Provider.of<AuthService>(context);
@@ -104,6 +442,14 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
                   ),
                 );
               },
+            ),
+      floatingActionButton: currentUser == null
+          ? null
+          : FloatingActionButton.extended(
+              onPressed: _showOrderServiceDialog,
+              icon: const Icon(Icons.add_shopping_cart_outlined),
+              label: const Text('Pesan Layanan'),
+              backgroundColor: AppTheme.primaryBlue,
             ),
     );
   }
@@ -243,6 +589,22 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
                 ),
               ],
             ),
+            if (order.paymentStatus == 'belum_bayar') ...[
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () => _showCustomerQrisDialog(order.id, order),
+                  icon: const Icon(Icons.qr_code_scanner, size: 16),
+                  label: const Text('Bayar Sekarang (QRIS)', style: TextStyle(fontSize: 12)),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppTheme.primaryBlue,
+                    side: const BorderSide(color: AppTheme.primaryBlue),
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                  ),
+                ),
+              ),
+            ],
             const SizedBox(height: 16),
 
             // Progress Stepper Tracker

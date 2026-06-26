@@ -167,7 +167,52 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
     );
   }
 
+  Future<List<Map<String, String>>> _fetchAllCustomers() async {
+    try {
+      final usersSnap = await FirebaseFirestore.instance
+          .collection('users')
+          .where('role', isEqualTo: 'customer')
+          .get();
+
+      final customersSnap = await FirebaseFirestore.instance
+          .collection('customers')
+          .get();
+
+      Map<String, Map<String, String>> merged = {};
+
+      for (var doc in usersSnap.docs) {
+        final data = doc.data();
+        final phone = data['phoneNumber']?.toString().trim() ?? '';
+        final name = data['name']?.toString().trim() ?? '';
+        if (phone.isNotEmpty) {
+          merged[phone] = {
+            'name': name,
+            'phone': phone,
+          };
+        }
+      }
+
+      for (var doc in customersSnap.docs) {
+        final data = doc.data();
+        final phone = data['phone']?.toString().trim() ?? '';
+        final name = data['name']?.toString().trim() ?? '';
+        if (phone.isNotEmpty) {
+          merged[phone] = {
+            'name': name,
+            'phone': phone,
+          };
+        }
+      }
+
+      return merged.values.toList();
+    } catch (e) {
+      if (kDebugMode) print("Error fetching customers: $e");
+      return [];
+    }
+  }
+
   Future<void> _showCustomerSearchDialog() async {
+    final customersFuture = _fetchAllCustomers();
     showDialog(
       context: context,
       builder: (context) {
@@ -194,19 +239,19 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
                     ),
                     const SizedBox(height: 12),
                     Expanded(
-                      child: StreamBuilder<QuerySnapshot>(
-                        stream: FirebaseFirestore.instance.collection('customers').snapshots(),
+                      child: FutureBuilder<List<Map<String, String>>>(
+                        future: customersFuture,
                         builder: (context, snapshot) {
                           if (snapshot.connectionState == ConnectionState.waiting) {
                             return const Center(child: CircularProgressIndicator());
                           }
-                          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                          if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
                             return const Center(child: Text('Belum ada pelanggan terdaftar.'));
                           }
 
-                          final docs = snapshot.data!.docs.where((doc) {
-                            final name = (doc.data() as Map<String, dynamic>)['name']?.toString().toLowerCase() ?? '';
-                            final phone = (doc.data() as Map<String, dynamic>)['phone']?.toString() ?? '';
+                          final docs = snapshot.data!.where((item) {
+                            final name = item['name']?.toLowerCase() ?? '';
+                            final phone = item['phone'] ?? '';
                             return name.contains(searchQuery) || phone.contains(searchQuery);
                           }).toList();
 
@@ -218,9 +263,9 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
                             itemCount: docs.length,
                             separatorBuilder: (_, __) => const Divider(),
                             itemBuilder: (context, index) {
-                              final data = docs[index].data() as Map<String, dynamic>;
-                              final name = data['name'] ?? '';
-                              final phone = data['phone'] ?? '';
+                              final item = docs[index];
+                              final name = item['name'] ?? '';
+                              final phone = item['phone'] ?? '';
                               return ListTile(
                                 leading: CircleAvatar(
                                   backgroundColor: AppTheme.primaryBlue.withOpacity(0.08),
