@@ -89,6 +89,18 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
     });
   }
 
+  void _resetForm() {
+    _nameController.clear();
+    _phoneController.clear();
+    _notesController.clear();
+    _itemNameController.clear();
+    setState(() {
+      _items.clear();
+      _selectedService = null;
+      _generateIdempotencyToken();
+    });
+  }
+
   double get _totalPrice => _items.fold(0, (sum, item) => sum + item.price);
 
   void _showQrisDialog(String invoiceId, OrderModel order) {
@@ -135,6 +147,7 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
                     .updateOrderPaymentStatus(invoiceId, 'sudah_bayar');
                 if (mounted) {
                   Navigator.pop(context); // Close dialog
+                  _resetForm(); // Reset form state
                   if (widget.onOrderSubmitted != null) {
                     widget.onOrderSubmitted!();
                   } else {
@@ -150,6 +163,7 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
             TextButton(
               onPressed: () {
                 Navigator.pop(context); // Close dialog
+                _resetForm(); // Reset form state
                 if (widget.onOrderSubmitted != null) {
                   widget.onOrderSubmitted!();
                 } else {
@@ -178,6 +192,12 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
           .collection('customers')
           .get();
 
+      final ordersSnap = await FirebaseFirestore.instance
+          .collection('orders')
+          .orderBy('createdAt', descending: true)
+          .limit(200)
+          .get();
+
       Map<String, Map<String, String>> merged = {};
 
       for (var doc in usersSnap.docs) {
@@ -197,6 +217,18 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
         final phone = data['phone']?.toString().trim() ?? '';
         final name = data['name']?.toString().trim() ?? '';
         if (phone.isNotEmpty) {
+          merged[phone] = {
+            'name': name,
+            'phone': phone,
+          };
+        }
+      }
+
+      for (var doc in ordersSnap.docs) {
+        final data = doc.data();
+        final phone = data['customerPhone']?.toString().trim() ?? '';
+        final name = data['customerName']?.toString().trim() ?? '';
+        if (phone.isNotEmpty && name.isNotEmpty) {
           merged[phone] = {
             'name': name,
             'phone': phone,

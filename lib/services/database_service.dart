@@ -85,7 +85,20 @@ class DatabaseService with ChangeNotifier {
         .where('createdAt', isLessThanOrEqualTo: Timestamp.fromDate(endOfDay))
         .get();
 
-    int count = todayOrders.docs.length + 1;
+    int maxSeq = 0;
+    for (var doc in todayOrders.docs) {
+      String id = doc.id;
+      // Expected format: KD-DDMMYYYY-XXX
+      List<String> parts = id.split('-');
+      if (parts.length == 3) {
+        int? seq = int.tryParse(parts[2]);
+        if (seq != null && seq > maxSeq) {
+          maxSeq = seq;
+        }
+      }
+    }
+
+    int count = maxSeq + 1;
     String sequence = count.toString().padLeft(3, '0'); // e.g. 001
 
     return "KD-$dateStr-$sequence";
