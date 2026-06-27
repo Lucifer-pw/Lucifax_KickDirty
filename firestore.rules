@@ -45,6 +45,21 @@ service cloud.firestore {
     }
 
     // ============================================
+    // COUNTERS COLLECTION (invoice number generator)
+    // ============================================
+    match /counters/{counterId} {
+      allow read, write: if request.auth != null;
+    }
+
+    // ============================================
+    // CUSTOMERS COLLECTION (customer database records)
+    // ============================================
+    match /customers/{customerId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
+    }
+
+    // ============================================
     // CHAT ROOMS COLLECTION
     // ============================================
     match /chat_rooms/{chatRoomId} {

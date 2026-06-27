@@ -15,6 +15,7 @@ import 'history_orders_screen.dart';
 import 'service_crud_screen.dart';
 import 'financial_report_screen.dart';
 import 'admin_chat_list_screen.dart';
+import 'sales_detail_screen.dart';
 
 class AdminDashboard extends StatefulWidget {
   const AdminDashboard({Key? key}) : super(key: key);
@@ -272,10 +273,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
                           spacing: 12,
                           runSpacing: 12,
                           children: [
-                            _buildRecapCard('Harian', displayRecaps['daily'] ?? 0.0, Icons.today, Colors.blue, cardWidth),
-                            _buildRecapCard('Mingguan', displayRecaps['weekly'] ?? 0.0, Icons.date_range, Colors.indigo, cardWidth),
-                            _buildRecapCard('Bulanan', displayRecaps['monthly'] ?? 0.0, Icons.calendar_month, Colors.deepPurple, cardWidth),
-                            _buildRecapCard('Tahunan', displayRecaps['yearly'] ?? 0.0, Icons.analytics, Colors.teal, cardWidth),
+                            _buildRecapCard('Harian', 'daily', displayRecaps['daily'] ?? 0.0, Icons.today, Colors.blue, cardWidth, orders),
+                            _buildRecapCard('Mingguan', 'weekly', displayRecaps['weekly'] ?? 0.0, Icons.date_range, Colors.indigo, cardWidth, orders),
+                            _buildRecapCard('Bulanan', 'monthly', displayRecaps['monthly'] ?? 0.0, Icons.calendar_month, Colors.deepPurple, cardWidth, orders),
+                            _buildRecapCard('Tahunan', 'yearly', displayRecaps['yearly'] ?? 0.0, Icons.analytics, Colors.teal, cardWidth, orders),
                           ],
                         );
                       },
@@ -342,7 +343,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 
-  Widget _buildRecapCard(String title, double amount, IconData icon, Color color, double width) {
+  Widget _buildRecapCard(String title, String periodKey, double amount, IconData icon, Color color, double width, List<OrderModel> orders) {
     final bool isNegative = amount < 0;
     final double absoluteAmount = amount.abs();
     final String formattedAmount = absoluteAmount.toStringAsFixed(0).replaceAllMapped(
@@ -350,55 +351,73 @@ class _AdminDashboardState extends State<AdminDashboard> {
           (Match m) => '${m[1]}.',
         );
 
-    return Container(
-      width: width,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppTheme.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: isNegative ? Colors.red.shade100 : AppTheme.lightGray),
-        boxShadow: AppTheme.cardShadow,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: isNegative ? Colors.red.withOpacity(0.1) : color.withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(icon, color: isNegative ? Colors.red : color, size: 20),
-              ),
-              if (isNegative)
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: Colors.red.shade100,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: const Text(
-                    'RUGI',
-                    style: TextStyle(color: Colors.red, fontSize: 8, fontWeight: FontWeight.bold),
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(title, style: const TextStyle(color: AppTheme.textGray, fontSize: 12)),
-          const SizedBox(height: 4),
-          Text(
-            '${isNegative ? "-" : ""}Rp $formattedAmount',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: isNegative ? Colors.red.shade700 : AppTheme.darkBlueText,
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => SalesDetailScreen(
+              periodTitle: title,
+              periodKey: periodKey,
+              totalAmount: absoluteAmount,
+              allOrders: orders,
+              themeColor: color,
             ),
           ),
-        ],
+        );
+      },
+      child: Container(
+        width: width,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppTheme.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: isNegative ? Colors.red.shade100 : AppTheme.lightGray),
+          boxShadow: AppTheme.cardShadow,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: isNegative ? Colors.red.withOpacity(0.1) : color.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(icon, color: isNegative ? Colors.red : color, size: 20),
+                ),
+                if (isNegative)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.red.shade100,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: const Text(
+                      'RUGI',
+                      style: TextStyle(color: Colors.red, fontSize: 8, fontWeight: FontWeight.bold),
+                    ),
+                  )
+                else
+                  Icon(Icons.chevron_right, size: 18, color: color.withOpacity(0.5)),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(title, style: const TextStyle(color: AppTheme.textGray, fontSize: 12)),
+            const SizedBox(height: 4),
+            Text(
+              '${isNegative ? "-" : ""}Rp $formattedAmount',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: isNegative ? Colors.red.shade700 : AppTheme.darkBlueText,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
