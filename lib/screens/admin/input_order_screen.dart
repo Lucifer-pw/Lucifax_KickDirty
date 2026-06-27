@@ -74,7 +74,7 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
   void _addItem() {
     if (_itemNameController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Nama/Merek Sepatu wajib diisi')),
+        const SnackBar(content: Text('Nama Merk Sepatu wajib diisi')),
       );
       return;
     }

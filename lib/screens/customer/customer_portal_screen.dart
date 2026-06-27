@@ -11,7 +11,9 @@ import '../../services/database_service.dart';
 import '../../services/image_service.dart';
 import '../../theme.dart';
 import '../../widgets/watermark.dart';
+import '../../widgets/invoice_detail_modal.dart';
 import '../login_screen.dart';
+import '../chat_screen.dart';
 
 class CustomerPortalScreen extends StatefulWidget {
   const CustomerPortalScreen({Key? key}) : super(key: key);
@@ -21,6 +23,8 @@ class CustomerPortalScreen extends StatefulWidget {
 }
 
 class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
+  int _currentIndex = 0;
+
   void _showOrderServiceDialog() async {
     final dbService = Provider.of<DatabaseService>(context, listen: false);
     final authService = Provider.of<AuthService>(context, listen: false);
@@ -138,13 +142,13 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
                       TextFormField(
                         controller: nameController,
                         decoration: const InputDecoration(
-                          labelText: 'Nama / Merek Sepatu',
+                          labelText: 'Nama Merk Sepatu',
                           hintText: 'Contoh: Adidas Samba, Nike Jordan',
                           prefixIcon: Icon(Icons.abc),
                         ),
                         validator: (value) {
                           if (value == null || value.trim().isEmpty) {
-                            return 'Nama/merek sepatu tidak boleh kosong';
+                            return 'Nama Merk Sepatu tidak boleh kosong';
                           }
                           return null;
                         },
@@ -617,6 +621,215 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
     );
   }
 
+  Widget _buildCustomerNavItem(int index, IconData icon, String label) {
+    final isSelected = _currentIndex == index;
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _currentIndex = index;
+        });
+      },
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? AppTheme.primaryBlue.withOpacity(0.1) : Colors.transparent,
+          borderRadius: BorderRadius.circular(24),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              color: isSelected ? AppTheme.primaryBlue : AppTheme.textGray,
+              size: 22,
+            ),
+            if (isSelected) ...[
+              const SizedBox(width: 8),
+              Text(
+                label,
+                style: const TextStyle(
+                  color: AppTheme.primaryBlue,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _editProfileDialog(BuildContext context, UserModel user, DatabaseService dbService) {
+    final editController = TextEditingController(text: user.name);
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Edit Nama Lengkap'),
+        content: TextField(
+          controller: editController,
+          decoration: const InputDecoration(
+            hintText: 'Masukkan nama baru',
+          ),
+          textCapitalization: TextCapitalization.words,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Batal'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final newName = editController.text.trim();
+              if (newName.isNotEmpty) {
+                await FirebaseFirestore.instance.collection('users').doc(user.uid).update({
+                  'name': newName,
+                });
+                if (context.mounted) Navigator.pop(context);
+              }
+            },
+            child: const Text('Simpan'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCustomerProfileTab(BuildContext context, UserModel user, DatabaseService dbService) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Banner
+          Center(
+            child: Column(
+              children: [
+                CircleAvatar(
+                  radius: 40,
+                  backgroundColor: AppTheme.primaryBlue.withOpacity(0.1),
+                  child: Text(
+                    user.name.isNotEmpty ? user.name[0].toUpperCase() : 'C',
+                    style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: AppTheme.primaryBlue),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  user.name,
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.darkBlueText),
+                ),
+                Text(
+                  user.phoneNumber,
+                  style: const TextStyle(fontSize: 13, color: AppTheme.textGray),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 30),
+
+          // Loyalty Points Card
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              gradient: AppTheme.primaryGradient,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: AppTheme.cardShadow,
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.stars, color: Colors.orange, size: 40),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Poin Loyalitas Anda',
+                        style: TextStyle(color: Colors.white70, fontSize: 12),
+                      ),
+                      Text(
+                        '${user.loyaltyPoints} Poin',
+                        style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 4),
+                      const Text(
+                        'Setiap 10 Poin dapat ditukar diskon Rp 25.000',
+                        style: TextStyle(color: Colors.white70, fontSize: 10),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+
+          // Detail Profil
+          const Text(
+            'Informasi Akun',
+            style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppTheme.darkBlueText),
+          ),
+          const SizedBox(height: 10),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Column(
+                children: [
+                  ListTile(
+                    leading: const Icon(Icons.person_outline, color: AppTheme.primaryBlue),
+                    title: const Text('Nama Lengkap', style: TextStyle(fontSize: 11, color: AppTheme.textGray)),
+                    subtitle: Text(user.name, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppTheme.darkBlueText)),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.edit_outlined, size: 20),
+                      onPressed: () => _editProfileDialog(context, user, dbService),
+                    ),
+                  ),
+                  const Divider(height: 1),
+                  ListTile(
+                    leading: const Icon(Icons.phone_android_outlined, color: AppTheme.primaryBlue),
+                    title: const Text('Nomor WhatsApp', style: TextStyle(fontSize: 11, color: AppTheme.textGray)),
+                    subtitle: Text(user.phoneNumber, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppTheme.darkBlueText)),
+                  ),
+                  const Divider(height: 1),
+                  ListTile(
+                    leading: const Icon(Icons.email_outlined, color: AppTheme.primaryBlue),
+                    title: const Text('Email', style: TextStyle(fontSize: 11, color: AppTheme.textGray)),
+                    subtitle: Text(user.email, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppTheme.darkBlueText)),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 30),
+
+          // Logout Button
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () async {
+                await Provider.of<AuthService>(context, listen: false).signOut();
+                if (context.mounted) {
+                  Navigator.of(context).pushReplacement(
+                    MaterialPageRoute(builder: (_) => const LoginScreen()),
+                  );
+                }
+              },
+              icon: const Icon(Icons.logout, color: Colors.red),
+              label: const Text('Keluar Aplikasi', style: TextStyle(color: Colors.red)),
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: Colors.red),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final authService = Provider.of<AuthService>(context);
@@ -624,28 +837,13 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
 
     final currentUser = authService.currentUserModel;
     final String phoneNumber = currentUser?.phoneNumber ?? '';
+    final showAppBar = _currentIndex != 1;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('KickDirty Pelanggan'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout_outlined, color: Colors.redAccent),
-            onPressed: () async {
-              await authService.signOut();
-              if (mounted) {
-                Navigator.of(context).pushReplacement(
-                  MaterialPageRoute(builder: (_) => const LoginScreen()),
-                );
-              }
-            },
-          ),
-        ],
-      ),
-      body: currentUser == null
-          ? const Center(child: CircularProgressIndicator())
-          : StreamBuilder<List<OrderModel>>(
-              // Query orders matching customer's WhatsApp number for seamless synchronization
+    final List<Widget> customerScreens = currentUser == null 
+        ? [const Center(child: CircularProgressIndicator())]
+        : [
+            // Tab 0: Home / Beranda
+            StreamBuilder<List<OrderModel>>(
               stream: dbService.getOrdersByPhone(phoneNumber),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
@@ -656,8 +854,6 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
                 }
 
                 final allOrders = snapshot.data ?? [];
-
-                // Filter Active vs Completed (Picked Up) orders
                 final activeOrders = allOrders.where((o) => o.status != 'diambil').toList();
                 final historyOrders = allOrders.where((o) => o.status == 'diambil').toList();
 
@@ -666,11 +862,8 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Profile Card
                       _buildProfileCard(currentUser),
                       const SizedBox(height: 24),
-
-                      // Active Orders (Real-time tracking)
                       Text('Lacak Cucian Sepatu (Real-Time)', style: Theme.of(context).textTheme.titleLarge),
                       const SizedBox(height: 12),
                       if (activeOrders.isEmpty)
@@ -685,8 +878,6 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
                           },
                         ),
                       const SizedBox(height: 24),
-
-                      // History Orders
                       Text('Riwayat Cucian Selesai', style: Theme.of(context).textTheme.titleLarge),
                       const SizedBox(height: 12),
                       if (historyOrders.isEmpty)
@@ -707,7 +898,73 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
                 );
               },
             ),
-      floatingActionButton: currentUser == null
+            
+            // Tab 1: Chat Screen
+            ChatScreen(
+              customerId: currentUser.uid,
+              customerName: currentUser.name,
+              customerPhone: currentUser.phoneNumber,
+              senderId: currentUser.uid,
+              senderName: currentUser.name,
+              isAdmin: false,
+            ),
+            
+            // Tab 2: Profile Screen
+            _buildCustomerProfileTab(context, currentUser, dbService),
+          ];
+
+    return Scaffold(
+      appBar: showAppBar
+          ? AppBar(
+              title: Text(_currentIndex == 0 ? 'KickDirty Pelanggan' : 'Profil Saya'),
+              automaticallyImplyLeading: false,
+              actions: _currentIndex == 2 ? null : [
+                IconButton(
+                  icon: const Icon(Icons.logout_outlined, color: Colors.redAccent),
+                  onPressed: () async {
+                    await authService.signOut();
+                    if (mounted) {
+                      Navigator.of(context).pushReplacement(
+                        MaterialPageRoute(builder: (_) => const LoginScreen()),
+                      );
+                    }
+                  },
+                ),
+              ],
+            )
+          : null,
+      body: currentUser == null
+          ? const Center(child: CircularProgressIndicator())
+          : IndexedStack(
+              index: _currentIndex,
+              children: customerScreens,
+            ),
+      bottomNavigationBar: currentUser == null
+          ? null
+          : Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: AppTheme.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.06),
+                    blurRadius: 10,
+                    offset: const Offset(0, -4),
+                  ),
+                ],
+              ),
+              child: SafeArea(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _buildCustomerNavItem(0, Icons.home_outlined, 'Beranda'),
+                    _buildCustomerNavItem(1, Icons.chat_bubble_outline, 'Chat Owner'),
+                    _buildCustomerNavItem(2, Icons.person_outline, 'Profil'),
+                  ],
+                ),
+              ),
+            ),
+      floatingActionButton: (currentUser == null || _currentIndex != 0)
           ? null
           : FloatingActionButton.extended(
               onPressed: _showOrderServiceDialog,
@@ -1186,6 +1443,7 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
       child: Padding(
         padding: const EdgeInsets.all(12.0),
         child: ListTile(
+          onTap: () => InvoiceDetailModal.show(context, order),
           leading: Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(

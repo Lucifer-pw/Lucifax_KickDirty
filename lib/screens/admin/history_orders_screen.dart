@@ -7,6 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../models/order_model.dart';
 import '../../services/database_service.dart';
 import '../../theme.dart';
+import '../../widgets/invoice_detail_modal.dart';
 
 class HistoryOrdersScreen extends StatefulWidget {
   final bool isTab;
@@ -20,8 +21,8 @@ class _HistoryOrdersScreenState extends State<HistoryOrdersScreen> {
   String _searchQuery = '';
   String _statusFilter = 'semua'; // 'semua' | 'diterima' | 'sedang_diproses' | 'selesai' | 'diambil'
 
-  // Generate and print PDF invoice
-  Future<void> _generatePdfInvoice(OrderModel order) async {
+  // Build A5 PDF Invoice Document
+  pw.Document _buildPdfInvoiceDocument(OrderModel order) {
     final pdf = pw.Document();
 
     String day = order.createdAt.day.toString().padLeft(2, '0');
@@ -31,129 +32,143 @@ class _HistoryOrdersScreenState extends State<HistoryOrdersScreen> {
 
     pdf.addPage(
       pw.Page(
-        pageFormat: PdfPageFormat.roll80, // Receipt roll size, highly practical for shops
-        margin: const pw.EdgeInsets.all(10),
+        pageFormat: PdfPageFormat.a5,
+        margin: const pw.EdgeInsets.all(20),
         build: (pw.Context context) {
           return pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
-              // Header
-              pw.Center(
-                child: pw.Column(
-                  children: [
-                    pw.Text(
-                      'KICK DIRTY',
-                      style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold),
-                    ),
-                    pw.Text(
-                      'Shoe Cleaning & Care Services',
-                      style: const pw.TextStyle(fontSize: 8),
-                    ),
-                    pw.Text(
-                      'HP/WA: 6281328580511',
-                      style: const pw.TextStyle(fontSize: 8),
-                    ),
-                    pw.Text(
-                      '--------------------------------------',
-                      style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
-                    ),
-                  ],
+              // Logo / Header
+              pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                      pw.Text(
+                        'KICK DIRTY',
+                        style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold, color: PdfColor.fromHex('#0D47A1')),
+                      ),
+                      pw.Text('Shoe Cleaning & Care Services', style: const pw.TextStyle(fontSize: 8)),
+                    ],
+                  ),
+                  pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.end,
+                    children: [
+                      pw.Text('INVOICE', style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
+                      pw.Text(order.id, style: const pw.TextStyle(fontSize: 9)),
+                    ],
+                  ),
+                ],
+              ),
+              pw.Divider(thickness: 1),
+              pw.SizedBox(height: 8),
+
+              // Metadata
+              pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                      pw.Text('PELANGGAN:', style: pw.TextStyle(fontSize: 7, fontWeight: pw.FontWeight.bold)),
+                      pw.Text(order.customerName, style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold)),
+                      pw.Text('WA: ${order.customerPhone}', style: const pw.TextStyle(fontSize: 8)),
+                    ],
+                  ),
+                  pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.end,
+                    children: [
+                      pw.Text('TANGGAL: $formattedDate', style: const pw.TextStyle(fontSize: 8)),
+                      pw.Text('STATUS: ${order.status.toUpperCase()}', style: const pw.TextStyle(fontSize: 8)),
+                    ],
+                  ),
+                ],
+              ),
+              pw.SizedBox(height: 12),
+
+              // Items Table
+              pw.Table(
+                border: const pw.TableBorder(
+                  horizontalInside: pw.BorderSide(width: 0.5, color: PdfColors.grey300),
+                  bottom: pw.BorderSide(width: 1, color: PdfColors.black),
                 ),
-              ),
-              pw.SizedBox(height: 5),
-
-              // Invoice Metadata
-              pw.Text('Invoice: ${order.id}', style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold)),
-              pw.Text('Tanggal: $formattedDate', style: const pw.TextStyle(fontSize: 8)),
-              pw.Text('Customer: ${order.customerName}', style: const pw.TextStyle(fontSize: 8)),
-              pw.Text('Status: ${order.status.toUpperCase()}', style: const pw.TextStyle(fontSize: 8)),
-              pw.Text(
-                '--------------------------------------',
-                style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
-              ),
-              pw.SizedBox(height: 5),
-
-              // Items Header
-              pw.Row(
-                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                columnWidths: {
+                  0: const pw.FlexColumnWidth(3),
+                  1: const pw.FlexColumnWidth(1),
+                },
                 children: [
-                  pw.Text('Layanan / Sepatu', style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold)),
-                  pw.Text('Harga', style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold)),
-                ],
-              ),
-              pw.SizedBox(height: 3),
-
-              // Items List
-              ...order.items.map((item) => pw.Padding(
-                    padding: const pw.EdgeInsets.symmetric(vertical: 2),
-                    child: pw.Row(
-                      mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                      crossAxisAlignment: pw.CrossAxisAlignment.start,
-                      children: [
-                        pw.Expanded(
-                          child: pw.Column(
-                            crossAxisAlignment: pw.CrossAxisAlignment.start,
-                            children: [
-                              pw.Text(item.itemName, style: const pw.TextStyle(fontSize: 8)),
-                              pw.Text('(${item.serviceName})', style: pw.TextStyle(fontSize: 7, fontStyle: pw.FontStyle.italic)),
-                            ],
-                          ),
+                  // Table Header
+                  pw.TableRow(
+                    decoration: const pw.BoxDecoration(color: PdfColors.grey100),
+                    children: [
+                      pw.Padding(
+                        padding: const pw.EdgeInsets.all(4),
+                        child: pw.Text('Layanan / Sepatu', style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold)),
+                      ),
+                      pw.Padding(
+                        padding: const pw.EdgeInsets.all(4),
+                        child: pw.Text('Harga', style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold), textAlign: pw.TextAlign.right),
+                      ),
+                    ],
+                  ),
+                  // Table Body
+                  ...order.items.map((item) => pw.TableRow(
+                    children: [
+                      pw.Padding(
+                        padding: const pw.EdgeInsets.all(4),
+                        child: pw.Column(
+                          crossAxisAlignment: pw.CrossAxisAlignment.start,
+                          children: [
+                            pw.Text(item.itemName, style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold)),
+                            pw.Text('(${item.serviceName})', style: const pw.TextStyle(fontSize: 7, color: PdfColors.grey700)),
+                          ],
                         ),
-                        pw.Text(
-                          'Rp ${item.price.toStringAsFixed(0)}',
-                          style: const pw.TextStyle(fontSize: 8),
-                        ),
-                      ],
-                    ),
+                      ),
+                      pw.Padding(
+                        padding: const pw.EdgeInsets.all(4),
+                        child: pw.Text('Rp ${item.price.toStringAsFixed(0)}', style: const pw.TextStyle(fontSize: 8), textAlign: pw.TextAlign.right),
+                      ),
+                    ],
                   )),
-
-              pw.Text(
-                '--------------------------------------',
-                style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+                ],
               ),
-              pw.SizedBox(height: 3),
+              pw.SizedBox(height: 8),
 
-              // Total
+              // Total Summary
               pw.Row(
-                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                mainAxisAlignment: pw.MainAxisAlignment.end,
                 children: [
-                  pw.Text('TOTAL', style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold)),
-                  pw.Text(
-                    'Rp ${order.totalAmount.toStringAsFixed(0)}',
-                    style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold),
+                  pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.end,
+                    children: [
+                      if (order.deliveryFee > 0)
+                        pw.Text('Ongkir: Rp ${order.deliveryFee.toStringAsFixed(0)}', style: const pw.TextStyle(fontSize: 8)),
+                      if (order.pointsRedeemed > 0)
+                        pw.Text('Diskon Poin: -Rp 25.000', style: const pw.TextStyle(fontSize: 8, color: PdfColors.green)),
+                      pw.SizedBox(height: 2),
+                      pw.Text(
+                        'TOTAL: Rp ${order.totalAmount.toStringAsFixed(0)}',
+                        style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold, color: PdfColor.fromHex('#0D47A1')),
+                      ),
+                    ],
                   ),
                 ],
               ),
-              pw.SizedBox(height: 2),
+              pw.SizedBox(height: 10),
+              if (order.notes.isNotEmpty)
+                pw.Text('Catatan: ${order.notes}', style: pw.TextStyle(fontSize: 7, fontStyle: pw.FontStyle.italic, color: PdfColors.orange)),
 
-              // Payment Status
-              pw.Row(
-                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                children: [
-                  pw.Text('Pembayaran:', style: const pw.TextStyle(fontSize: 8)),
-                  pw.Text(
-                    order.paymentStatus == 'sudah_bayar' ? 'LUNAS' : 'BELUM BAYAR',
-                    style: pw.TextStyle(
-                      fontSize: 8,
-                      fontWeight: pw.FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-              
-              if (order.notes.isNotEmpty) ...[
-                pw.SizedBox(height: 5),
-                pw.Text('Catatan: ${order.notes}', style: pw.TextStyle(fontSize: 7, fontStyle: pw.FontStyle.italic)),
-              ],
+              pw.Spacer(),
 
-              pw.SizedBox(height: 15),
-              // Footer
+              // Footer Note
               pw.Center(
                 child: pw.Column(
                   children: [
                     pw.Text('Terima kasih atas kunjungan Anda!', style: const pw.TextStyle(fontSize: 8)),
-                    pw.SizedBox(height: 2),
-                    pw.Text('Powered by Lucifax', style: pw.TextStyle(fontSize: 6, fontStyle: pw.FontStyle.italic)),
+                    pw.SizedBox(height: 1),
+                    pw.Text('HP/WA: 6281328580511 • KickDirty', style: const pw.TextStyle(fontSize: 7)),
                   ],
                 ),
               ),
@@ -163,10 +178,26 @@ class _HistoryOrdersScreenState extends State<HistoryOrdersScreen> {
       ),
     );
 
+    return pdf;
+  }
+
+  // Generate and print PDF invoice
+  Future<void> _generatePdfInvoice(OrderModel order) async {
+    final pdf = _buildPdfInvoiceDocument(order);
+
     // Open print preview
     await Printing.layoutPdf(
       onLayout: (PdfPageFormat format) async => pdf.save(),
       name: 'invoice_${order.id}.pdf',
+    );
+  }
+
+  // Share PDF invoice to WA or other apps
+  Future<void> _sharePdfInvoice(OrderModel order) async {
+    final pdf = _buildPdfInvoiceDocument(order);
+    await Printing.sharePdf(
+      bytes: await pdf.save(),
+      filename: 'invoice_${order.id}.pdf',
     );
   }
 
@@ -327,82 +358,94 @@ class _HistoryOrdersScreenState extends State<HistoryOrdersScreen> {
 
                     return Card(
                       margin: const EdgeInsets.only(bottom: 12),
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  order.id,
-                                  style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primaryBlue),
-                                ),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                  decoration: BoxDecoration(
-                                    color: statusColor.withOpacity(0.12),
-                                    borderRadius: BorderRadius.circular(6),
+                      child: InkWell(
+                        onTap: () => InvoiceDetailModal.show(context, order),
+                        borderRadius: BorderRadius.circular(12),
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    order.id,
+                                    style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primaryBlue),
                                   ),
-                                  child: Text(
-                                    order.status.toUpperCase().replaceAll('_', ' '),
-                                    style: TextStyle(
-                                      color: statusColor,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 10,
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: statusColor.withOpacity(0.12),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Text(
+                                      order.status.toUpperCase().replaceAll('_', ' '),
+                                      style: TextStyle(
+                                        color: statusColor,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 10,
+                                      ),
                                     ),
                                   ),
-                                ),
-                              ],
-                            ),
-                            const Divider(height: 20, color: AppTheme.lightGray),
-                            
-                            Text(
-                              'Pelanggan: ${order.customerName}',
-                              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
-                            ),
-                            Text('Tanggal: $formattedDate', style: const TextStyle(color: AppTheme.textGray, fontSize: 11)),
-                            const SizedBox(height: 8),
+                                ],
+                              ),
+                              const Divider(height: 20, color: AppTheme.lightGray),
+                              
+                              Text(
+                                'Pelanggan: ${order.customerName}',
+                                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                              ),
+                              Text('Tanggal: $formattedDate', style: const TextStyle(color: AppTheme.textGray, fontSize: 11)),
+                              const SizedBox(height: 8),
 
-                            // Items count and price
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  '${order.items.length} Pasang Sepatu',
-                                  style: const TextStyle(fontSize: 12, color: AppTheme.textGray),
-                                ),
-                                Text(
-                                  'Rp ${order.totalAmount.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}',
-                                  style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.darkBlueText),
-                                ),
-                              ],
-                            ),
-                            
-                            const Divider(height: 24, color: AppTheme.lightGray),
+                              // Items count and price
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    '${order.items.length} Pasang Sepatu',
+                                    style: const TextStyle(fontSize: 12, color: AppTheme.textGray),
+                                  ),
+                                  Text(
+                                    'Rp ${order.totalAmount.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}',
+                                    style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.darkBlueText),
+                                  ),
+                                ],
+                              ),
+                              
+                              const Divider(height: 24, color: AppTheme.lightGray),
 
-                            // Action buttons (PDF, WA Notification)
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.end,
-                              children: [
-                                // WA Notification
-                                TextButton.icon(
-                                  onPressed: () => _sendWhatsAppMessage(order),
-                                  icon: const Icon(Icons.chat_bubble_outline, color: Colors.green, size: 16),
-                                  label: const Text('WA Notif', style: TextStyle(color: Colors.green, fontSize: 12)),
-                                ),
-                                const SizedBox(width: 8),
+                              // Action buttons (PDF, WA Notification)
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                children: [
+                                  // WA Notification
+                                  TextButton.icon(
+                                    onPressed: () => _sendWhatsAppMessage(order),
+                                    icon: const Icon(Icons.chat_bubble_outline, color: Colors.green, size: 14),
+                                    label: const Text('WA Notif', style: TextStyle(color: Colors.green, fontSize: 11)),
+                                  ),
+                                  const SizedBox(width: 4),
 
-                                // PDF Invoice Print
-                                TextButton.icon(
-                                  onPressed: () => _generatePdfInvoice(order),
-                                  icon: const Icon(Icons.picture_as_pdf_outlined, color: AppTheme.primaryBlue, size: 16),
-                                  label: const Text('Cetak PDF', style: TextStyle(color: AppTheme.primaryBlue, fontSize: 12)),
-                                ),
-                              ],
-                            ),
-                          ],
+                                  // Kirim PDF via native share (WhatsApp)
+                                  TextButton.icon(
+                                    onPressed: () => _sharePdfInvoice(order),
+                                    icon: const Icon(Icons.share, color: Colors.blue, size: 14),
+                                    label: const Text('Kirim PDF', style: TextStyle(color: Colors.blue, fontSize: 11)),
+                                  ),
+                                  const SizedBox(width: 4),
+
+                                  // PDF Invoice Print
+                                  TextButton.icon(
+                                    onPressed: () => _generatePdfInvoice(order),
+                                    icon: const Icon(Icons.print_outlined, color: AppTheme.textGray, size: 14),
+                                    label: const Text('Cetak', style: TextStyle(color: AppTheme.textGray, fontSize: 11)),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     );

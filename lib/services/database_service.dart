@@ -121,6 +121,15 @@ class DatabaseService with ChangeNotifier {
 
     // Calculate points earned
     int pointsEarned = (order.totalAmount / 10000).floor();
+    
+    Map<String, DateTime> timeline = Map.from(order.statusTimeline);
+    if (!timeline.containsKey(order.status)) {
+      timeline[order.status] = DateTime.now();
+    }
+    if (order.paymentStatus == 'sudah_bayar' && !timeline.containsKey('sudah_bayar')) {
+      timeline['sudah_bayar'] = DateTime.now();
+    }
+
     OrderModel finalOrder = OrderModel(
       id: invoiceId,
       idempotencyToken: order.idempotencyToken,
@@ -140,6 +149,7 @@ class DatabaseService with ChangeNotifier {
       photoAfter: order.photoAfter,
       pointsEarned: pointsEarned,
       pointsRedeemed: order.pointsRedeemed,
+      statusTimeline: timeline,
       createdAt: order.createdAt,
       updatedAt: order.updatedAt,
     );
@@ -197,6 +207,7 @@ class DatabaseService with ChangeNotifier {
   Future<void> updateOrderStatus(String orderId, String newStatus) async {
     await _db.collection('orders').doc(orderId).update({
       'status': newStatus,
+      'statusTimeline.$newStatus': FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),
     });
   }
@@ -206,6 +217,7 @@ class DatabaseService with ChangeNotifier {
     await _db.collection('orders').doc(orderId).update({
       'status': newStatus,
       'photoAfter': afterPhotos,
+      'statusTimeline.$newStatus': FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),
     });
   }
@@ -215,6 +227,7 @@ class DatabaseService with ChangeNotifier {
     await _db.collection('orders').doc(orderId).update({
       'status': newStatus,
       'estimatedCompletion': estimation,
+      'statusTimeline.$newStatus': FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),
     });
   }
@@ -243,10 +256,14 @@ class DatabaseService with ChangeNotifier {
       }
     }
 
-    await _db.collection('orders').doc(orderId).update({
+    final updateData = {
       'paymentStatus': newPaymentStatus,
       'updatedAt': FieldValue.serverTimestamp(),
-    });
+    };
+    if (newPaymentStatus == 'sudah_bayar') {
+      updateData['statusTimeline.sudah_bayar'] = FieldValue.serverTimestamp();
+    }
+    await _db.collection('orders').doc(orderId).update(updateData);
   }
 
   // ==========================================
@@ -363,5 +380,97 @@ class DatabaseService with ChangeNotifier {
       'monthly': monthly,
       'yearly': yearly,
     };
+  }
+
+  // ==========================================
+  // REAL-TIME CHAT METHODS
+  // ==========================================
+
+  // Get stream of all active chat rooms (Admin view)
+  Stream<List<Map<String, dynamic>>> getChatRooms() {
+    return _db
+        .collection('chat_rooms')
+        .orderBy('lastMessageTime', descending: true)
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs.map((doc) => doc.data()).toList();
+    });
+  }
+
+  // Get stream of messages in a room
+  Stream<List<Map<String, dynamic>>> getChatMessages(String customerId) {
+    return _db
+        .collection('chat_rooms')
+        .doc(customerId)
+        .collection('messages')
+        .orderBy('timestamp', descending: false)
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs.map((doc) {
+        final data = doc.data();
+        data['id'] = doc.id;
+        return data;
+      }).toList();
+    });
+  }
+
+  // Send message
+  Future<void> sendChatMessage({
+    required String customerId,
+    required String customerName,
+    required String customerPhone,
+    required String senderId,
+    required String senderName,
+    required String message,
+    required bool isAdmin,
+  }) async {
+    final timestamp = FieldValue.serverTimestamp();
+
+    // 1. Add message document
+    await _db
+        .collection('chat_rooms')
+        .doc(customerId)
+        .collection('messages')
+        .add({
+      'senderId': senderId,
+      'senderName': senderName,
+      'message': message,
+      'timestamp': timestamp,
+    });
+
+    // 2. Set/Update room document with unread indicators
+    final roomData = {
+      'customerId': customerId,
+      'customerName': customerName,
+      'customerPhone': customerPhone,
+      'lastMessage': message,
+      'lastMessageTime': timestamp,
+    };
+
+    if (isAdmin) {
+      roomData['unreadCountCustomer'] = FieldValue.increment(1);
+    } else {
+      roomData['unreadCountAdmin'] = FieldValue.increment(1);
+    }
+
+    await _db.collection('chat_rooms').doc(customerId).set(roomData, SetOptions(merge: true));
+  }
+
+  // Reset unread count for admin/owner
+  Future<void> clearUnreadCountAdmin(String customerId) async {
+    try {
+      await _db.collection('chat_rooms').doc(customerId).update({
+        'unreadCountAdmin': 0,
+      });
+    } catch (_) {}
+  }
+
+  // Reset unread count for customer
+  Future<void> clearUnreadCountCustomer(String customerId) async {
+    try {
+      await _db.collection('chat_rooms').doc(customerId).update({
+        'unreadCountCustomer': 0,
+      });
+    } catch (_) {}
   }
 }

@@ -52,6 +52,7 @@ class OrderModel {
   final int pointsEarned;
   final int pointsRedeemed;
   final String estimatedCompletion;
+  final Map<String, DateTime> statusTimeline;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -75,6 +76,7 @@ class OrderModel {
     this.pointsEarned = 0,
     this.pointsRedeemed = 0,
     this.estimatedCompletion = '',
+    this.statusTimeline = const {},
     required this.createdAt,
     required this.updatedAt,
   });
@@ -84,6 +86,16 @@ class OrderModel {
     List<OrderItem> parsedItems = rawItems
         .map((item) => OrderItem.fromMap(Map<String, dynamic>.from(item)))
         .toList();
+
+    Map<String, dynamic> rawTimeline = map['statusTimeline'] as Map<String, dynamic>? ?? {};
+    Map<String, DateTime> timeline = {};
+    rawTimeline.forEach((key, value) {
+      if (value is Timestamp) {
+        timeline[key] = value.toDate();
+      } else if (value is String) {
+        timeline[key] = DateTime.parse(value);
+      }
+    });
 
     return OrderModel(
       id: documentId,
@@ -105,12 +117,18 @@ class OrderModel {
       pointsEarned: map['pointsEarned'] ?? 0,
       pointsRedeemed: map['pointsRedeemed'] ?? 0,
       estimatedCompletion: map['estimatedCompletion'] ?? '',
+      statusTimeline: timeline,
       createdAt: (map['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       updatedAt: (map['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
     );
   }
 
   Map<String, dynamic> toMap() {
+    Map<String, Timestamp> timelineDb = {};
+    statusTimeline.forEach((key, value) {
+      timelineDb[key] = Timestamp.fromDate(value);
+    });
+
     return {
       'idempotencyToken': idempotencyToken,
       'customerName': customerName,
@@ -130,6 +148,7 @@ class OrderModel {
       'pointsEarned': pointsEarned,
       'pointsRedeemed': pointsRedeemed,
       'estimatedCompletion': estimatedCompletion,
+      'statusTimeline': timelineDb,
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': Timestamp.fromDate(updatedAt),
     };

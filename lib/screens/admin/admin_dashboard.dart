@@ -17,6 +17,7 @@ import 'process_order_screen.dart';
 import 'history_orders_screen.dart';
 import 'service_crud_screen.dart';
 import 'financial_report_screen.dart';
+import 'admin_chat_list_screen.dart';
 
 class AdminDashboard extends StatefulWidget {
   const AdminDashboard({Key? key}) : super(key: key);
@@ -115,6 +116,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
       InputOrderScreen(isTab: true, onOrderSubmitted: () => _onTabTapped(0)),
       const ProcessOrderScreen(isTab: true),
       const HistoryOrdersScreen(isTab: true),
+      const AdminChatListScreen(isTab: true),
       const ServiceCrudScreen(isTab: true),
     ];
 
@@ -132,7 +134,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
           children: screens,
         ),
         bottomNavigationBar: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
           decoration: BoxDecoration(
             color: AppTheme.white,
             boxShadow: [
@@ -147,11 +149,12 @@ class _AdminDashboardState extends State<AdminDashboard> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _buildNavItem(0, Icons.grid_view, 'Dashboard'),
+                _buildNavItem(0, Icons.grid_view, 'Beranda'),
                 _buildNavItem(1, Icons.add_shopping_cart, 'Input'),
                 _buildNavItem(2, Icons.sync_alt, 'Proses'),
                 _buildNavItem(3, Icons.history, 'Riwayat'),
-                _buildNavItem(4, Icons.cleaning_services_outlined, 'Layanan'),
+                _buildNavItem(4, Icons.chat_outlined, 'Pesan'),
+                _buildNavItem(5, Icons.cleaning_services_outlined, 'Layanan'),
               ],
             ),
           ),
@@ -202,13 +205,61 @@ class _AdminDashboardState extends State<AdminDashboard> {
                     }
                   : recaps;
 
+              final newOrdersCount = orders.where((o) => o.status == 'diterima').length;
+              final activeOrdersCount = orders.where((o) => o.status != 'diambil').length;
+
               return SingleChildScrollView(
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _buildProfileBanner(currentUser?.name ?? 'Admin', roleLabel),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 16),
+                    
+                    // Notification banner for new & running orders
+                    if (newOrdersCount > 0 || activeOrdersCount > 0) ...[
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: AppTheme.primaryBlue.withOpacity(0.08),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: AppTheme.primaryBlue.withOpacity(0.3)),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.notifications_active, color: AppTheme.primaryBlue, size: 24),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  if (newOrdersCount > 0)
+                                    Text(
+                                      'Ada $newOrdersCount pesanan baru masuk!',
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold, 
+                                        color: AppTheme.primaryBlue,
+                                        fontSize: 13
+                                      ),
+                                    ),
+                                  Text(
+                                    'Total $activeOrdersCount transaksi berjalan belum selesai.',
+                                    style: TextStyle(
+                                      color: AppTheme.darkBlueText,
+                                      fontSize: 12,
+                                      fontWeight: newOrdersCount > 0 ? FontWeight.normal : FontWeight.bold
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -471,7 +522,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 'CRUD tarif & layanan',
                 Icons.cleaning_services_outlined,
                 Colors.indigo,
-                () => _onTabTapped(4),
+                () => _onTabTapped(5),
               ),
             ),
           ],
@@ -481,8 +532,18 @@ class _AdminDashboardState extends State<AdminDashboard> {
           children: [
             Expanded(
               child: _buildMenuButton(
+                'Pesan Masuk',
+                'Chat dengan pelanggan',
+                Icons.chat_outlined,
+                Colors.pink,
+                () => _onTabTapped(4),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildMenuButton(
                 'Laporan Keuangan',
-                'Pemasukan, pengeluaran & laba bersih',
+                'Pemasukan & laba bersih',
                 Icons.analytics_outlined,
                 Colors.purple,
                 () {

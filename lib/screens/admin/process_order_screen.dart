@@ -389,6 +389,50 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
                       ),
                     )),
                 
+                // Delivery/Logistic Details
+                if (order.deliveryType == 'pickup_delivery') ...[
+                  const SizedBox(height: 8),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 26),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.local_shipping_outlined, size: 16, color: AppTheme.primaryBlue),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Pengantaran: Kurir • Ongkir: Rp ${order.deliveryFee.toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")}',
+                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 50, top: 2),
+                    child: Text(
+                      'Alamat: ${order.deliveryAddress}',
+                      style: const TextStyle(fontSize: 11, color: AppTheme.textGray),
+                    ),
+                  ),
+                ] else ...[
+                  const SizedBox(height: 8),
+                  const Padding(
+                    padding: EdgeInsets.only(left: 26),
+                    child: Row(
+                      children: [
+                        Icon(Icons.storefront_outlined, size: 16, color: AppTheme.textGray),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Tipe: Drop-Off & Ambil Sendiri',
+                            style: TextStyle(fontSize: 11, color: AppTheme.textGray),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+                
                 if (order.notes.isNotEmpty) ...[
                   const SizedBox(height: 8),
                   Padding(
