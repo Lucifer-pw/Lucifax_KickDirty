@@ -85,6 +85,7 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
     final formKey = GlobalKey<FormState>();
     bool isSubmitting = false;
     List<String> photoBeforeList = [];
+    List<OrderItem> orderItems = [];
 
     if (!mounted) return;
 
@@ -95,7 +96,7 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setStateSheet) {
-            double servicePrice = selectedService?.price ?? 0.0;
+            double servicePrice = orderItems.fold(0.0, (sum, item) => sum + item.price);
             double deliveryFee = deliveryType == 'pickup_delivery' ? 15000.0 : 0.0;
             double discount = usePointsRedemption ? 25000.0 : 0.0;
             double totalPrice = servicePrice + deliveryFee - discount;
@@ -143,61 +144,166 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
                       ),
                       const SizedBox(height: 8),
                       const Text(
-                        'Silakan masukkan detail sepatu Anda dan pilih jenis layanan.',
+                        'Silakan masukkan merk sepatu dan pilih jenis layanan.',
                         style: TextStyle(fontSize: 12, color: AppTheme.textGray),
                       ),
                       const SizedBox(height: 20),
 
-                      // Item Name input
-                      TextFormField(
-                        controller: nameController,
-                        decoration: const InputDecoration(
-                          labelText: 'Nama Merk Sepatu',
-                          hintText: 'Contoh: Adidas Samba, Nike Jordan',
-                          prefixIcon: Icon(Icons.abc),
+                      // Input section for adding a shoe
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[50],
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.grey[200]!),
                         ),
-                        validator: (value) {
-                          if (value == null || value.trim().isEmpty) {
-                            return 'Nama Merk Sepatu tidak boleh kosong';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Service selection dropdown
-                      DropdownButtonFormField<ServiceModel>(
-                        value: selectedService,
-                        decoration: const InputDecoration(
-                          labelText: 'Pilih Layanan',
-                          prefixIcon: Icon(Icons.dry_cleaning),
-                        ),
-                        items: services.map((service) {
-                          return DropdownMenuItem<ServiceModel>(
-                            value: service,
-                            child: Text(
-                              '${service.name} - Rp ${service.price.toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")}',
-                              style: const TextStyle(fontSize: 14),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Form Tambah Sepatu',
+                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.darkBlueText),
                             ),
-                          );
-                        }).toList(),
-                        onChanged: (val) {
-                          setStateSheet(() {
-                            selectedService = val;
-                          });
-                        },
+                            const SizedBox(height: 10),
+                            TextFormField(
+                              controller: nameController,
+                              decoration: const InputDecoration(
+                                labelText: 'Nama Merk Sepatu',
+                                hintText: 'Contoh: Adidas Samba, Nike Jordan',
+                                prefixIcon: Icon(Icons.abc),
+                                fillColor: Colors.white,
+                                filled: true,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            DropdownButtonFormField<ServiceModel>(
+                              value: selectedService,
+                              decoration: const InputDecoration(
+                                labelText: 'Pilih Layanan',
+                                prefixIcon: Icon(Icons.dry_cleaning),
+                                fillColor: Colors.white,
+                                filled: true,
+                              ),
+                              items: services.map((service) {
+                                return DropdownMenuItem<ServiceModel>(
+                                  value: service,
+                                  child: Text(
+                                    '${service.name} - Rp ${service.price.toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")}',
+                                    style: const TextStyle(fontSize: 13),
+                                  ),
+                                );
+                              }).toList(),
+                              onChanged: (val) {
+                                setStateSheet(() {
+                                  selectedService = val;
+                                });
+                              },
+                            ),
+                            const SizedBox(height: 8),
+                            if (selectedService != null)
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 4),
+                                child: Text(
+                                  selectedService!.description,
+                                  style: const TextStyle(fontSize: 11, color: AppTheme.textGray, fontStyle: FontStyle.italic),
+                                ),
+                              ),
+                            const SizedBox(height: 12),
+                            SizedBox(
+                              width: double.infinity,
+                              child: ElevatedButton.icon(
+                                onPressed: () {
+                                  final name = nameController.text.trim();
+                                  if (name.isEmpty) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(content: Text('Masukkan nama merk sepatu terlebih dahulu')),
+                                    );
+                                    return;
+                                  }
+                                  if (selectedService == null) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(content: Text('Pilih jenis layanan terlebih dahulu')),
+                                    );
+                                    return;
+                                  }
+                                  setStateSheet(() {
+                                    orderItems.add(OrderItem(
+                                      itemName: name,
+                                      serviceId: selectedService!.id,
+                                      serviceName: selectedService!.name,
+                                      price: selectedService!.price,
+                                    ));
+                                    nameController.clear();
+                                  });
+                                },
+                                icon: const Icon(Icons.add, size: 16, color: Colors.white),
+                                label: const Text('Tambahkan Sepatu ke Daftar', style: TextStyle(color: Colors.white)),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppTheme.primaryBlue,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                  padding: const EdgeInsets.symmetric(vertical: 10),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                      const SizedBox(height: 8),
-                      if (selectedService != null) ...[
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 4),
-                          child: Text(
-                            selectedService!.description,
-                            style: const TextStyle(fontSize: 11, color: AppTheme.textGray, fontStyle: FontStyle.italic),
+
+                      // List of added shoes
+                      if (orderItems.isNotEmpty) ...[
+                        const SizedBox(height: 16),
+                        const Text(
+                          'Daftar Sepatu & Layanan:',
+                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppTheme.darkBlueText),
+                        ),
+                        const SizedBox(height: 8),
+                        Container(
+                          constraints: const BoxConstraints(maxHeight: 180),
+                          decoration: BoxDecoration(
+                            color: Colors.grey[50],
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.grey[200]!),
+                          ),
+                          child: ListView.builder(
+                            shrinkWrap: true,
+                            itemCount: orderItems.length,
+                            itemBuilder: (context, index) {
+                              final item = orderItems[index];
+                              return Card(
+                                margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                color: Colors.white,
+                                elevation: 0.5,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                child: ListTile(
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
+                                  title: Text(item.itemName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                                  subtitle: Text(item.serviceName, style: const TextStyle(color: AppTheme.textGray, fontSize: 10)),
+                                  trailing: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        'Rp ${item.price.toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")}',
+                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
+                                      ),
+                                      IconButton(
+                                        icon: const Icon(Icons.delete_outline, color: Colors.red, size: 16),
+                                        padding: EdgeInsets.zero,
+                                        constraints: const BoxConstraints(),
+                                        onPressed: () {
+                                          setStateSheet(() {
+                                            orderItems.removeAt(index);
+                                          });
+                                        },
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
                           ),
                         ),
-                        const SizedBox(height: 16),
                       ],
+                      const SizedBox(height: 16),
 
                       // Delivery Logistics Type selection
                       DropdownButtonFormField<String>(
@@ -396,13 +502,16 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
                       const SizedBox(height: 16),
 
                       // Order Summary Pricing
-                      if (selectedService != null) ...[
+                      if (orderItems.isNotEmpty || (nameController.text.trim().isNotEmpty && selectedService != null)) ...[
                         const Divider(),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             const Text('Harga Layanan:', style: TextStyle(fontSize: 13, color: AppTheme.textGray)),
-                            Text('Rp ${servicePrice.toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")}', style: const TextStyle(fontSize: 13)),
+                            Text(
+                              'Rp ${(orderItems.isEmpty && selectedService != null ? selectedService!.price : servicePrice).toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")}',
+                              style: const TextStyle(fontSize: 13),
+                            ),
                           ],
                         ),
                         if (deliveryType == 'pickup_delivery') ...[
@@ -431,7 +540,7 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
                           children: [
                             const Text('Total Pembayaran:', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
                             Text(
-                              'Rp ${totalPrice.toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")}',
+                              'Rp ${(orderItems.isEmpty && selectedService != null ? (selectedService!.price + deliveryFee - discount < 0 ? 0.0 : selectedService!.price + deliveryFee - discount) : totalPrice).toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")}',
                               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.primaryBlue),
                             ),
                           ],
@@ -448,13 +557,36 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
                           onPressed: isSubmitting
                               ? null
                               : () async {
-                                  if (!formKey.currentState!.validate() || selectedService == null) return;
+                                  // Fallback: if list is empty but textfields have content, auto-add
+                                  if (orderItems.isEmpty) {
+                                    final name = nameController.text.trim();
+                                    if (name.isNotEmpty && selectedService != null) {
+                                      orderItems.add(OrderItem(
+                                        itemName: name,
+                                        serviceId: selectedService!.id,
+                                        serviceName: selectedService!.name,
+                                        price: selectedService!.price,
+                                      ));
+                                    }
+                                  }
+
+                                  if (orderItems.isEmpty) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(content: Text('Tambahkan minimal 1 sepatu ke daftar pesanan')),
+                                    );
+                                    return;
+                                  }
 
                                   setStateSheet(() {
                                     isSubmitting = true;
                                   });
 
                                   try {
+                                    // Recalculate final totals
+                                    double finalServicePrice = orderItems.fold(0.0, (sum, item) => sum + item.price);
+                                    double finalTotalPrice = finalServicePrice + deliveryFee - discount;
+                                    if (finalTotalPrice < 0) finalTotalPrice = 0.0;
+
                                     // Generate a deterministic unique ID
                                     String invoiceId = await dbService.generateInvoiceId();
 
@@ -464,15 +596,8 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
                                       customerName: currentUser.name,
                                       customerPhone: currentUser.phoneNumber,
                                       customerId: currentUser.uid,
-                                      items: [
-                                        OrderItem(
-                                          itemName: nameController.text.trim(),
-                                          serviceId: selectedService!.id,
-                                          serviceName: selectedService!.name,
-                                          price: selectedService!.price,
-                                        )
-                                      ],
-                                      totalAmount: totalPrice,
+                                      items: orderItems,
+                                      totalAmount: finalTotalPrice,
                                       status: 'diterima',
                                       paymentStatus: 'belum_bayar',
                                       qrisImage: 'assets/qris_pembayaran.jpeg',
@@ -482,7 +607,7 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
                                       deliveryFee: deliveryFee,
                                       photoBefore: photoBeforeList,
                                       photoAfter: const [],
-                                      pointsEarned: (totalPrice / 10000).floor(),
+                                      pointsEarned: (finalTotalPrice / 10000).floor(),
                                       pointsRedeemed: usePointsRedemption ? 10 : 0,
                                       mapsLink: currentUser.mapsLink,
                                       createdAt: DateTime.now(),
