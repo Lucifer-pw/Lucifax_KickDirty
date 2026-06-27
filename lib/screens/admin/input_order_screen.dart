@@ -418,6 +418,12 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
       );
       return;
     }
+    if (_photoBeforeList.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Foto barang (Before) wajib diambil minimal 1 foto!')),
+      );
+      return;
+    }
 
     setState(() {
       _isSubmitting = true;
@@ -425,6 +431,17 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
 
     try {
       final dbService = Provider.of<DatabaseService>(context, listen: false);
+
+      // Fetch customer's maps link if selected
+      String customerMapsLink = '';
+      if (_selectedCustomerId.isNotEmpty) {
+        try {
+          final userSnap = await FirebaseFirestore.instance.collection('users').doc(_selectedCustomerId).get();
+          if (userSnap.exists) {
+            customerMapsLink = userSnap.data()?['mapsLink'] ?? '';
+          }
+        } catch (_) {}
+      }
 
       // Generate invoice ID deterministically using helper
       String invoiceId = await dbService.generateInvoiceId();
@@ -447,6 +464,7 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
         photoBefore: _photoBeforeList,
         photoAfter: const [],
         pointsRedeemed: _usePointsRedemption ? 10 : 0,
+        mapsLink: customerMapsLink,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );

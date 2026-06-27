@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../models/order_model.dart';
 import '../theme.dart';
 
@@ -182,7 +183,36 @@ class InvoiceDetailModal extends StatelessWidget {
                   _buildInfoRow('Metode Logistik:', deliveryText),
                   if (order.deliveryType == 'pickup_delivery') ...[
                     _buildInfoRow('Ongkos Kirim:', 'Rp ${order.deliveryFee.toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")}'),
-                    _buildInfoRow('Alamat Pengiriman:', order.deliveryAddress),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 2.0),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(
+                            width: 120,
+                            child: Text('Alamat Pengiriman:', style: TextStyle(color: AppTheme.textGray, fontSize: 11)),
+                          ),
+                          Expanded(
+                            child: Text(
+                              order.deliveryAddress,
+                              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.darkBlueText),
+                            ),
+                          ),
+                          if (order.mapsLink.isNotEmpty)
+                            IconButton(
+                              icon: const Icon(Icons.map, size: 16, color: AppTheme.primaryBlue),
+                              onPressed: () async {
+                                final uri = Uri.parse(order.mapsLink);
+                                try {
+                                  await launchUrl(uri, mode: LaunchMode.externalApplication);
+                                } catch (_) {}
+                              },
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                            ),
+                        ],
+                      ),
+                    ),
                   ],
                   
                   const Divider(height: 20, color: AppTheme.lightGray),

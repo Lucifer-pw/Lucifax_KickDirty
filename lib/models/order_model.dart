@@ -52,6 +52,7 @@ class OrderModel {
   final int pointsEarned;
   final int pointsRedeemed;
   final String estimatedCompletion;
+  final String mapsLink;
   final Map<String, DateTime> statusTimeline;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -76,6 +77,7 @@ class OrderModel {
     this.pointsEarned = 0,
     this.pointsRedeemed = 0,
     this.estimatedCompletion = '',
+    this.mapsLink = '',
     this.statusTimeline = const {},
     required this.createdAt,
     required this.updatedAt,
@@ -117,6 +119,7 @@ class OrderModel {
       pointsEarned: map['pointsEarned'] ?? 0,
       pointsRedeemed: map['pointsRedeemed'] ?? 0,
       estimatedCompletion: map['estimatedCompletion'] ?? '',
+      mapsLink: map['mapsLink'] ?? '',
       statusTimeline: timeline,
       createdAt: (map['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       updatedAt: (map['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
@@ -148,6 +151,7 @@ class OrderModel {
       'pointsEarned': pointsEarned,
       'pointsRedeemed': pointsRedeemed,
       'estimatedCompletion': estimatedCompletion,
+      'mapsLink': mapsLink,
       'statusTimeline': timelineDb,
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': Timestamp.fromDate(updatedAt),

@@ -30,11 +30,45 @@ class ChatScreen extends StatefulWidget {
 class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  List<String> _quickReplies = [];
+  bool _loadingQuickReplies = true;
 
   @override
   void initState() {
     super.initState();
     _clearUnread();
+    _loadQuickReplies();
+  }
+
+  void _loadQuickReplies() {
+    FirebaseFirestore.instance
+        .collection('users')
+        .doc(widget.senderId)
+        .snapshots()
+        .listen((snapshot) {
+      if (mounted) {
+        setState(() {
+          _loadingQuickReplies = false;
+          if (snapshot.exists && snapshot.data()!.containsKey('quickReplies')) {
+            _quickReplies = List<String>.from(snapshot.data()!['quickReplies']);
+          } else {
+            _quickReplies = widget.isAdmin
+                ? [
+                    'Halo, sepatu Anda sedang kami proses.',
+                    'Layanan Anda sudah selesai dan siap diambil.',
+                    'Silakan melakukan pembayaran.',
+                    'Terima kasih telah mencuci di KickDirty!',
+                  ]
+                : [
+                    'Halo, apakah sepatu saya sudah selesai?',
+                    'Berapa biaya pengiriman?',
+                    'Bisa request pick-up?',
+                    'Terima kasih!',
+                  ];
+          }
+        });
+      }
+    });
   }
 
   void _clearUnread() {
@@ -203,6 +237,38 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
           ),
           
+          // Quick replies list
+          if (!_loadingQuickReplies && _quickReplies.isNotEmpty)
+            Container(
+              height: 48,
+              color: Colors.grey[50],
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                children: [
+                  ..._quickReplies.map((reply) => Padding(
+                    padding: const EdgeInsets.only(right: 8.0),
+                    child: ActionChip(
+                      label: Text(reply, style: const TextStyle(fontSize: 12)),
+                      backgroundColor: Colors.white,
+                      side: BorderSide(color: Colors.grey[300]!),
+                      onPressed: () {
+                        _messageController.text = reply;
+                        _sendMessage();
+                      },
+                    ),
+                  )),
+                  IconButton(
+                    icon: const Icon(Icons.edit_note, size: 20, color: AppTheme.primaryBlue),
+                    onPressed: _manageQuickReplies,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                    tooltip: 'Kelola Pesan Cepat',
+                  ),
+                ],
+              ),
+            ),
+
           // Input row
           SafeArea(
             child: Container(
@@ -244,6 +310,131 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  void _manageQuickReplies() {
+    final TextEditingController newReplyController = TextEditingController();
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setStateSheet) {
+            return Container(
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(24),
+                  topRight: Radius.circular(24),
+                ),
+              ),
+              padding: EdgeInsets.only(
+                top: 20,
+                left: 20,
+                right: 20,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Kelola Pesan Cepat',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.darkBlueText),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: newReplyController,
+                          decoration: const InputDecoration(
+                            hintText: 'Tambah template pesan...',
+                            contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      ElevatedButton(
+                        onPressed: () {
+                          final text = newReplyController.text.trim();
+                          if (text.isNotEmpty) {
+                            setState(() {
+                              _quickReplies.add(text);
+                            });
+                            setStateSheet(() {});
+                            newReplyController.clear();
+                            FirebaseFirestore.instance
+                                .collection('users')
+                                .doc(widget.senderId)
+                                .update({'quickReplies': _quickReplies});
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.primaryBlue,
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        ),
+                        child: const Text('Tambah', style: TextStyle(color: Colors.white)),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxHeight: 250),
+                    child: _quickReplies.isEmpty
+                        ? const Center(
+                            child: Padding(
+                              padding: EdgeInsets.symmetric(vertical: 24),
+                              child: Text(
+                                'Belum ada pesan cepat.',
+                                style: TextStyle(color: AppTheme.textGray),
+                              ),
+                            ),
+                          )
+                        : ListView.builder(
+                            shrinkWrap: true,
+                            itemCount: _quickReplies.length,
+                            itemBuilder: (context, idx) {
+                              return ListTile(
+                                contentPadding: EdgeInsets.zero,
+                                title: Text(
+                                  _quickReplies[idx],
+                                  style: const TextStyle(fontSize: 13),
+                                ),
+                                trailing: IconButton(
+                                  icon: const Icon(Icons.delete_outline, color: Colors.red),
+                                  onPressed: () {
+                                    setState(() {
+                                      _quickReplies.removeAt(idx);
+                                    });
+                                    setStateSheet(() {});
+                                    FirebaseFirestore.instance
+                                        .collection('users')
+                                        .doc(widget.senderId)
+                                        .update({'quickReplies': _quickReplies});
+                                  },
+                                ),
+                              );
+                            },
+                          ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
     );
   }
 

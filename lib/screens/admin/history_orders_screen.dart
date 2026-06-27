@@ -6,6 +6,7 @@ import 'package:printing/printing.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../models/order_model.dart';
 import '../../services/database_service.dart';
+import '../../services/whatsapp_service.dart';
 import '../../theme.dart';
 import '../../widgets/invoice_detail_modal.dart';
 
@@ -194,6 +195,59 @@ class _HistoryOrdersScreenState extends State<HistoryOrdersScreen> {
 
   // Share PDF invoice to WA or other apps
   Future<void> _sharePdfInvoice(OrderModel order) async {
+    // Show loading
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: Card(
+          child: Padding(
+            padding: EdgeInsets.all(20.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(height: 12),
+                Text('Mengunggah & Mengirim PDF...', style: TextStyle(fontSize: 12)),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    try {
+      final pdf = _buildPdfInvoiceDocument(order);
+      final bytes = await pdf.save();
+      final filename = '${order.id}_KickDirty.pdf';
+
+      // Upload and send via Gateway
+      final fileUrl = await WhatsAppService.uploadPdfToTmpFiles(bytes, filename);
+      if (fileUrl != null) {
+        final message = 'Halo Kak *${order.customerName}*,\n\nBerikut terlampir dokumen invoice asli pesanan Anda *${order.id}*.';
+        final success = await WhatsAppService.sendNotification(
+          phone: order.customerPhone,
+          message: message,
+          fileUrl: fileUrl,
+          filename: filename,
+        );
+
+        if (mounted) Navigator.pop(context); // Close loading
+
+        if (success) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Invoice PDF berhasil dikirim otomatis ke WhatsApp pelanggan sebagai berkas dokumen asli!')),
+            );
+          }
+          return;
+        }
+      }
+    } catch (_) {}
+
+    if (mounted) Navigator.pop(context); // Close loading if failed
+
+    // Fallback: system share sheet
     final pdf = _buildPdfInvoiceDocument(order);
     await Printing.sharePdf(
       bytes: await pdf.save(),

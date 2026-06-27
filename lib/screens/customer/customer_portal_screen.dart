@@ -78,7 +78,7 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
 
     final nameController = TextEditingController();
     final notesController = TextEditingController();
-    final addressController = TextEditingController();
+    final addressController = TextEditingController(text: currentUser?.addressDetail ?? '');
     ServiceModel? selectedService = services.first;
     String deliveryType = 'drop_off_only';
     bool usePointsRedemption = false;
@@ -484,6 +484,7 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
                                       photoAfter: const [],
                                       pointsEarned: (totalPrice / 10000).floor(),
                                       pointsRedeemed: usePointsRedemption ? 10 : 0,
+                                      mapsLink: currentUser.mapsLink,
                                       createdAt: DateTime.now(),
                                       updatedAt: DateTime.now(),
                                     );
@@ -673,17 +674,47 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
   }
 
   void _editProfileDialog(BuildContext context, UserModel user, DatabaseService dbService) {
-    final editController = TextEditingController(text: user.name);
+    final nameController = TextEditingController(text: user.name);
+    final addressController = TextEditingController(text: user.addressDetail);
+    final mapsController = TextEditingController(text: user.mapsLink);
+    
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Edit Nama Lengkap'),
-        content: TextField(
-          controller: editController,
-          decoration: const InputDecoration(
-            hintText: 'Masukkan nama baru',
+        title: const Text('Edit Profil'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameController,
+                decoration: const InputDecoration(
+                  labelText: 'Nama Lengkap',
+                  hintText: 'Masukkan nama baru',
+                ),
+                textCapitalization: TextCapitalization.words,
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: addressController,
+                decoration: const InputDecoration(
+                  labelText: 'Detail Alamat',
+                  hintText: 'Nama Jalan, No. Rumah, RT/RW, Kec/Kel',
+                ),
+                maxLines: 2,
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: mapsController,
+                decoration: const InputDecoration(
+                  labelText: 'Link / Titik Google Maps',
+                  hintText: 'https://maps.app.goo.gl/...',
+                  helperText: 'Buka Google Maps -> Cari Lokasi -> Bagikan -> Salin Link',
+                  helperMaxLines: 2,
+                ),
+              ),
+            ],
           ),
-          textCapitalization: TextCapitalization.words,
         ),
         actions: [
           TextButton(
@@ -692,10 +723,15 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
           ),
           ElevatedButton(
             onPressed: () async {
-              final newName = editController.text.trim();
+              final newName = nameController.text.trim();
+              final newAddress = addressController.text.trim();
+              final newMaps = mapsController.text.trim();
+              
               if (newName.isNotEmpty) {
                 await FirebaseFirestore.instance.collection('users').doc(user.uid).update({
                   'name': newName,
+                  'addressDetail': newAddress,
+                  'mapsLink': newMaps,
                 });
                 if (context.mounted) Navigator.pop(context);
               }
@@ -807,6 +843,45 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
                     leading: const Icon(Icons.email_outlined, color: AppTheme.primaryBlue),
                     title: const Text('Email', style: TextStyle(fontSize: 11, color: AppTheme.textGray)),
                     subtitle: Text(user.email, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppTheme.darkBlueText)),
+                  ),
+                  const Divider(height: 1),
+                  ListTile(
+                    leading: const Icon(Icons.home_outlined, color: AppTheme.primaryBlue),
+                    title: const Text('Detail Alamat', style: TextStyle(fontSize: 11, color: AppTheme.textGray)),
+                    subtitle: Text(
+                      user.addressDetail.isEmpty ? 'Alamat belum diatur' : user.addressDetail,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: user.addressDetail.isEmpty ? FontWeight.normal : FontWeight.bold,
+                        color: user.addressDetail.isEmpty ? AppTheme.textGray : AppTheme.darkBlueText,
+                      ),
+                    ),
+                  ),
+                  const Divider(height: 1),
+                  ListTile(
+                    leading: const Icon(Icons.location_on_outlined, color: AppTheme.primaryBlue),
+                    title: const Text('Titik Google Maps', style: TextStyle(fontSize: 11, color: AppTheme.textGray)),
+                    subtitle: Text(
+                      user.mapsLink.isEmpty ? 'Link lokasi belum diatur' : user.mapsLink,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: user.mapsLink.isEmpty ? FontWeight.normal : FontWeight.bold,
+                        color: user.mapsLink.isEmpty ? AppTheme.textGray : AppTheme.darkBlueText,
+                      ),
+                    ),
+                    trailing: user.mapsLink.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.open_in_new, size: 18, color: AppTheme.primaryBlue),
+                            onPressed: () async {
+                              final uri = Uri.parse(user.mapsLink);
+                              try {
+                                await launchUrl(uri, mode: LaunchMode.externalApplication);
+                              } catch (_) {}
+                            },
+                          )
+                        : null,
                   ),
                 ],
               ),

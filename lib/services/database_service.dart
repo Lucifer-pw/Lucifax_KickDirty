@@ -3,9 +3,22 @@ import 'package:flutter/foundation.dart';
 import '../models/service_model.dart';
 import '../models/order_model.dart';
 import '../models/expense_model.dart';
+import 'whatsapp_service.dart';
 
 class DatabaseService with ChangeNotifier {
   FirebaseFirestore get _db => FirebaseFirestore.instance;
+
+  // Helper to trigger background automated WA notification
+  void _triggerWA(String orderId, String eventType) {
+    _db.collection('orders').doc(orderId).get().then((doc) {
+      if (doc.exists) {
+        final order = OrderModel.fromMap(doc.data() as Map<String, dynamic>, doc.id);
+        WhatsAppService.sendAutomaticStatusNotification(order, eventType);
+      }
+    }).catchError((e) {
+      if (kDebugMode) print("Error triggering automatic WA: $e");
+    });
+  }
 
   // ==========================================
   // SERVICES CRUD
@@ -149,6 +162,8 @@ class DatabaseService with ChangeNotifier {
       photoAfter: order.photoAfter,
       pointsEarned: pointsEarned,
       pointsRedeemed: order.pointsRedeemed,
+      estimatedCompletion: order.estimatedCompletion,
+      mapsLink: order.mapsLink,
       statusTimeline: timeline,
       createdAt: order.createdAt,
       updatedAt: order.updatedAt,
@@ -161,6 +176,10 @@ class DatabaseService with ChangeNotifier {
     if (finalOrder.paymentStatus == 'sudah_bayar' || finalOrder.pointsRedeemed > 0) {
       await _awardPoints(finalOrder);
     }
+
+    // Trigger background automated WA notification
+    WhatsAppService.sendAutomaticStatusNotification(finalOrder, 'diterima');
+
     return invoiceId;
   }
 
@@ -210,6 +229,7 @@ class DatabaseService with ChangeNotifier {
       'statusTimeline.$newStatus': FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),
     });
+    _triggerWA(orderId, newStatus);
   }
 
   // Update order status with after photo
@@ -220,6 +240,7 @@ class DatabaseService with ChangeNotifier {
       'statusTimeline.$newStatus': FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),
     });
+    _triggerWA(orderId, newStatus);
   }
 
   // Update order status with estimated completion
@@ -230,6 +251,7 @@ class DatabaseService with ChangeNotifier {
       'statusTimeline.$newStatus': FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),
     });
+    _triggerWA(orderId, newStatus);
   }
 
   // Update estimated completion only
@@ -264,6 +286,10 @@ class DatabaseService with ChangeNotifier {
       updateData['statusTimeline.sudah_bayar'] = FieldValue.serverTimestamp();
     }
     await _db.collection('orders').doc(orderId).update(updateData);
+
+    if (newPaymentStatus == 'sudah_bayar') {
+      _triggerWA(orderId, 'dibayar');
+    }
   }
 
   // ==========================================
@@ -454,6 +480,54 @@ class DatabaseService with ChangeNotifier {
     }
 
     await _db.collection('chat_rooms').doc(customerId).set(roomData, SetOptions(merge: true));
+
+    if (!isAdmin) {
+      _triggerAutoReply(customerId);
+    }
+  }
+
+  // Trigger automated chat welcome response from the Owner
+  void _triggerAutoReply(String customerId) {
+    _db.collection('app_config').doc('chat_config').get().then((doc) {
+      final bool enabled = doc.exists && (doc.data()?['autoReplyEnabled'] == true);
+      if (enabled) {
+        final autoReplyText = doc.data()?['autoReplyText'] ?? 'Halo! Terima kasih telah menghubungi KickDirty. Pesan Anda telah kami terima dan akan segera kami balas. Jam Operasional: 09:00 - 21:00.';
+        
+        // Prevent duplicate spamming by checking if we sent an auto-reply recently
+        _db.collection('chat_rooms')
+            .doc(customerId)
+            .collection('messages')
+            .orderBy('timestamp', descending: true)
+            .limit(5)
+            .get()
+            .then((snap) {
+          bool shouldSend = true;
+          final now = DateTime.now();
+          for (var d in snap.docs) {
+            if (d.data()['senderId'] == 'owner_auto_reply') {
+              final ts = d.data()['timestamp'] as Timestamp?;
+              if (ts != null && now.difference(ts.toDate()).inMinutes < 5) {
+                shouldSend = false;
+                break;
+              }
+            }
+          }
+          if (shouldSend) {
+            _db.collection('chat_rooms').doc(customerId).collection('messages').add({
+              'senderId': 'owner_auto_reply',
+              'senderName': 'KickDirty Bot',
+              'message': autoReplyText,
+              'timestamp': FieldValue.serverTimestamp(),
+            });
+            _db.collection('chat_rooms').doc(customerId).update({
+              'lastMessage': autoReplyText,
+              'lastMessageTime': FieldValue.serverTimestamp(),
+              'unreadCountCustomer': FieldValue.increment(1),
+            });
+          }
+        });
+      }
+    }).catchError((_) {});
   }
 
   // Reset unread count for admin/owner

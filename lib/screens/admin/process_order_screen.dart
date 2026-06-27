@@ -88,10 +88,10 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
       }
       return;
     } else if (currentStatus == 'sedang_diproses') {
-      String? photoAfter = await showDialog<String?>(
+      List<String>? photoAfterList = await showDialog<List<String>?>(
         context: context,
         builder: (context) {
-          String? capturedBase64;
+          List<String> capturedPhotos = [];
           return StatefulBuilder(
             builder: (context, setStateDialog) {
               return AlertDialog(
@@ -99,17 +99,59 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
                 content: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Text('Ambil foto hasil cucian sepatu sebagai bukti sebelum diselesaikan.'),
+                    const Text('Ambil foto hasil cucian sepatu sebagai bukti sebelum diselesaikan. (Minimal 1 Foto)'),
                     const SizedBox(height: 16),
-                    if (capturedBase64 != null)
+                    if (capturedPhotos.isNotEmpty)
+                      SizedBox(
+                        height: 80,
+                        child: ListView.builder(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: capturedPhotos.length,
+                          itemBuilder: (context, idx) {
+                            return Stack(
+                              children: [
+                                Container(
+                                  margin: const EdgeInsets.only(right: 8),
+                                  width: 80,
+                                  height: 80,
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(8),
+                                    image: DecorationImage(
+                                      image: MemoryImage(base64Decode(capturedPhotos[idx].split(',')[1])),
+                                      fit: BoxFit.cover,
+                                    ),
+                                  ),
+                                ),
+                                Positioned(
+                                  top: 2,
+                                  right: 10,
+                                  child: InkWell(
+                                    onTap: () {
+                                      setStateDialog(() {
+                                        capturedPhotos.removeAt(idx);
+                                      });
+                                    },
+                                    child: const CircleAvatar(
+                                      radius: 10,
+                                      backgroundColor: Colors.red,
+                                      child: Icon(Icons.close, size: 12, color: Colors.white),
+                                    ),
+                                  ),
+                                )
+                              ],
+                            );
+                          },
+                         ),
+                      )
+                    else
                       Container(
-                        width: 150,
-                        height: 150,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(8),
-                          image: DecorationImage(
-                            image: MemoryImage(base64Decode(capturedBase64!.split(',')[1])),
-                            fit: BoxFit.cover,
+                        height: 80,
+                        width: double.infinity,
+                        color: Colors.grey[100],
+                        child: const Center(
+                          child: Text(
+                            'Belum ada foto diambil',
+                            style: TextStyle(color: AppTheme.textGray, fontSize: 12),
                           ),
                         ),
                       ),
@@ -122,7 +164,7 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
                               final img = await ImageService.pickImageFromCamera();
                               if (img != null) {
                                 setStateDialog(() {
-                                  capturedBase64 = img;
+                                  capturedPhotos.add(img);
                                 });
                               }
                             },
@@ -137,7 +179,7 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
                               final img = await ImageService.pickImageFromGallery();
                               if (img != null) {
                                 setStateDialog(() {
-                                  capturedBase64 = img;
+                                  capturedPhotos.add(img);
                                 });
                               }
                             },
@@ -152,11 +194,16 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
                 actions: [
                   TextButton(
                     onPressed: () => Navigator.pop(context, null),
-                    child: const Text('Lewati'),
+                    child: const Text('Batal'),
                   ),
                   ElevatedButton(
-                    onPressed: () => Navigator.pop(context, capturedBase64),
-                    style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryBlue),
+                    onPressed: capturedPhotos.isEmpty
+                        ? null
+                        : () => Navigator.pop(context, capturedPhotos),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.primaryBlue,
+                      disabledBackgroundColor: Colors.grey[300],
+                    ),
                     child: const Text('Simpan'),
                   ),
                 ],
@@ -166,15 +213,20 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
         },
       );
 
-      nextStatus = 'selesai';
-      successMsg = 'Servis sepatu selesai!';
-      if (photoAfter != null) {
-        await dbService.updateOrderStatusWithPhoto(orderId, nextStatus, [photoAfter]);
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(successMsg)));
-        }
+      if (photoAfterList == null || photoAfterList.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Foto After wajib diambil minimal 1 foto!')),
+        );
         return;
       }
+
+      nextStatus = 'selesai';
+      successMsg = 'Servis sepatu selesai!';
+      await dbService.updateOrderStatusWithPhoto(orderId, nextStatus, photoAfterList);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(successMsg)));
+      }
+      return;
     } else if (currentStatus == 'selesai') {
       nextStatus = 'diambil';
       successMsg = 'Sepatu telah diserahkan ke pelanggan!';
@@ -408,10 +460,32 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
                     ),
                   ),
                   Padding(
-                    padding: const EdgeInsets.only(left: 50, top: 2),
-                    child: Text(
-                      'Alamat: ${order.deliveryAddress}',
-                      style: const TextStyle(fontSize: 11, color: AppTheme.textGray),
+                    padding: const EdgeInsets.only(left: 50, top: 2, right: 16),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'Alamat: ${order.deliveryAddress}',
+                            style: const TextStyle(fontSize: 11, color: AppTheme.textGray),
+                          ),
+                        ),
+                        if (order.mapsLink.isNotEmpty)
+                          TextButton.icon(
+                            onPressed: () async {
+                              final uri = Uri.parse(order.mapsLink);
+                              try {
+                                await launchUrl(uri, mode: LaunchMode.externalApplication);
+                              } catch (_) {}
+                            },
+                            icon: const Icon(Icons.map, size: 14, color: AppTheme.primaryBlue),
+                            label: const Text('Buka Maps', style: TextStyle(fontSize: 10, color: AppTheme.primaryBlue)),
+                            style: TextButton.styleFrom(
+                              padding: EdgeInsets.zero,
+                              minimumSize: Size.zero,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ),
+                          ),
+                      ],
                     ),
                   ),
                 ] else ...[

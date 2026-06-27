@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../models/user_model.dart';
 import '../../models/order_model.dart';
 import '../../models/expense_model.dart';
@@ -555,6 +556,30 @@ class _AdminDashboardState extends State<AdminDashboard> {
             ),
           ],
         ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _buildMenuButton(
+                'Pengaturan WA',
+                'Konfigurasi WA Gateway',
+                Icons.settings_phone,
+                Colors.teal,
+                _showWhatsAppSettingsDialog,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildMenuButton(
+                'Auto-Reply Chat',
+                'Salam bot otomatis',
+                Icons.android,
+                Colors.amber,
+                _showChatBotSettingsDialog,
+              ),
+            ),
+          ],
+        ),
       ],
     );
   }
@@ -589,6 +614,213 @@ class _AdminDashboardState extends State<AdminDashboard> {
           ],
         ),
       ),
+    );
+  }
+
+  void _showWhatsAppSettingsDialog() async {
+    // Show loading dialog
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator()),
+    );
+
+    Map<String, dynamic> data = {};
+    try {
+      final doc = await FirebaseFirestore.instance.collection('app_config').doc('whatsapp_config').get();
+      if (doc.exists) {
+        data = doc.data() ?? {};
+      }
+    } catch (_) {}
+
+    if (mounted) Navigator.pop(context); // Close loading
+
+    String provider = data['provider'] ?? 'manual';
+    bool useAutomation = data['useAutomation'] ?? false;
+    final tokenController = TextEditingController(text: data['apiToken'] ?? '');
+    final urlController = TextEditingController(text: data['gatewayUrl'] ?? 'https://api.wablas.com');
+
+    if (!mounted) return;
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            return AlertDialog(
+              title: const Text('Pengaturan WA Gateway'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SwitchListTile(
+                      title: const Text('Aktifkan Otomasi WA', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                      subtitle: const Text('Kirim notifikasi & file PDF otomatis', style: TextStyle(fontSize: 11)),
+                      value: useAutomation,
+                      activeColor: AppTheme.primaryBlue,
+                      contentPadding: EdgeInsets.zero,
+                      onChanged: (val) {
+                        setStateDialog(() {
+                          useAutomation = val;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 8),
+                    DropdownButtonFormField<String>(
+                      value: provider,
+                      decoration: const InputDecoration(labelText: 'Penyedia Gateway (Provider)'),
+                      items: const [
+                        DropdownMenuItem(value: 'manual', child: Text('Manual (Tautan WA)')),
+                        DropdownMenuItem(value: 'fonnte', child: Text('Fonnte (Otomatis)')),
+                        DropdownMenuItem(value: 'wablas', child: Text('Wablas (Otomatis)')),
+                      ],
+                      onChanged: (val) {
+                        setStateDialog(() {
+                          provider = val ?? 'manual';
+                        });
+                      },
+                    ),
+                    if (provider != 'manual') ...[
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: tokenController,
+                        decoration: const InputDecoration(
+                          labelText: 'API Key / Token Otorisasi',
+                          hintText: 'Masukkan token API gateway Anda',
+                        ),
+                      ),
+                    ],
+                    if (provider == 'wablas') ...[
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: urlController,
+                        decoration: const InputDecoration(
+                          labelText: 'Wablas Domain URL',
+                          hintText: 'https://api.wablas.com',
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Batal'),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    await FirebaseFirestore.instance.collection('app_config').doc('whatsapp_config').set({
+                      'provider': provider,
+                      'useAutomation': useAutomation,
+                      'apiToken': tokenController.text.trim(),
+                      'gatewayUrl': urlController.text.trim(),
+                    }, SetOptions(merge: true));
+                    if (context.mounted) Navigator.pop(context);
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Konfigurasi WhatsApp Gateway berhasil disimpan!')),
+                      );
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryBlue),
+                  child: const Text('Simpan', style: TextStyle(color: Colors.white)),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showChatBotSettingsDialog() async {
+    // Show loading
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator()),
+    );
+
+    Map<String, dynamic> data = {};
+    try {
+      final doc = await FirebaseFirestore.instance.collection('app_config').doc('chat_config').get();
+      if (doc.exists) {
+        data = doc.data() ?? {};
+      }
+    } catch (_) {}
+
+    if (mounted) Navigator.pop(context);
+
+    bool autoReplyEnabled = data['autoReplyEnabled'] ?? false;
+    final textController = TextEditingController(
+      text: data['autoReplyText'] ??
+          'Halo! Terima kasih telah menghubungi KickDirty. Pesan Anda telah kami terima dan akan segera kami balas. Jam Operasional: 09:00 - 21:00.',
+    );
+
+    if (!mounted) return;
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            return AlertDialog(
+              title: const Text('Pengaturan Auto-Reply Chat'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SwitchListTile(
+                      title: const Text('Aktifkan Pesan Otomatis', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                      subtitle: const Text('Kirim salam otomatis ke pelanggan baru', style: TextStyle(fontSize: 11)),
+                      value: autoReplyEnabled,
+                      activeColor: AppTheme.primaryBlue,
+                      contentPadding: EdgeInsets.zero,
+                      onChanged: (val) {
+                        setStateDialog(() {
+                          autoReplyEnabled = val;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: textController,
+                      maxLines: 4,
+                      decoration: const InputDecoration(
+                        labelText: 'Isi Pesan Otomatis',
+                        hintText: 'Tulis pesan balasan otomatis...',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Batal'),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    await FirebaseFirestore.instance.collection('app_config').doc('chat_config').set({
+                      'autoReplyEnabled': autoReplyEnabled,
+                      'autoReplyText': textController.text.trim(),
+                    }, SetOptions(merge: true));
+                    if (context.mounted) Navigator.pop(context);
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Pengaturan Auto-Reply Chat berhasil disimpan!')),
+                      );
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryBlue),
+                  child: const Text('Simpan', style: TextStyle(color: Colors.white)),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 }

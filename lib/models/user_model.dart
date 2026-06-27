@@ -7,6 +7,8 @@ class UserModel {
   final String phoneNumber;
   final String role; // 'owner' | 'staff' | 'customer'
   final int loyaltyPoints;
+  final String addressDetail;
+  final String mapsLink;
   final DateTime createdAt;
 
   UserModel({
@@ -16,6 +18,8 @@ class UserModel {
     required this.phoneNumber,
     required this.role,
     this.loyaltyPoints = 0,
+    this.addressDetail = '',
+    this.mapsLink = '',
     required this.createdAt,
   });
 
@@ -27,6 +31,8 @@ class UserModel {
       phoneNumber: map['phoneNumber'] ?? '',
       role: map['role'] ?? 'customer',
       loyaltyPoints: map['loyaltyPoints'] ?? 0,
+      addressDetail: map['addressDetail'] ?? '',
+      mapsLink: map['mapsLink'] ?? '',
       createdAt: (map['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
     );
   }
@@ -38,6 +44,8 @@ class UserModel {
       'phoneNumber': phoneNumber,
       'role': role,
       'loyaltyPoints': loyaltyPoints,
+      'addressDetail': addressDetail,
+      'mapsLink': mapsLink,
       'createdAt': Timestamp.fromDate(createdAt),
     };
   }
