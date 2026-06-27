@@ -12,6 +12,7 @@ import '../../services/image_service.dart';
 import '../../theme.dart';
 import '../../widgets/watermark.dart';
 import '../../widgets/invoice_detail_modal.dart';
+import '../../widgets/update_dialog.dart';
 import '../login_screen.dart';
 import '../chat_screen.dart';
 
@@ -24,6 +25,15 @@ class CustomerPortalScreen extends StatefulWidget {
 
 class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
   int _currentIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    // Run update check on customer portal load
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      UpdateDialog.checkAndShow(context);
+    });
+  }
 
   void _showOrderServiceDialog() async {
     final dbService = Provider.of<DatabaseService>(context, listen: false);

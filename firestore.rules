@@ -1,0 +1,71 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ============================================
+    // USERS COLLECTION
+    // ============================================
+    match /users/{userId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // ============================================
+    // SERVICES COLLECTION (pricing list)
+    // ============================================
+    match /services/{serviceId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && isOwnerOrStaff();
+    }
+
+    // ============================================
+    // ORDERS COLLECTION
+    // ============================================
+    match /orders/{orderId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null;
+      allow update, delete: if request.auth != null;
+    }
+
+    // ============================================
+    // EXPENSES COLLECTION
+    // ============================================
+    match /expenses/{expenseId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && isOwnerOrStaff();
+    }
+
+    // ============================================
+    // APP CONFIG (version_info, etc)
+    // ============================================
+    match /app_config/{docId} {
+      allow read: if true;
+      allow write: if request.auth != null && isOwnerOrStaff();
+    }
+
+    // ============================================
+    // CHAT ROOMS COLLECTION
+    // ============================================
+    match /chat_rooms/{chatRoomId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null;
+      allow update: if request.auth != null;
+      allow delete: if request.auth != null && isOwnerOrStaff();
+
+      // Messages subcollection
+      match /messages/{messageId} {
+        allow read: if request.auth != null;
+        allow create: if request.auth != null;
+        allow update, delete: if request.auth != null && isOwnerOrStaff();
+      }
+    }
+
+    // ============================================
+    // HELPER FUNCTIONS
+    // ============================================
+    function isOwnerOrStaff() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['owner', 'staff'];
+    }
+  }
+}
