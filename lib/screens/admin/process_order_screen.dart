@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../models/order_model.dart';
 import '../../services/database_service.dart';
+import '../../services/auth_service.dart';
 import '../../services/image_service.dart';
 import '../../theme.dart';
 
@@ -457,12 +458,31 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
                             style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
                           ),
                         ),
-                        IconButton(
-                          icon: const Icon(Icons.edit_outlined, size: 14, color: AppTheme.primaryBlue),
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(),
-                          onPressed: () => _showEditCourierFeeDialog(order),
-                          tooltip: 'Ubah biaya ongkir',
+                        StreamBuilder<DocumentSnapshot>(
+                          stream: FirebaseFirestore.instance.collection('app_config').doc('staff_permissions').snapshots(),
+                          builder: (context, permSnap) {
+                            final role = Provider.of<AuthService>(context, listen: false).currentUserModel?.role ?? 'staff';
+                            if (role == 'owner') {
+                              return IconButton(
+                                icon: const Icon(Icons.edit_outlined, size: 14, color: AppTheme.primaryBlue),
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(),
+                                onPressed: () => _showEditCourierFeeDialog(order),
+                                tooltip: 'Ubah biaya ongkir',
+                              );
+                            }
+                            final perms = (permSnap.data?.data() as Map<String, dynamic>?) ?? {};
+                            if (perms['canEditCourierFee'] == true) {
+                              return IconButton(
+                                icon: const Icon(Icons.edit_outlined, size: 14, color: AppTheme.primaryBlue),
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(),
+                                onPressed: () => _showEditCourierFeeDialog(order),
+                                tooltip: 'Ubah biaya ongkir',
+                              );
+                            }
+                            return const SizedBox.shrink();
+                          },
                         ),
                       ],
                     ),

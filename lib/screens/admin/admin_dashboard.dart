@@ -17,6 +17,7 @@ import 'service_crud_screen.dart';
 import 'financial_report_screen.dart';
 import 'admin_chat_list_screen.dart';
 import 'sales_detail_screen.dart';
+import 'staff_permissions_screen.dart';
 
 class AdminDashboard extends StatefulWidget {
   const AdminDashboard({Key? key}) : super(key: key);
@@ -28,6 +29,12 @@ class AdminDashboard extends StatefulWidget {
 class _AdminDashboardState extends State<AdminDashboard> {
   int _currentIndex = 0;
   bool _showNetProfit = false;
+  Map<String, bool> _staffPerms = {};
+
+  bool _hasPerm(String key, String? role) {
+    if (role == 'owner') return true;
+    return _staffPerms[key] == true;
+  }
 
   @override
   void initState() {
@@ -91,61 +98,88 @@ class _AdminDashboardState extends State<AdminDashboard> {
     final dbService = Provider.of<DatabaseService>(context);
     
     final currentUser = authService.currentUserModel;
-    final String roleLabel = currentUser?.role == 'owner' ? 'Owner' : 'Staff';
+    final String role = currentUser?.role ?? 'staff';
+    final String roleLabel = role == 'owner' ? 'Owner' : 'Staff';
 
-    final List<Widget> screens = [
-      _buildDashboardHome(context, dbService, currentUser, roleLabel),
-      InputOrderScreen(isTab: true, onOrderSubmitted: () => _onTabTapped(0)),
-      const ProcessOrderScreen(isTab: true),
-      const HistoryOrdersScreen(isTab: true),
-      const AdminChatListScreen(isTab: true),
-      const ServiceCrudScreen(isTab: true),
-    ];
-
-    return PopScope(
-      canPop: _currentIndex == 0,
-      onPopInvoked: (didPop) {
-        if (didPop) return;
-        if (_currentIndex != 0) {
-          _onTabTapped(0);
+    return StreamBuilder<DocumentSnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('app_config')
+          .doc('staff_permissions')
+          .snapshots(),
+      builder: (context, permSnapshot) {
+        // Update permissions map in real-time
+        if (permSnapshot.hasData && permSnapshot.data!.exists) {
+          _staffPerms = Map<String, bool>.from(
+            (permSnapshot.data!.data() as Map<String, dynamic>? ?? {})
+                .map((k, v) => MapEntry(k, v == true)),
+          );
         }
-      },
-      child: Scaffold(
-        body: IndexedStack(
-          index: _currentIndex,
-          children: screens,
-        ),
-        bottomNavigationBar: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
-          decoration: BoxDecoration(
-            color: AppTheme.white,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.06),
-                blurRadius: 10,
-                offset: const Offset(0, -4),
+
+        final bool showServices = _hasPerm('canManageServices', role);
+
+        final List<Widget> screens = [
+          _buildDashboardHome(context, dbService, currentUser, roleLabel, role),
+          InputOrderScreen(isTab: true, onOrderSubmitted: () => _onTabTapped(0)),
+          const ProcessOrderScreen(isTab: true),
+          const HistoryOrdersScreen(isTab: true),
+          const AdminChatListScreen(isTab: true),
+          if (showServices) const ServiceCrudScreen(isTab: true),
+        ];
+
+        // Clamp index if tab was removed
+        if (_currentIndex >= screens.length) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) setState(() => _currentIndex = 0);
+          });
+        }
+
+        return PopScope(
+          canPop: _currentIndex == 0,
+          onPopInvoked: (didPop) {
+            if (didPop) return;
+            if (_currentIndex != 0) {
+              _onTabTapped(0);
+            }
+          },
+          child: Scaffold(
+            body: IndexedStack(
+              index: _currentIndex < screens.length ? _currentIndex : 0,
+              children: screens,
+            ),
+            bottomNavigationBar: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+              decoration: BoxDecoration(
+                color: AppTheme.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.06),
+                    blurRadius: 10,
+                    offset: const Offset(0, -4),
+                  ),
+                ],
               ),
-            ],
-          ),
-          child: SafeArea(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _buildNavItem(0, Icons.grid_view, 'Beranda'),
-                _buildNavItem(1, Icons.add_shopping_cart, 'Input'),
-                _buildNavItem(2, Icons.sync_alt, 'Proses'),
-                _buildNavItem(3, Icons.history, 'Riwayat'),
-                _buildNavItem(4, Icons.chat_outlined, 'Pesan'),
-                _buildNavItem(5, Icons.cleaning_services_outlined, 'Layanan'),
-              ],
+              child: SafeArea(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _buildNavItem(0, Icons.grid_view, 'Beranda'),
+                    _buildNavItem(1, Icons.add_shopping_cart, 'Input'),
+                    _buildNavItem(2, Icons.sync_alt, 'Proses'),
+                    _buildNavItem(3, Icons.history, 'Riwayat'),
+                    _buildNavItem(4, Icons.chat_outlined, 'Pesan'),
+                    if (showServices)
+                      _buildNavItem(5, Icons.cleaning_services_outlined, 'Layanan'),
+                  ],
+                ),
+              ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
-  Widget _buildDashboardHome(BuildContext context, DatabaseService dbService, UserModel? currentUser, String roleLabel) {
+  Widget _buildDashboardHome(BuildContext context, DatabaseService dbService, UserModel? currentUser, String roleLabel, String role) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('KickDirty Dashboard'),
@@ -189,6 +223,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
               final newOrdersCount = orders.where((o) => o.status == 'diterima').length;
               final activeOrdersCount = orders.where((o) => o.status != 'diambil').length;
+
+              final bool showSalesCards = _hasPerm('canViewSalesCards', role);
 
               return SingleChildScrollView(
                 padding: const EdgeInsets.all(16.0),
@@ -242,52 +278,56 @@ class _AdminDashboardState extends State<AdminDashboard> {
                       const SizedBox(height: 16),
                     ],
 
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          _showNetProfit ? 'Rekap Keuntungan Bersih' : 'Rekap Penjualan (Lunas)',
-                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.darkBlueText),
-                        ),
-                        Row(
-                          children: [
-                            const Text('Laba Bersih', style: TextStyle(fontSize: 11, color: AppTheme.textGray)),
-                            const SizedBox(width: 4),
-                            Switch(
-                              value: _showNetProfit,
-                              activeColor: AppTheme.primaryBlue,
-                              onChanged: (val) {
-                                setState(() {
-                                  _showNetProfit = val;
-                                });
-                              },
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    LayoutBuilder(
-                      builder: (context, constraints) {
-                        final double cardWidth = (constraints.maxWidth - 12) / 2;
-                        return Wrap(
-                          spacing: 12,
-                          runSpacing: 12,
-                          children: [
-                            _buildRecapCard('Harian', 'daily', displayRecaps['daily'] ?? 0.0, Icons.today, Colors.blue, cardWidth, orders),
-                            _buildRecapCard('Mingguan', 'weekly', displayRecaps['weekly'] ?? 0.0, Icons.date_range, Colors.indigo, cardWidth, orders),
-                            _buildRecapCard('Bulanan', 'monthly', displayRecaps['monthly'] ?? 0.0, Icons.calendar_month, Colors.deepPurple, cardWidth, orders),
-                            _buildRecapCard('Tahunan', 'yearly', displayRecaps['yearly'] ?? 0.0, Icons.analytics, Colors.teal, cardWidth, orders),
-                          ],
-                        );
-                      },
-                    ),
-                    const SizedBox(height: 24),
-                    _buildVisualChart(displayRecaps['monthly'] ?? 0.0, displayRecaps['yearly'] ?? 0.0),
-                    const SizedBox(height: 24),
+                    // Sales recap cards — conditionally shown
+                    if (showSalesCards) ...[
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            _showNetProfit ? 'Rekap Keuntungan Bersih' : 'Rekap Penjualan (Lunas)',
+                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.darkBlueText),
+                          ),
+                          Row(
+                            children: [
+                              const Text('Laba Bersih', style: TextStyle(fontSize: 11, color: AppTheme.textGray)),
+                              const SizedBox(width: 4),
+                              Switch(
+                                value: _showNetProfit,
+                                activeColor: AppTheme.primaryBlue,
+                                onChanged: (val) {
+                                  setState(() {
+                                    _showNetProfit = val;
+                                  });
+                                },
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          final double cardWidth = (constraints.maxWidth - 12) / 2;
+                          return Wrap(
+                            spacing: 12,
+                            runSpacing: 12,
+                            children: [
+                              _buildRecapCard('Harian', 'daily', displayRecaps['daily'] ?? 0.0, Icons.today, Colors.blue, cardWidth, orders),
+                              _buildRecapCard('Mingguan', 'weekly', displayRecaps['weekly'] ?? 0.0, Icons.date_range, Colors.indigo, cardWidth, orders),
+                              _buildRecapCard('Bulanan', 'monthly', displayRecaps['monthly'] ?? 0.0, Icons.calendar_month, Colors.deepPurple, cardWidth, orders),
+                              _buildRecapCard('Tahunan', 'yearly', displayRecaps['yearly'] ?? 0.0, Icons.analytics, Colors.teal, cardWidth, orders),
+                            ],
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 24),
+                      _buildVisualChart(displayRecaps['monthly'] ?? 0.0, displayRecaps['yearly'] ?? 0.0),
+                      const SizedBox(height: 24),
+                    ],
+
                     Text('Menu Navigasi', style: Theme.of(context).textTheme.titleLarge),
                     const SizedBox(height: 16),
-                    _buildMenuGrid(),
+                    _buildMenuGrid(role),
                     const SizedBox(height: 32),
                     const Center(child: Watermark()),
                   ],
@@ -354,6 +394,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
     return GestureDetector(
       onTap: () {
+        // Check if user has permission to view sales detail
+        final authService = Provider.of<AuthService>(context, listen: false);
+        final role = authService.currentUserModel?.role ?? 'staff';
+        if (!_hasPerm('canViewSalesDetail', role)) return;
+
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -477,127 +522,156 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 
-  Widget _buildMenuGrid() {
-    return Column(
-      children: [
+  Widget _buildMenuGrid(String role) {
+    // Define all menu items with their permission keys
+    // null permKey = always visible
+    final List<Map<String, dynamic>> menuItems = [
+      {
+        'title': 'Input Pesanan',
+        'subtitle': 'Input cucian sepatu baru',
+        'icon': Icons.add_shopping_cart,
+        'color': Colors.blue,
+        'onTap': () => _onTabTapped(1),
+        'permKey': null, // always visible
+      },
+      {
+        'title': 'Proses Pesanan',
+        'subtitle': 'Update cucian real-time',
+        'icon': Icons.sync_alt,
+        'color': Colors.orange,
+        'onTap': () => _onTabTapped(2),
+        'permKey': null, // always visible
+      },
+      {
+        'title': 'Riwayat Transaksi',
+        'subtitle': 'Invoice & Cetak PDF',
+        'icon': Icons.history,
+        'color': Colors.green,
+        'onTap': () => _onTabTapped(3),
+        'permKey': null, // always visible
+      },
+      {
+        'title': 'Pesan Masuk',
+        'subtitle': 'Chat dengan pelanggan',
+        'icon': Icons.chat_outlined,
+        'color': Colors.pink,
+        'onTap': () => _onTabTapped(4),
+        'permKey': null, // always visible
+      },
+      {
+        'title': 'Kelola Layanan',
+        'subtitle': 'CRUD tarif & layanan',
+        'icon': Icons.cleaning_services_outlined,
+        'color': Colors.indigo,
+        'onTap': () {
+          // Find the correct index for Layanan tab
+          final showServices = _hasPerm('canManageServices', role);
+          if (showServices) _onTabTapped(5);
+        },
+        'permKey': 'canManageServices',
+      },
+      {
+        'title': 'Laporan Keuangan',
+        'subtitle': 'Pemasukan & laba bersih',
+        'icon': Icons.analytics_outlined,
+        'color': Colors.purple,
+        'onTap': () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const FinancialReportScreen()),
+          );
+        },
+        'permKey': 'canViewFinancialReport',
+      },
+      {
+        'title': 'Pengaturan WA',
+        'subtitle': 'Konfigurasi WA Gateway',
+        'icon': Icons.settings_phone,
+        'color': Colors.teal,
+        'onTap': _showWhatsAppSettingsDialog,
+        'permKey': 'canAccessWhatsAppSettings',
+      },
+      {
+        'title': 'Auto-Reply Chat',
+        'subtitle': 'Salam bot otomatis',
+        'icon': Icons.android,
+        'color': Colors.amber,
+        'onTap': _showChatBotSettingsDialog,
+        'permKey': 'canAccessChatBotSettings',
+      },
+      {
+        'title': 'Poin & Ongkir',
+        'subtitle': 'Tarif ongkir & poin loyalitas',
+        'icon': Icons.stars_outlined,
+        'color': Colors.deepOrange,
+        'onTap': _showBusinessSettingsDialog,
+        'permKey': 'canAccessBusinessSettings',
+      },
+    ];
+
+    // Owner-only: Hak Akses Staff button
+    if (role == 'owner') {
+      menuItems.add({
+        'title': 'Hak Akses Staff',
+        'subtitle': 'Kontrol fitur karyawan',
+        'icon': Icons.admin_panel_settings,
+        'color': Colors.red,
+        'onTap': () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const StaffPermissionsScreen()),
+          );
+        },
+        'permKey': null, // owner-only, always visible for owner
+      });
+    }
+
+    // Filter items based on permissions
+    final visibleItems = menuItems.where((item) {
+      final permKey = item['permKey'] as String?;
+      if (permKey == null) return true;
+      return _hasPerm(permKey, role);
+    }).toList();
+
+    // Build rows of 2
+    final List<Widget> rows = [];
+    for (int i = 0; i < visibleItems.length; i += 2) {
+      final first = visibleItems[i];
+      final hasSecond = i + 1 < visibleItems.length;
+
+      rows.add(
         Row(
           children: [
             Expanded(
               child: _buildMenuButton(
-                'Input Pesanan',
-                'Input cucian sepatu baru',
-                Icons.add_shopping_cart,
-                Colors.blue,
-                () => _onTabTapped(1),
+                first['title'] as String,
+                first['subtitle'] as String,
+                first['icon'] as IconData,
+                first['color'] as Color,
+                first['onTap'] as VoidCallback,
               ),
             ),
             const SizedBox(width: 12),
-            Expanded(
-              child: _buildMenuButton(
-                'Proses Pesanan',
-                'Update cucian real-time',
-                Icons.sync_alt,
-                Colors.orange,
-                () => _onTabTapped(2),
-              ),
-            ),
+            hasSecond
+                ? Expanded(
+                    child: _buildMenuButton(
+                      visibleItems[i + 1]['title'] as String,
+                      visibleItems[i + 1]['subtitle'] as String,
+                      visibleItems[i + 1]['icon'] as IconData,
+                      visibleItems[i + 1]['color'] as Color,
+                      visibleItems[i + 1]['onTap'] as VoidCallback,
+                    ),
+                  )
+                : const Expanded(child: SizedBox()),
           ],
         ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: _buildMenuButton(
-                'Riwayat Transaksi',
-                'Invoice & Cetak PDF',
-                Icons.history,
-                Colors.green,
-                () => _onTabTapped(3),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildMenuButton(
-                'Kelola Layanan',
-                'CRUD tarif & layanan',
-                Icons.cleaning_services_outlined,
-                Colors.indigo,
-                () => _onTabTapped(5),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: _buildMenuButton(
-                'Pesan Masuk',
-                'Chat dengan pelanggan',
-                Icons.chat_outlined,
-                Colors.pink,
-                () => _onTabTapped(4),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildMenuButton(
-                'Laporan Keuangan',
-                'Pemasukan & laba bersih',
-                Icons.analytics_outlined,
-                Colors.purple,
-                () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const FinancialReportScreen()),
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: _buildMenuButton(
-                'Pengaturan WA',
-                'Konfigurasi WA Gateway',
-                Icons.settings_phone,
-                Colors.teal,
-                _showWhatsAppSettingsDialog,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildMenuButton(
-                'Auto-Reply Chat',
-                'Salam bot otomatis',
-                Icons.android,
-                Colors.amber,
-                _showChatBotSettingsDialog,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: _buildMenuButton(
-                'Poin & Ongkir',
-                'Tarif ongkir & poin loyalitas',
-                Icons.stars_outlined,
-                Colors.deepOrange,
-                _showBusinessSettingsDialog,
-              ),
-            ),
-            const SizedBox(width: 12),
-            const Expanded(child: SizedBox()),
-          ],
-        ),
-      ],
-    );
+      );
+      if (i + 2 < visibleItems.length) {
+        rows.add(const SizedBox(height: 12));
+      }
+    }
+
+    return Column(children: rows);
   }
 
   Widget _buildMenuButton(String title, String subtitle, IconData icon, Color color, VoidCallback onTap) {
