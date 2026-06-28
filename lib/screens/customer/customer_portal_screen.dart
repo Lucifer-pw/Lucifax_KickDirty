@@ -15,6 +15,7 @@ import '../../widgets/invoice_detail_modal.dart';
 import '../../widgets/update_dialog.dart';
 import '../login_screen.dart';
 import '../chat_screen.dart';
+import '../../services/in_app_notification_service.dart';
 
 class CustomerPortalScreen extends StatefulWidget {
   const CustomerPortalScreen({Key? key}) : super(key: key);
@@ -32,6 +33,15 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
     // Run update check on customer portal load
     WidgetsBinding.instance.addPostFrameCallback((_) {
       UpdateDialog.checkAndShow(context);
+      
+      final authService = Provider.of<AuthService>(context, listen: false);
+      if (authService.currentUserModel != null) {
+        InAppNotificationService.instance.startListening(
+          context,
+          authService.currentUserModel!.uid,
+          authService.currentUserModel!.role,
+        );
+      }
     });
   }
 
@@ -725,16 +735,26 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
                 foregroundColor: Colors.white,
               ),
               onPressed: () async {
+                // Fetch dynamic shop phone & name from Firestore
+                String shopPhone = "6281328580511";
+                String shopName = "KickDirty";
+                try {
+                  final configDoc = await FirebaseFirestore.instance.collection('app_config').doc('business_config').get();
+                  if (configDoc.exists) {
+                    shopPhone = configDoc.data()?['shopPhone'] ?? "6281328580511";
+                    shopName = configDoc.data()?['shopName'] ?? "KickDirty";
+                  }
+                } catch (_) {}
+
                 // Open WhatsApp with confirmation template
                 final message =
-                    "Halo KickDirty, saya ingin mengirimkan bukti pembayaran untuk pesanan saya:\n\n"
+                    "Halo $shopName, saya ingin mengirimkan bukti pembayaran untuk pesanan saya:\n\n"
                     "- Invoice: $invoiceId\n"
                     "- Layanan: ${order.items.map((item) => "${item.itemName} (${item.serviceName})").join(', ')}\n"
                     "- Total: Rp ${order.totalAmount.toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")}\n\n"
                     "Berikut saya lampirkan bukti transfer pembayarannya.";
                 
-                const cleanPhone = "6281328580511";
-                final uri = Uri.parse('https://wa.me/$cleanPhone?text=${Uri.encodeComponent(message)}');
+                final uri = Uri.parse('https://wa.me/$shopPhone?text=${Uri.encodeComponent(message)}');
                 
                 try {
                   await launchUrl(uri, mode: LaunchMode.externalApplication);
@@ -1049,6 +1069,7 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
             width: double.infinity,
             child: OutlinedButton.icon(
               onPressed: () async {
+                InAppNotificationService.instance.stopListening();
                 await Provider.of<AuthService>(context, listen: false).signOut();
                 if (context.mounted) {
                   Navigator.of(context).pushReplacement(
@@ -1161,7 +1182,8 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
               actions: _currentIndex == 2 ? null : [
                 IconButton(
                   icon: const Icon(Icons.logout_outlined, color: Colors.redAccent),
-                  onPressed: () async {
+                   onPressed: () async {
+                    InAppNotificationService.instance.stopListening();
                     await authService.signOut();
                     if (mounted) {
                       Navigator.of(context).pushReplacement(

@@ -4,6 +4,7 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../models/order_model.dart';
 import '../../services/database_service.dart';
 import '../../services/whatsapp_service.dart';
@@ -23,7 +24,7 @@ class _HistoryOrdersScreenState extends State<HistoryOrdersScreen> {
   String _statusFilter = 'semua'; // 'semua' | 'diterima' | 'sedang_diproses' | 'selesai' | 'diambil'
 
   // Build A5 PDF Invoice Document
-  pw.Document _buildPdfInvoiceDocument(OrderModel order) {
+  pw.Document _buildPdfInvoiceDocument(OrderModel order, String shopName, String shopPhone) {
     final pdf = pw.Document();
 
     String day = order.createdAt.day.toString().padLeft(2, '0');
@@ -47,7 +48,7 @@ class _HistoryOrdersScreenState extends State<HistoryOrdersScreen> {
                     crossAxisAlignment: pw.CrossAxisAlignment.start,
                     children: [
                       pw.Text(
-                        'KICK DIRTY',
+                        shopName.toUpperCase(),
                         style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold, color: PdfColor.fromHex('#0D47A1')),
                       ),
                       pw.Text('Shoe Cleaning & Care Services', style: const pw.TextStyle(fontSize: 8)),
@@ -169,7 +170,7 @@ class _HistoryOrdersScreenState extends State<HistoryOrdersScreen> {
                   children: [
                     pw.Text('Terima kasih atas kunjungan Anda!', style: const pw.TextStyle(fontSize: 8)),
                     pw.SizedBox(height: 1),
-                    pw.Text('HP/WA: 6281328580511 • KickDirty', style: const pw.TextStyle(fontSize: 7)),
+                    pw.Text('HP/WA: $shopPhone • $shopName', style: const pw.TextStyle(fontSize: 7)),
                   ],
                 ),
               ),
@@ -184,7 +185,17 @@ class _HistoryOrdersScreenState extends State<HistoryOrdersScreen> {
 
   // Generate and print PDF invoice
   Future<void> _generatePdfInvoice(OrderModel order) async {
-    final pdf = _buildPdfInvoiceDocument(order);
+    String shopName = "KickDirty";
+    String shopPhone = "6281328580511";
+    try {
+      final doc = await FirebaseFirestore.instance.collection('app_config').doc('business_config').get();
+      if (doc.exists) {
+        shopName = doc.data()?['shopName'] ?? "KickDirty";
+        shopPhone = doc.data()?['shopPhone'] ?? "6281328580511";
+      }
+    } catch (_) {}
+
+    final pdf = _buildPdfInvoiceDocument(order, shopName, shopPhone);
 
     // Open print preview
     await Printing.layoutPdf(
@@ -216,10 +227,20 @@ class _HistoryOrdersScreenState extends State<HistoryOrdersScreen> {
       ),
     );
 
+    String shopName = "KickDirty";
+    String shopPhone = "6281328580511";
     try {
-      final pdf = _buildPdfInvoiceDocument(order);
+      final doc = await FirebaseFirestore.instance.collection('app_config').doc('business_config').get();
+      if (doc.exists) {
+        shopName = doc.data()?['shopName'] ?? "KickDirty";
+        shopPhone = doc.data()?['shopPhone'] ?? "6281328580511";
+      }
+    } catch (_) {}
+
+    try {
+      final pdf = _buildPdfInvoiceDocument(order, shopName, shopPhone);
       final bytes = await pdf.save();
-      final filename = '${order.id}_KickDirty.pdf';
+      final filename = '${order.id}_$shopName.pdf';
 
       // Upload and send via Gateway
       final fileUrl = await WhatsAppService.uploadPdfToTmpFiles(bytes, filename);
@@ -248,7 +269,7 @@ class _HistoryOrdersScreenState extends State<HistoryOrdersScreen> {
     if (mounted) Navigator.pop(context); // Close loading if failed
 
     // Fallback: system share sheet
-    final pdf = _buildPdfInvoiceDocument(order);
+    final pdf = _buildPdfInvoiceDocument(order, shopName, shopPhone);
     await Printing.sharePdf(
       bytes: await pdf.save(),
       filename: 'invoice_${order.id}.pdf',
@@ -256,6 +277,14 @@ class _HistoryOrdersScreenState extends State<HistoryOrdersScreen> {
   }
 
   Future<void> _sendWhatsAppMessage(OrderModel order) async {
+    String shopName = "KickDirty";
+    try {
+      final doc = await FirebaseFirestore.instance.collection('app_config').doc('business_config').get();
+      if (doc.exists) {
+        shopName = doc.data()?['shopName'] ?? "KickDirty";
+      }
+    } catch (_) {}
+
     String statusText = '';
     if (order.status == 'diterima') {
       statusText = 'telah kami terima dan segera diproses.';
@@ -274,7 +303,7 @@ class _HistoryOrdersScreenState extends State<HistoryOrdersScreen> {
         'Detail sepatu:\n'
         '${order.items.map((item) => '- ${item.itemName} (${item.serviceName})').join('\n')}\n\n'
         'Total Biaya: *Rp ${order.totalAmount.toStringAsFixed(0)}* (${paymentText})\n\n'
-        'Powered by KickDirty';
+        'Powered by $shopName';
 
     // Sanitize phone number (remove spaces, symbols, and convert 08xx to 628xx)
     String cleanPhone = order.customerPhone.replaceAll(RegExp(r'[^0-9]'), '');

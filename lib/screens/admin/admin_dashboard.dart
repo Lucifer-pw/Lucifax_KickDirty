@@ -17,7 +17,9 @@ import 'service_crud_screen.dart';
 import 'financial_report_screen.dart';
 import 'admin_chat_list_screen.dart';
 import 'sales_detail_screen.dart';
-import 'staff_permissions_screen.dart';
+
+import 'settings_screen.dart';
+import '../../services/in_app_notification_service.dart';
 
 class AdminDashboard extends StatefulWidget {
   const AdminDashboard({Key? key}) : super(key: key);
@@ -42,6 +44,15 @@ class _AdminDashboardState extends State<AdminDashboard> {
     // Run update check on dashboard load
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkForUpdates();
+      
+      final authService = Provider.of<AuthService>(context, listen: false);
+      if (authService.currentUserModel != null) {
+        InAppNotificationService.instance.startListening(
+          context,
+          authService.currentUserModel!.uid,
+          authService.currentUserModel!.role,
+        );
+      }
     });
   }
 
@@ -180,20 +191,57 @@ class _AdminDashboardState extends State<AdminDashboard> {
   }
 
   Widget _buildDashboardHome(BuildContext context, DatabaseService dbService, UserModel? currentUser, String roleLabel, String role) {
+    // Check if user has permission to see settings
+    final bool canAccessSettings = role == 'owner' ||
+        _hasPerm('canAccessBusinessSettings', role) ||
+        _hasPerm('canAccessWhatsAppSettings', role) ||
+        _hasPerm('canAccessChatBotSettings', role);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('KickDirty Dashboard'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.logout_outlined, color: Colors.redAccent),
-            onPressed: () async {
-              await Provider.of<AuthService>(context, listen: false).signOut();
-              if (context.mounted) {
-                Navigator.of(context).pushReplacement(
-                  MaterialPageRoute(builder: (_) => const LoginScreen()),
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert),
+            onSelected: (value) async {
+              if (value == 'settings') {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const AdminSettingsScreen()),
                 );
+              } else if (value == 'logout') {
+                InAppNotificationService.instance.stopListening();
+                await Provider.of<AuthService>(context, listen: false).signOut();
+                if (context.mounted) {
+                  Navigator.of(context).pushReplacement(
+                    MaterialPageRoute(builder: (_) => const LoginScreen()),
+                  );
+                }
               }
             },
+            itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+              if (canAccessSettings)
+                const PopupMenuItem<String>(
+                  value: 'settings',
+                  child: Row(
+                    children: [
+                      Icon(Icons.settings, color: AppTheme.darkBlueText, size: 20),
+                      SizedBox(width: 10),
+                      Text('Pengaturan'),
+                    ],
+                  ),
+                ),
+              const PopupMenuItem<String>(
+                value: 'logout',
+                child: Row(
+                  children: [
+                    Icon(Icons.logout, color: Colors.redAccent, size: 20),
+                    SizedBox(width: 10),
+                    Text('Logout', style: TextStyle(color: Colors.redAccent)),
+                  ],
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -523,8 +571,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
   }
 
   Widget _buildMenuGrid(String role) {
-    // Define all menu items with their permission keys
-    // null permKey = always visible
+    // Define operational menu items
     final List<Map<String, dynamic>> menuItems = [
       {
         'title': 'Input Pesanan',
@@ -532,7 +579,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
         'icon': Icons.add_shopping_cart,
         'color': Colors.blue,
         'onTap': () => _onTabTapped(1),
-        'permKey': null, // always visible
+        'permKey': null,
       },
       {
         'title': 'Proses Pesanan',
@@ -540,7 +587,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
         'icon': Icons.sync_alt,
         'color': Colors.orange,
         'onTap': () => _onTabTapped(2),
-        'permKey': null, // always visible
+        'permKey': null,
       },
       {
         'title': 'Riwayat Transaksi',
@@ -548,7 +595,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
         'icon': Icons.history,
         'color': Colors.green,
         'onTap': () => _onTabTapped(3),
-        'permKey': null, // always visible
+        'permKey': null,
       },
       {
         'title': 'Pesan Masuk',
@@ -556,7 +603,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
         'icon': Icons.chat_outlined,
         'color': Colors.pink,
         'onTap': () => _onTabTapped(4),
-        'permKey': null, // always visible
+        'permKey': null,
       },
       {
         'title': 'Kelola Layanan',
@@ -564,7 +611,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
         'icon': Icons.cleaning_services_outlined,
         'color': Colors.indigo,
         'onTap': () {
-          // Find the correct index for Layanan tab
           final showServices = _hasPerm('canManageServices', role);
           if (showServices) _onTabTapped(5);
         },
@@ -583,48 +629,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
         },
         'permKey': 'canViewFinancialReport',
       },
-      {
-        'title': 'Pengaturan WA',
-        'subtitle': 'Konfigurasi WA Gateway',
-        'icon': Icons.settings_phone,
-        'color': Colors.teal,
-        'onTap': _showWhatsAppSettingsDialog,
-        'permKey': 'canAccessWhatsAppSettings',
-      },
-      {
-        'title': 'Auto-Reply Chat',
-        'subtitle': 'Salam bot otomatis',
-        'icon': Icons.android,
-        'color': Colors.amber,
-        'onTap': _showChatBotSettingsDialog,
-        'permKey': 'canAccessChatBotSettings',
-      },
-      {
-        'title': 'Poin & Ongkir',
-        'subtitle': 'Tarif ongkir & poin loyalitas',
-        'icon': Icons.stars_outlined,
-        'color': Colors.deepOrange,
-        'onTap': _showBusinessSettingsDialog,
-        'permKey': 'canAccessBusinessSettings',
-      },
     ];
-
-    // Owner-only: Hak Akses Staff button
-    if (role == 'owner') {
-      menuItems.add({
-        'title': 'Hak Akses Staff',
-        'subtitle': 'Kontrol fitur karyawan',
-        'icon': Icons.admin_panel_settings,
-        'color': Colors.red,
-        'onTap': () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const StaffPermissionsScreen()),
-          );
-        },
-        'permKey': null, // owner-only, always visible for owner
-      });
-    }
 
     // Filter items based on permissions
     final visibleItems = menuItems.where((item) {
@@ -707,320 +712,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 
-  void _showWhatsAppSettingsDialog() async {
-    // Show loading dialog
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => const Center(child: CircularProgressIndicator()),
-    );
 
-    Map<String, dynamic> data = {};
-    try {
-      final doc = await FirebaseFirestore.instance.collection('app_config').doc('whatsapp_config').get();
-      if (doc.exists) {
-        data = doc.data() ?? {};
-      }
-    } catch (_) {}
-
-    if (mounted) Navigator.pop(context); // Close loading
-
-    String provider = data['provider'] ?? 'manual';
-    bool useAutomation = data['useAutomation'] ?? false;
-    final tokenController = TextEditingController(text: data['apiToken'] ?? '');
-    final urlController = TextEditingController(text: data['gatewayUrl'] ?? 'https://api.wablas.com');
-
-    if (!mounted) return;
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setStateDialog) {
-            return AlertDialog(
-              title: const Text('Pengaturan WA Gateway'),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    SwitchListTile(
-                      title: const Text('Aktifkan Otomasi WA', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
-                      subtitle: const Text('Kirim notifikasi & file PDF otomatis', style: TextStyle(fontSize: 11)),
-                      value: useAutomation,
-                      activeColor: AppTheme.primaryBlue,
-                      contentPadding: EdgeInsets.zero,
-                      onChanged: (val) {
-                        setStateDialog(() {
-                          useAutomation = val;
-                        });
-                      },
-                    ),
-                    const SizedBox(height: 8),
-                    DropdownButtonFormField<String>(
-                      value: provider,
-                      decoration: const InputDecoration(labelText: 'Penyedia Gateway (Provider)'),
-                      items: const [
-                        DropdownMenuItem(value: 'manual', child: Text('Manual (Tautan WA)')),
-                        DropdownMenuItem(value: 'fonnte', child: Text('Fonnte (Otomatis)')),
-                        DropdownMenuItem(value: 'wablas', child: Text('Wablas (Otomatis)')),
-                      ],
-                      onChanged: (val) {
-                        setStateDialog(() {
-                          provider = val ?? 'manual';
-                        });
-                      },
-                    ),
-                    if (provider != 'manual') ...[
-                      const SizedBox(height: 12),
-                      TextField(
-                        controller: tokenController,
-                        decoration: const InputDecoration(
-                          labelText: 'API Key / Token Otorisasi',
-                          hintText: 'Masukkan token API gateway Anda',
-                        ),
-                      ),
-                    ],
-                    if (provider == 'wablas') ...[
-                      const SizedBox(height: 12),
-                      TextField(
-                        controller: urlController,
-                        decoration: const InputDecoration(
-                          labelText: 'Wablas Domain URL',
-                          hintText: 'https://api.wablas.com',
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Batal'),
-                ),
-                ElevatedButton(
-                  onPressed: () async {
-                    await FirebaseFirestore.instance.collection('app_config').doc('whatsapp_config').set({
-                      'provider': provider,
-                      'useAutomation': useAutomation,
-                      'apiToken': tokenController.text.trim(),
-                      'gatewayUrl': urlController.text.trim(),
-                    }, SetOptions(merge: true));
-                    if (context.mounted) Navigator.pop(context);
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Konfigurasi WhatsApp Gateway berhasil disimpan!')),
-                      );
-                    }
-                  },
-                  style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryBlue),
-                  child: const Text('Simpan', style: TextStyle(color: Colors.white)),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-  }
-
-  void _showChatBotSettingsDialog() async {
-    // Show loading
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => const Center(child: CircularProgressIndicator()),
-    );
-
-    Map<String, dynamic> data = {};
-    try {
-      final doc = await FirebaseFirestore.instance.collection('app_config').doc('chat_config').get();
-      if (doc.exists) {
-        data = doc.data() ?? {};
-      }
-    } catch (_) {}
-
-    if (mounted) Navigator.pop(context);
-
-    bool autoReplyEnabled = data['autoReplyEnabled'] ?? false;
-    final textController = TextEditingController(
-      text: data['autoReplyText'] ??
-          'Halo! Terima kasih telah menghubungi KickDirty. Pesan Anda telah kami terima dan akan segera kami balas. Jam Operasional: 09:00 - 21:00.',
-    );
-
-    if (!mounted) return;
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setStateDialog) {
-            return AlertDialog(
-              title: const Text('Pengaturan Auto-Reply Chat'),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    SwitchListTile(
-                      title: const Text('Aktifkan Pesan Otomatis', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
-                      subtitle: const Text('Kirim salam otomatis ke pelanggan baru', style: TextStyle(fontSize: 11)),
-                      value: autoReplyEnabled,
-                      activeColor: AppTheme.primaryBlue,
-                      contentPadding: EdgeInsets.zero,
-                      onChanged: (val) {
-                        setStateDialog(() {
-                          autoReplyEnabled = val;
-                        });
-                      },
-                    ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: textController,
-                      maxLines: 4,
-                      decoration: const InputDecoration(
-                        labelText: 'Isi Pesan Otomatis',
-                        hintText: 'Tulis pesan balasan otomatis...',
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Batal'),
-                ),
-                ElevatedButton(
-                  onPressed: () async {
-                    await FirebaseFirestore.instance.collection('app_config').doc('chat_config').set({
-                      'autoReplyEnabled': autoReplyEnabled,
-                      'autoReplyText': textController.text.trim(),
-                    }, SetOptions(merge: true));
-                    if (context.mounted) Navigator.pop(context);
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Pengaturan Auto-Reply Chat berhasil disimpan!')),
-                      );
-                    }
-                  },
-                  style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryBlue),
-                  child: const Text('Simpan', style: TextStyle(color: Colors.white)),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-  }
-
-  void _showBusinessSettingsDialog() async {
-    // Show loading
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => const Center(child: CircularProgressIndicator()),
-    );
-
-    Map<String, dynamic> data = {};
-    try {
-      final doc = await FirebaseFirestore.instance.collection('app_config').doc('business_config').get();
-      if (doc.exists) {
-        data = doc.data() ?? {};
-      }
-    } catch (_) {}
-
-    if (mounted) Navigator.pop(context); // Close loading
-
-    final deliveryFeeController = TextEditingController(text: (data['deliveryFee'] ?? 15000.0).toStringAsFixed(0));
-    final rupiahPerPointController = TextEditingController(text: (data['rupiahPerPoint'] ?? 10000).toString());
-    final pointsNeededController = TextEditingController(text: (data['pointsNeeded'] ?? 10).toString());
-    final discountValueController = TextEditingController(text: (data['discountValue'] ?? 25000.0).toStringAsFixed(0));
-
-    if (!mounted) return;
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Pengaturan Poin & Ongkir'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: deliveryFeeController,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                    labelText: 'Biaya Ongkir Kurir Flat (Rp)',
-                    hintText: 'Contoh: 15000',
-                  ),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: rupiahPerPointController,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                    labelText: 'Minimal Belanja per 1 Poin (Rp)',
-                    hintText: 'Contoh: 10000',
-                    helperText: 'Layanan jasa cuci saja, ongkir tidak dihitung poin',
-                    helperMaxLines: 2,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: pointsNeededController,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                    labelText: 'Poin untuk Klaim Diskon',
-                    hintText: 'Contoh: 10',
-                  ),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: discountValueController,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                    labelText: 'Nilai Diskon Potongan (Rp)',
-                    hintText: 'Contoh: 25000',
-                  ),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Batal'),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                final double deliveryFee = double.tryParse(deliveryFeeController.text.trim()) ?? 15000.0;
-                final int rupiahPerPoint = int.tryParse(rupiahPerPointController.text.trim()) ?? 10000;
-                final int pointsNeeded = int.tryParse(pointsNeededController.text.trim()) ?? 10;
-                final double discountValue = double.tryParse(discountValueController.text.trim()) ?? 25000.0;
-
-                await FirebaseFirestore.instance.collection('app_config').doc('business_config').set({
-                  'deliveryFee': deliveryFee,
-                  'rupiahPerPoint': rupiahPerPoint,
-                  'pointsNeeded': pointsNeeded,
-                  'discountValue': discountValue,
-                }, SetOptions(merge: true));
-
-                if (context.mounted) Navigator.pop(context);
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Konfigurasi Tarif & Poin berhasil disimpan!')),
-                  );
-                }
-              },
-              style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryBlue),
-              child: const Text('Simpan', style: TextStyle(color: Colors.white)),
-            ),
-          ],
-        );
-      },
-    );
-  }
 }
 
