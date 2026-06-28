@@ -53,11 +53,16 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
 
     List<ServiceModel> services = [];
     int livePoints = 0;
+    Map<String, dynamic> businessConfig = {};
     try {
       services = await dbService.getServices().first;
       final userSnap = await FirebaseFirestore.instance.collection('users').doc(currentUser.uid).get();
       if (userSnap.exists) {
         livePoints = (userSnap.data()?['loyaltyPoints'] as int?) ?? 0;
+      }
+      final configDoc = await FirebaseFirestore.instance.collection('app_config').doc('business_config').get();
+      if (configDoc.exists) {
+        businessConfig = configDoc.data() ?? {};
       }
     } catch (e) {
       print("Error fetching setup: $e");
@@ -87,6 +92,12 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
     List<String> photoBeforeList = [];
     List<OrderItem> orderItems = [];
 
+    // Business settings config
+    double defaultDeliveryFee = (businessConfig['deliveryFee'] as num?)?.toDouble() ?? 15000.0;
+    int rupiahPerPoint = businessConfig['rupiahPerPoint'] as int? ?? 10000;
+    int pointsNeeded = businessConfig['pointsNeeded'] as int? ?? 10;
+    double discountValue = (businessConfig['discountValue'] as num?)?.toDouble() ?? 25000.0;
+
     if (!mounted) return;
 
     showModalBottomSheet(
@@ -97,8 +108,8 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
         return StatefulBuilder(
           builder: (context, setStateSheet) {
             double servicePrice = orderItems.fold(0.0, (sum, item) => sum + item.price);
-            double deliveryFee = deliveryType == 'pickup_delivery' ? 15000.0 : 0.0;
-            double discount = usePointsRedemption ? 25000.0 : 0.0;
+            double deliveryFee = deliveryType == 'pickup_delivery' ? defaultDeliveryFee : 0.0;
+            double discount = usePointsRedemption ? discountValue : 0.0;
             double totalPrice = servicePrice + deliveryFee - discount;
             if (totalPrice < 0) totalPrice = 0.0;
 
@@ -344,18 +355,18 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
                           },
                         ),
                         const SizedBox(height: 8),
-                        const Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 4),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
                           child: Text(
-                            'Biaya Kurir Flat: Rp 15.000',
-                            style: TextStyle(fontSize: 12, color: AppTheme.primaryBlue, fontWeight: FontWeight.bold),
+                            'Biaya Kurir Flat: Rp ${defaultDeliveryFee.toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")}',
+                            style: const TextStyle(fontSize: 12, color: AppTheme.primaryBlue, fontWeight: FontWeight.bold),
                           ),
                         ),
                         const SizedBox(height: 16),
                       ],
 
                       // Loyalty Points redemption
-                      if (livePoints >= 10) ...[
+                      if (livePoints >= pointsNeeded) ...[
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                           decoration: BoxDecoration(
@@ -369,7 +380,7 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
-                                  'Anda memiliki $livePoints Poin!\nTukarkan 10 Poin (Diskon Rp 25.000)',
+                                  'Anda memiliki $livePoints Poin!\nTukarkan $pointsNeeded Poin (Diskon Rp ${discountValue.toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")})',
                                   style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.brown),
                                 ),
                               ),
@@ -516,21 +527,21 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
                         ),
                         if (deliveryType == 'pickup_delivery') ...[
                           const SizedBox(height: 4),
-                          const Row(
+                          Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text('Ongkos Kirim:', style: TextStyle(fontSize: 13, color: AppTheme.textGray)),
-                              Text('Rp 15.000', style: TextStyle(fontSize: 13)),
+                              const Text('Ongkos Kirim:', style: TextStyle(fontSize: 13, color: AppTheme.textGray)),
+                              Text('Rp ${defaultDeliveryFee.toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")}', style: const TextStyle(fontSize: 13)),
                             ],
                           ),
                         ],
                         if (usePointsRedemption) ...[
                           const SizedBox(height: 4),
-                          const Row(
+                          Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text('Diskon Poin:', style: TextStyle(fontSize: 13, color: Colors.green)),
-                              Text('-Rp 25.000', style: TextStyle(fontSize: 13, color: Colors.green, fontWeight: FontWeight.bold)),
+                              const Text('Diskon Poin:', style: TextStyle(fontSize: 13, color: Colors.green)),
+                              Text('-Rp ${discountValue.toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")}', style: const TextStyle(fontSize: 13, color: Colors.green, fontWeight: FontWeight.bold)),
                             ],
                           ),
                         ],
@@ -607,8 +618,8 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
                                       deliveryFee: deliveryFee,
                                       photoBefore: photoBeforeList,
                                       photoAfter: const [],
-                                      pointsEarned: (finalTotalPrice / 10000).floor(),
-                                      pointsRedeemed: usePointsRedemption ? 10 : 0,
+                                      pointsEarned: (finalServicePrice / rupiahPerPoint).floor(),
+                                      pointsRedeemed: usePointsRedemption ? pointsNeeded : 0,
                                       mapsLink: currentUser.mapsLink,
                                       createdAt: DateTime.now(),
                                       updatedAt: DateTime.now(),
@@ -901,39 +912,58 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
           const SizedBox(height: 30),
 
           // Loyalty Points Card
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              gradient: AppTheme.primaryGradient,
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: AppTheme.cardShadow,
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.stars, color: Colors.orange, size: 40),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Poin Loyalitas Anda',
-                        style: TextStyle(color: Colors.white70, fontSize: 12),
-                      ),
-                      Text(
-                        '${user.loyaltyPoints} Poin',
-                        style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 4),
-                      const Text(
-                        'Setiap 10 Poin dapat ditukar diskon Rp 25.000',
-                        style: TextStyle(color: Colors.white70, fontSize: 10),
-                      ),
-                    ],
-                  ),
+          StreamBuilder<DocumentSnapshot>(
+            stream: FirebaseFirestore.instance.collection('app_config').doc('business_config').snapshots(),
+            builder: (context, snapshot) {
+              int pointsNeeded = 10;
+              double discountValue = 25000.0;
+              if (snapshot.hasData && snapshot.data!.exists) {
+                final data = snapshot.data!.data() as Map<String, dynamic>?;
+                if (data != null) {
+                  pointsNeeded = data['pointsNeeded'] as int? ?? 10;
+                  discountValue = (data['discountValue'] as num?)?.toDouble() ?? 25000.0;
+                }
+              }
+              final formattedDiscount = discountValue.toStringAsFixed(0).replaceAllMapped(
+                    RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+                    (Match m) => '${m[1]}.',
+                  );
+
+              return Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  gradient: AppTheme.primaryGradient,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: AppTheme.cardShadow,
                 ),
-              ],
-            ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.stars, color: Colors.orange, size: 40),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Poin Loyalitas Anda',
+                            style: TextStyle(color: Colors.white70, fontSize: 12),
+                          ),
+                          Text(
+                            '${user.loyaltyPoints} Poin',
+                            style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Setiap $pointsNeeded Poin dapat ditukar diskon Rp $formattedDiscount',
+                            style: const TextStyle(color: Colors.white70, fontSize: 10),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
           ),
           const SizedBox(height: 24),
 

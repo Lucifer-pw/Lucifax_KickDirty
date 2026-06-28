@@ -132,8 +132,17 @@ class DatabaseService with ChangeNotifier {
     // 2. Generate a fresh invoice ID if not defined (or reuse if it's already set)
     String invoiceId = order.id.isNotEmpty ? order.id : await generateInvoiceId();
 
-    // Calculate points earned
-    int pointsEarned = (order.totalAmount / 10000).floor();
+    // Calculate points earned dynamically based on services total (excluding delivery fee)
+    int rupiahPerPoint = 10000;
+    try {
+      final configDoc = await FirebaseFirestore.instance.collection('app_config').doc('business_config').get();
+      if (configDoc.exists) {
+        rupiahPerPoint = configDoc.data()?['rupiahPerPoint'] ?? 10000;
+      }
+    } catch (_) {}
+
+    double servicesTotal = order.items.fold(0.0, (sum, item) => sum + item.price);
+    int pointsEarned = (servicesTotal / rupiahPerPoint).floor();
     
     Map<String, DateTime> timeline = Map.from(order.statusTimeline);
     if (!timeline.containsKey(order.status)) {

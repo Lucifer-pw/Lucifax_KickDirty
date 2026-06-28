@@ -6,7 +6,7 @@ import '../../widgets/watermark.dart';
 
 /// Detailed Sales Report screen that shows breakdown of revenue
 /// for a specific period (daily, weekly, monthly, yearly).
-class SalesDetailScreen extends StatelessWidget {
+class SalesDetailScreen extends StatefulWidget {
   final String periodTitle; // 'Harian', 'Mingguan', 'Bulanan', 'Tahunan'
   final String periodKey; // 'daily', 'weekly', 'monthly', 'yearly'
   final double totalAmount;
@@ -22,7 +22,14 @@ class SalesDetailScreen extends StatelessWidget {
     required this.themeColor,
   }) : super(key: key);
 
-  /// Filter orders for the given period that are paid
+  @override
+  State<SalesDetailScreen> createState() => _SalesDetailScreenState();
+}
+
+class _SalesDetailScreenState extends State<SalesDetailScreen> {
+  DateTime? _selectedSearchDate;
+
+  /// Filter orders for the given period or custom selected date
   List<OrderModel> _getFilteredOrders() {
     DateTime now = DateTime.now();
     DateTime today = DateTime(now.year, now.month, now.day);
@@ -31,29 +38,42 @@ class SalesDetailScreen extends StatelessWidget {
     DateTime startOfMonth = DateTime(now.year, now.month, 1);
     DateTime startOfYear = DateTime(now.year, 1, 1);
 
-    DateTime startDate;
-    switch (periodKey) {
-      case 'daily':
-        startDate = today;
-        break;
-      case 'weekly':
-        startDate = startOfWeek;
-        break;
-      case 'monthly':
-        startDate = startOfMonth;
-        break;
-      case 'yearly':
-        startDate = startOfYear;
-        break;
-      default:
-        startDate = today;
-    }
-
-    return allOrders.where((order) {
+    return widget.allOrders.where((order) {
       if (order.paymentStatus != 'sudah_bayar') return false;
+      
+      if (_selectedSearchDate != null) {
+        // Filter precisely for the selected search date day
+        return order.createdAt.year == _selectedSearchDate!.year &&
+            order.createdAt.month == _selectedSearchDate!.month &&
+            order.createdAt.day == _selectedSearchDate!.day;
+      }
+
+      // Default period filtering
+      DateTime startDate;
+      switch (widget.periodKey) {
+        case 'daily':
+          startDate = today;
+          break;
+        case 'weekly':
+          startDate = startOfWeek;
+          break;
+        case 'monthly':
+          startDate = startOfMonth;
+          break;
+        case 'yearly':
+          startDate = startOfYear;
+          break;
+        default:
+          startDate = today;
+      }
       return order.createdAt.isAfter(startDate) || order.createdAt.isAtSameMomentAs(startDate);
     }).toList()
       ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+  }
+
+  /// Get sum of amount for the currently filtered orders
+  double _getFilteredTotal(List<OrderModel> filteredOrders) {
+    return filteredOrders.fold(0.0, (sum, o) => sum + o.totalAmount);
   }
 
   /// Build service popularity analytics
@@ -97,9 +117,44 @@ class SalesDetailScreen extends StatelessWidget {
         );
   }
 
+  String _formatIndonesianDate(DateTime date) {
+    final months = [
+      'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+      'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+    ];
+    return '${date.day} ${months[date.month - 1]} ${date.year}';
+  }
+
+  Future<void> _selectSearchDate(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedSearchDate ?? DateTime.now(),
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2030),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: ColorScheme.light(
+              primary: widget.themeColor,
+              onPrimary: Colors.white,
+              onSurface: AppTheme.darkBlueText,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (picked != null) {
+      setState(() {
+        _selectedSearchDate = picked;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final filteredOrders = _getFilteredOrders();
+    final filteredTotal = _getFilteredTotal(filteredOrders);
     final serviceAnalytics = _getServiceAnalytics(filteredOrders);
     final brandAnalytics = _getShoeBrandAnalytics(filteredOrders);
 
@@ -117,25 +172,57 @@ class SalesDetailScreen extends StatelessWidget {
 
     final maxBrandCount = sortedBrands.isNotEmpty ? sortedBrands.first.value : 1;
 
+    String currentTitle = _selectedSearchDate != null
+        ? 'Tanggal ${_formatIndonesianDate(_selectedSearchDate!)}'
+        : widget.periodTitle;
+
     return Scaffold(
       appBar: AppBar(
-        title: Text('Rincian Penjualan $periodTitle'),
+        title: Text('Rincian $currentTitle'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.calendar_month),
+            onPressed: () => _selectSearchDate(context),
+            tooltip: 'Cari berdasarkan tanggal',
+          ),
+          if (_selectedSearchDate != null)
+            IconButton(
+              icon: const Icon(Icons.refresh),
+              onPressed: () {
+                setState(() {
+                  _selectedSearchDate = null;
+                });
+              },
+              tooltip: 'Reset filter',
+            ),
+        ],
       ),
       body: filteredOrders.isEmpty
           ? Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.receipt_long_outlined, size: 64, color: themeColor.withOpacity(0.3)),
+                  Icon(Icons.receipt_long_outlined, size: 64, color: widget.themeColor.withOpacity(0.3)),
                   const SizedBox(height: 16),
                   Text(
-                    'Belum ada transaksi $periodTitle',
-                    style: const TextStyle(color: AppTheme.textGray, fontSize: 16),
+                    'Belum ada transaksi pada $currentTitle',
+                    style: const TextStyle(color: AppTheme.textGray, fontSize: 14),
                   ),
+                  if (_selectedSearchDate != null) ...[
+                    const SizedBox(height: 12),
+                    TextButton(
+                      onPressed: () {
+                        setState(() {
+                          _selectedSearchDate = null;
+                        });
+                      },
+                      child: const Text('Kembali ke filter awal'),
+                    ),
+                  ],
                 ],
               ),
             )
@@ -145,7 +232,7 @@ class SalesDetailScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // ========== SUMMARY HEADER ==========
-                  _buildSummaryHeader(filteredOrders),
+                  _buildSummaryHeader(filteredOrders, filteredTotal),
                   const SizedBox(height: 20),
 
                   // ========== SERVICE REVENUE CHART ==========
@@ -176,23 +263,23 @@ class SalesDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSummaryHeader(List<OrderModel> orders) {
+  Widget _buildSummaryHeader(List<OrderModel> orders, double totalAmt) {
     final totalItems = orders.fold<int>(0, (sum, o) => sum + o.items.length);
-    final avgPerOrder = orders.isNotEmpty ? totalAmount / orders.length : 0.0;
+    final avgPerOrder = orders.isNotEmpty ? totalAmt / orders.length : 0.0;
 
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [themeColor, themeColor.withOpacity(0.7)],
+          colors: [widget.themeColor, widget.themeColor.withOpacity(0.7)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: themeColor.withOpacity(0.3),
+            color: widget.themeColor.withOpacity(0.3),
             blurRadius: 12,
             offset: const Offset(0, 6),
           ),
@@ -206,7 +293,7 @@ class SalesDetailScreen extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            'Rp ${_formatCurrency(totalAmount)}',
+            'Rp ${_formatCurrency(totalAmt)}',
             style: const TextStyle(
               color: Colors.white,
               fontSize: 28,
@@ -249,7 +336,7 @@ class SalesDetailScreen extends StatelessWidget {
   Widget _buildSectionTitle(String title, IconData icon) {
     return Row(
       children: [
-        Icon(icon, size: 20, color: themeColor),
+        Icon(icon, size: 20, color: widget.themeColor),
         const SizedBox(width: 8),
         Text(
           title,
@@ -264,7 +351,6 @@ class SalesDetailScreen extends StatelessWidget {
   }
 
   Widget _buildServiceChart(List<MapEntry<String, Map<String, dynamic>>> services, double maxRevenue) {
-    // Color palette for bars
     final barColors = [
       Colors.blue,
       Colors.indigo,
@@ -357,7 +443,7 @@ class SalesDetailScreen extends StatelessWidget {
   }
 
   Widget _buildBrandChart(List<MapEntry<String, int>> brands, int maxCount) {
-    final topBrands = brands.take(10).toList(); // Show top 10
+    final topBrands = brands.take(10).toList();
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -385,7 +471,7 @@ class SalesDetailScreen extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
-                      color: isTop ? themeColor : AppTheme.textGray,
+                      color: isTop ? widget.themeColor : AppTheme.textGray,
                     ),
                   ),
                 ),
@@ -413,9 +499,9 @@ class SalesDetailScreen extends StatelessWidget {
                     borderRadius: BorderRadius.circular(4),
                     child: LinearProgressIndicator(
                       value: ratio,
-                      backgroundColor: themeColor.withOpacity(0.08),
+                      backgroundColor: widget.themeColor.withOpacity(0.08),
                       valueColor: AlwaysStoppedAnimation<Color>(
-                        isTop ? themeColor : themeColor.withOpacity(0.5),
+                        isTop ? widget.themeColor : widget.themeColor.withOpacity(0.5),
                       ),
                       minHeight: 8,
                     ),
@@ -429,7 +515,7 @@ class SalesDetailScreen extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
-                      color: isTop ? themeColor : AppTheme.textGray,
+                      color: isTop ? widget.themeColor : AppTheme.textGray,
                     ),
                     textAlign: TextAlign.right,
                   ),
@@ -443,7 +529,7 @@ class SalesDetailScreen extends StatelessWidget {
   }
 
   Widget _buildOrderCard(OrderModel order) {
-    final dateFormat = DateFormat('dd MMM yyyy, HH:mm', 'id_ID');
+    final dateFormat = DateFormat('dd MMM yyyy, HH:mm');
     final formattedDate = dateFormat.format(order.createdAt);
 
     return Container(
@@ -463,14 +549,14 @@ class SalesDetailScreen extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  Icon(Icons.receipt_outlined, size: 16, color: themeColor),
+                  Icon(Icons.receipt_outlined, size: 16, color: widget.themeColor),
                   const SizedBox(width: 6),
                   Text(
                     order.id,
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.bold,
-                      color: themeColor,
+                      color: widget.themeColor,
                     ),
                   ),
                 ],
@@ -513,12 +599,12 @@ class SalesDetailScreen extends StatelessWidget {
               return Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: themeColor.withOpacity(0.08),
+                  color: widget.themeColor.withOpacity(0.08),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
                   '${item.itemName} • ${item.serviceName}',
-                  style: TextStyle(fontSize: 11, color: themeColor, fontWeight: FontWeight.w500),
+                  style: TextStyle(fontSize: 11, color: widget.themeColor, fontWeight: FontWeight.w500),
                 ),
               );
             }).toList(),

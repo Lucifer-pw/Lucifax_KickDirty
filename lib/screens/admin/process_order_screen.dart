@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -456,6 +457,13 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
                             style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
                           ),
                         ),
+                        IconButton(
+                          icon: const Icon(Icons.edit_outlined, size: 14, color: AppTheme.primaryBlue),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                          onPressed: () => _showEditCourierFeeDialog(order),
+                          tooltip: 'Ubah biaya ongkir',
+                        ),
                       ],
                     ),
                   ),
@@ -626,6 +634,85 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
               ],
             ),
           ),
+        );
+      },
+    );
+  }
+
+  void _showEditCourierFeeDialog(OrderModel order) {
+    final feeController = TextEditingController(text: order.deliveryFee.toStringAsFixed(0));
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text('Edit Ongkir (${order.id})'),
+          content: TextField(
+            controller: feeController,
+            keyboardType: TextInputType.number,
+            decoration: const InputDecoration(
+              labelText: 'Biaya Ongkir Kurir (Rp)',
+              hintText: 'Contoh: 15000',
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Batal'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final double newFee = double.tryParse(feeController.text.trim()) ?? 0.0;
+                
+                // Show loading
+                showDialog(
+                  context: context,
+                  barrierDismissible: false,
+                  builder: (context) => const Center(child: CircularProgressIndicator()),
+                );
+
+                try {
+                  // Fetch business config for discount value if redeemed
+                  double discount = 0.0;
+                  if (order.pointsRedeemed > 0) {
+                    final configDoc = await FirebaseFirestore.instance.collection('app_config').doc('business_config').get();
+                    if (configDoc.exists) {
+                      discount = (configDoc.data()?['discountValue'] as num?)?.toDouble() ?? 25000.0;
+                    } else {
+                      discount = 25000.0;
+                    }
+                  }
+
+                  // Calculate new total amount
+                  double servicesTotal = order.items.fold(0.0, (sum, item) => sum + item.price);
+                  double newTotal = servicesTotal + newFee - discount;
+                  if (newTotal < 0) newTotal = 0.0;
+
+                  // Update order in Firestore
+                  await FirebaseFirestore.instance.collection('orders').doc(order.id).update({
+                    'deliveryFee': newFee,
+                    'totalAmount': newTotal,
+                  });
+
+                  if (context.mounted) {
+                    Navigator.pop(context); // Close loading
+                    Navigator.pop(context); // Close dialog
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Biaya ongkir & total invoice berhasil diperbarui!')),
+                    );
+                  }
+                } catch (e) {
+                  if (context.mounted) {
+                    Navigator.pop(context); // Close loading
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Gagal memperbarui ongkir: $e')),
+                    );
+                  }
+                }
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryBlue),
+              child: const Text('Simpan', style: TextStyle(color: Colors.white)),
+            ),
+          ],
         );
       },
     );

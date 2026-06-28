@@ -580,6 +580,22 @@ class _AdminDashboardState extends State<AdminDashboard> {
             ),
           ],
         ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _buildMenuButton(
+                'Poin & Ongkir',
+                'Tarif ongkir & poin loyalitas',
+                Icons.stars_outlined,
+                Colors.deepOrange,
+                _showBusinessSettingsDialog,
+              ),
+            ),
+            const SizedBox(width: 12),
+            const Expanded(child: SizedBox()),
+          ],
+        ),
       ],
     );
   }
@@ -819,6 +835,115 @@ class _AdminDashboardState extends State<AdminDashboard> {
               ],
             );
           },
+        );
+      },
+    );
+  }
+
+  void _showBusinessSettingsDialog() async {
+    // Show loading
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator()),
+    );
+
+    Map<String, dynamic> data = {};
+    try {
+      final doc = await FirebaseFirestore.instance.collection('app_config').doc('business_config').get();
+      if (doc.exists) {
+        data = doc.data() ?? {};
+      }
+    } catch (_) {}
+
+    if (mounted) Navigator.pop(context); // Close loading
+
+    final deliveryFeeController = TextEditingController(text: (data['deliveryFee'] ?? 15000.0).toStringAsFixed(0));
+    final rupiahPerPointController = TextEditingController(text: (data['rupiahPerPoint'] ?? 10000).toString());
+    final pointsNeededController = TextEditingController(text: (data['pointsNeeded'] ?? 10).toString());
+    final discountValueController = TextEditingController(text: (data['discountValue'] ?? 25000.0).toStringAsFixed(0));
+
+    if (!mounted) return;
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Pengaturan Poin & Ongkir'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: deliveryFeeController,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: 'Biaya Ongkir Kurir Flat (Rp)',
+                    hintText: 'Contoh: 15000',
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: rupiahPerPointController,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: 'Minimal Belanja per 1 Poin (Rp)',
+                    hintText: 'Contoh: 10000',
+                    helperText: 'Layanan jasa cuci saja, ongkir tidak dihitung poin',
+                    helperMaxLines: 2,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: pointsNeededController,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: 'Poin untuk Klaim Diskon',
+                    hintText: 'Contoh: 10',
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: discountValueController,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: 'Nilai Diskon Potongan (Rp)',
+                    hintText: 'Contoh: 25000',
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Batal'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final double deliveryFee = double.tryParse(deliveryFeeController.text.trim()) ?? 15000.0;
+                final int rupiahPerPoint = int.tryParse(rupiahPerPointController.text.trim()) ?? 10000;
+                final int pointsNeeded = int.tryParse(pointsNeededController.text.trim()) ?? 10;
+                final double discountValue = double.tryParse(discountValueController.text.trim()) ?? 25000.0;
+
+                await FirebaseFirestore.instance.collection('app_config').doc('business_config').set({
+                  'deliveryFee': deliveryFee,
+                  'rupiahPerPoint': rupiahPerPoint,
+                  'pointsNeeded': pointsNeeded,
+                  'discountValue': discountValue,
+                }, SetOptions(merge: true));
+
+                if (context.mounted) Navigator.pop(context);
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Konfigurasi Tarif & Poin berhasil disimpan!')),
+                  );
+                }
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryBlue),
+              child: const Text('Simpan', style: TextStyle(color: Colors.white)),
+            ),
+          ],
         );
       },
     );
