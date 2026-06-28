@@ -26,6 +26,7 @@ class _LogisticsCrudScreenState extends State<LogisticsCrudScreen> {
 
   void _showFormDialog({Map<String, dynamic>? method}) {
     final isEdit = method != null;
+    final screenContext = context;
     
     if (isEdit) {
       _nameController.text = method['name'] ?? '';
@@ -89,7 +90,6 @@ class _LogisticsCrudScreenState extends State<LogisticsCrudScreen> {
                   onPressed: () async {
                     final name = _nameController.text.trim();
                     final fee = double.tryParse(_feeController.text.trim()) ?? 0.0;
-                    final dbService = Provider.of<DatabaseService>(context, listen: false);
 
                     if (name.isEmpty) {
                       ScaffoldMessenger.of(context).showSnackBar(
@@ -98,13 +98,21 @@ class _LogisticsCrudScreenState extends State<LogisticsCrudScreen> {
                       return;
                     }
 
-                    if (isEdit) {
-                      await dbService.updateLogisticsMethod(method['id'], name, fee, _requiresAddress);
-                    } else {
-                      await dbService.addLogisticsMethod(name, fee, _requiresAddress);
+                    try {
+                      final dbService = Provider.of<DatabaseService>(screenContext, listen: false);
+                      if (isEdit) {
+                        await dbService.updateLogisticsMethod(method['id'], name, fee, _requiresAddress);
+                      } else {
+                        await dbService.addLogisticsMethod(name, fee, _requiresAddress);
+                      }
+                      if (context.mounted) Navigator.pop(context);
+                    } catch (e) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Gagal menyimpan: $e')),
+                        );
+                      }
                     }
-
-                    if (context.mounted) Navigator.pop(context);
                   },
                   style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryBlue),
                   child: const Text('Simpan', style: TextStyle(color: Colors.white)),
