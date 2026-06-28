@@ -646,6 +646,7 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
                               Text('Logistik & Pengantaran', style: Theme.of(context).textTheme.titleMedium),
                               const SizedBox(height: 16),
                               DropdownButtonFormField<String>(
+                                isExpanded: true,
                                 value: _deliveryType.isEmpty && methods.isNotEmpty ? methods.first['id'] : _deliveryType,
                                 decoration: const InputDecoration(
                                   prefixIcon: Icon(Icons.local_shipping_outlined),
@@ -655,7 +656,11 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
                                   final feeStr = fee > 0 ? ' (Rp ${fee.toStringAsFixed(0)})' : '';
                                   return DropdownMenuItem<String>(
                                     value: m['id'] as String,
-                                    child: Text('${m['name']}$feeStr'),
+                                    child: Text(
+                                      '${m['name']}$feeStr',
+                                      overflow: TextOverflow.ellipsis,
+                                      maxLines: 1,
+                                    ),
                                   );
                                 }).toList(),
                                 onChanged: (val) {

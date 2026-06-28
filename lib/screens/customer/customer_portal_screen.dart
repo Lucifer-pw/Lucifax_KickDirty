@@ -348,6 +348,7 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
 
                       // Delivery Logistics Type selection
                       DropdownButtonFormField<String>(
+                        isExpanded: true,
                         value: deliveryType,
                         decoration: const InputDecoration(
                           labelText: 'Tipe Pengiriman / Penjemputan',
@@ -358,7 +359,11 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
                           final feeStr = fee > 0 ? ' (Rp ${fee.toStringAsFixed(0)})' : '';
                           return DropdownMenuItem<String>(
                             value: m['id'] as String,
-                            child: Text('${m['name']}$feeStr'),
+                            child: Text(
+                              '${m['name']}$feeStr',
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
+                            ),
                           );
                         }).toList(),
                         onChanged: (val) {
