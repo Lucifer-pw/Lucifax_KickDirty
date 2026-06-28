@@ -72,8 +72,10 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
     );
   }
 
-  Future<void> _updateStatus(String orderId, String currentStatus) async {
+  Future<void> _updateStatus(OrderModel order) async {
     final dbService = Provider.of<DatabaseService>(context, listen: false);
+    final orderId = order.id;
+    final currentStatus = order.status;
     String nextStatus = '';
     String successMsg = '';
 
@@ -230,6 +232,32 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
       }
       return;
     } else if (currentStatus == 'selesai') {
+      if (order.paymentStatus == 'belum_bayar') {
+        if (mounted) {
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Row(
+                children: [
+                  Icon(Icons.warning_amber_rounded, color: Colors.redAccent),
+                  SizedBox(width: 8),
+                  Text('Pembayaran Belum Lunas'),
+                ],
+              ),
+              content: const Text(
+                'Sepatu tidak dapat diserahkan karena status pembayaran masih belum lunas. Silakan selesaikan pembayaran terlebih dahulu.',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('OK'),
+                ),
+              ],
+            ),
+          );
+        }
+        return;
+      }
       nextStatus = 'diambil';
       successMsg = 'Sepatu telah diserahkan ke pelanggan!';
     }
@@ -625,7 +653,7 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
 
                     // Advance status button
                     ElevatedButton.icon(
-                      onPressed: () => _updateStatus(order.id, order.status),
+                      onPressed: () => _updateStatus(order),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppTheme.primaryBlue,
                         foregroundColor: Colors.white,
