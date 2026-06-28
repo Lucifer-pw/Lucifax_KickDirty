@@ -128,14 +128,36 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
         final bool showServices = _hasPerm('canManageServices', role);
 
-        final List<Widget> screens = [
-          _buildDashboardHome(context, dbService, currentUser, roleLabel, role),
-          InputOrderScreen(isTab: true, onOrderSubmitted: () => _onTabTapped(0)),
-          const ProcessOrderScreen(isTab: true),
-          const HistoryOrdersScreen(isTab: true),
-          const AdminChatListScreen(isTab: true),
-          if (showServices) const ServiceCrudScreen(isTab: true),
-        ];
+        final List<Widget> screens = [];
+        final List<Map<String, dynamic>> navItems = [];
+
+        // 1. Beranda
+        screens.add(_buildDashboardHome(context, dbService, currentUser, roleLabel, role, navItems));
+        navItems.add({'index': 0, 'icon': Icons.grid_view, 'label': 'Beranda'});
+
+        // 2. Input
+        screens.add(InputOrderScreen(isTab: true, onOrderSubmitted: () => _onTabTapped(0)));
+        navItems.add({'index': 1, 'icon': Icons.add_shopping_cart, 'label': 'Input'});
+
+        // 3. Proses
+        screens.add(const ProcessOrderScreen(isTab: true));
+        navItems.add({'index': 2, 'icon': Icons.sync_alt, 'label': 'Proses'});
+
+        // 4. Pesan
+        screens.add(const AdminChatListScreen(isTab: true));
+        navItems.add({'index': 3, 'icon': Icons.chat_outlined, 'label': 'Pesan'});
+
+        // 5. Layanan (Conditional)
+        int indexCounter = 4;
+        if (showServices) {
+          screens.add(const ServiceCrudScreen(isTab: true));
+          navItems.add({'index': indexCounter, 'icon': Icons.cleaning_services_outlined, 'label': 'Layanan'});
+          indexCounter++;
+        }
+
+        // 6. Riwayat (Always Last!)
+        screens.add(const HistoryOrdersScreen(isTab: true));
+        navItems.add({'index': indexCounter, 'icon': Icons.history, 'label': 'Riwayat'});
 
         // Clamp index if tab was removed
         if (_currentIndex >= screens.length) {
@@ -173,13 +195,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
-                    _buildNavItem(0, Icons.grid_view, 'Beranda'),
-                    _buildNavItem(1, Icons.add_shopping_cart, 'Input'),
-                    _buildNavItem(2, Icons.sync_alt, 'Proses'),
-                    _buildNavItem(3, Icons.history, 'Riwayat'),
-                    _buildNavItem(4, Icons.chat_outlined, 'Pesan'),
-                    if (showServices)
-                      _buildNavItem(5, Icons.cleaning_services_outlined, 'Layanan'),
+                    ...navItems.map((item) => _buildNavItem(
+                          item['index'] as int,
+                          item['icon'] as IconData,
+                          item['label'] as String,
+                        )),
                   ],
                 ),
               ),
@@ -190,7 +210,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 
-  Widget _buildDashboardHome(BuildContext context, DatabaseService dbService, UserModel? currentUser, String roleLabel, String role) {
+  Widget _buildDashboardHome(BuildContext context, DatabaseService dbService, UserModel? currentUser, String roleLabel, String role, List<Map<String, dynamic>> navItems) {
     // Check if user has permission to see settings
     final bool canAccessSettings = role == 'owner' ||
         _hasPerm('canAccessBusinessSettings', role) ||
@@ -375,7 +395,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
                     Text('Menu Navigasi', style: Theme.of(context).textTheme.titleLarge),
                     const SizedBox(height: 16),
-                    _buildMenuGrid(role),
+                    _buildMenuGrid(role, navItems),
                     const SizedBox(height: 32),
                     const Center(child: Watermark()),
                   ],
@@ -570,7 +590,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 
-  Widget _buildMenuGrid(String role) {
+  Widget _buildMenuGrid(String role, List<Map<String, dynamic>> navItems) {
+    int getIndexFor(String label) {
+      return navItems.indexWhere((item) => item['label'] == label);
+    }
+
     // Define operational menu items
     final List<Map<String, dynamic>> menuItems = [
       {
@@ -578,7 +602,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
         'subtitle': 'Input cucian sepatu baru',
         'icon': Icons.add_shopping_cart,
         'color': Colors.blue,
-        'onTap': () => _onTabTapped(1),
+        'onTap': () => _onTabTapped(getIndexFor('Input')),
         'permKey': null,
       },
       {
@@ -586,7 +610,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
         'subtitle': 'Update cucian real-time',
         'icon': Icons.sync_alt,
         'color': Colors.orange,
-        'onTap': () => _onTabTapped(2),
+        'onTap': () => _onTabTapped(getIndexFor('Proses')),
         'permKey': null,
       },
       {
@@ -594,7 +618,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
         'subtitle': 'Invoice & Cetak PDF',
         'icon': Icons.history,
         'color': Colors.green,
-        'onTap': () => _onTabTapped(3),
+        'onTap': () => _onTabTapped(getIndexFor('Riwayat')),
         'permKey': null,
       },
       {
@@ -602,7 +626,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
         'subtitle': 'Chat dengan pelanggan',
         'icon': Icons.chat_outlined,
         'color': Colors.pink,
-        'onTap': () => _onTabTapped(4),
+        'onTap': () => _onTabTapped(getIndexFor('Pesan')),
         'permKey': null,
       },
       {
@@ -612,7 +636,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
         'color': Colors.indigo,
         'onTap': () {
           final showServices = _hasPerm('canManageServices', role);
-          if (showServices) _onTabTapped(5);
+          if (showServices) {
+            final idx = getIndexFor('Layanan');
+            if (idx != -1) _onTabTapped(idx);
+          }
         },
         'permKey': 'canManageServices',
       },

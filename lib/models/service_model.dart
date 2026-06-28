@@ -33,4 +33,13 @@ class ServiceModel {
       'createdAt': Timestamp.fromDate(createdAt),
     };
   }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is ServiceModel && other.id == id;
+  }
+
+  @override
+  int get hashCode => id.hashCode;
 }

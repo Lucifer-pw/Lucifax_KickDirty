@@ -129,10 +129,7 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
   double get _deliveryFee => double.tryParse(_deliveryFeeController.text) ?? 0.0;
 
   double get _totalPrice {
-    double total = _itemsPrice;
-    if (_deliveryType == 'pickup_delivery') {
-      total += _deliveryFee;
-    }
+    double total = _itemsPrice + _deliveryFee;
     if (_usePointsRedemption && _selectedCustomerPoints >= 10) {
       total -= 25000;
     }
@@ -443,6 +440,15 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
         } catch (_) {}
       }
 
+      // Fetch dynamic logistics config to determine if address/fee should be populated
+      bool requiresAddress = false;
+      try {
+        final doc = await FirebaseFirestore.instance.collection('logistics_methods').doc(_deliveryType).get();
+        if (doc.exists) {
+          requiresAddress = doc.data()?['requiresAddress'] == true;
+        }
+      } catch (_) {}
+
       // Generate invoice ID deterministically using helper
       String invoiceId = await dbService.generateInvoiceId();
 
@@ -459,8 +465,8 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
         qrisImage: 'assets/qris_pembayaran.jpeg',
         notes: _notesController.text.trim(),
         deliveryType: _deliveryType,
-        deliveryAddress: _deliveryType == 'pickup_delivery' ? _deliveryAddressController.text.trim() : '',
-        deliveryFee: _deliveryType == 'pickup_delivery' ? _deliveryFee : 0.0,
+        deliveryAddress: requiresAddress ? _deliveryAddressController.text.trim() : '',
+        deliveryFee: _deliveryFee,
         photoBefore: _photoBeforeList,
         photoAfter: const [],
         pointsRedeemed: _usePointsRedemption ? 10 : 0,
@@ -619,60 +625,78 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
                   Card(
                     child: Padding(
                       padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Logistik & Pengantaran', style: Theme.of(context).textTheme.titleMedium),
-                          const SizedBox(height: 16),
-                          DropdownButtonFormField<String>(
-                            value: _deliveryType,
-                            decoration: const InputDecoration(
-                              prefixIcon: Icon(Icons.local_shipping_outlined),
-                            ),
-                            items: const [
-                              DropdownMenuItem(value: 'drop_off_only', child: Text('Drop-Off & Ambil Sendiri')),
-                              DropdownMenuItem(value: 'pickup_delivery', child: Text('Penjemputan & Pengantaran (Kurir)')),
-                            ],
-                            onChanged: (val) {
-                              if (val != null) {
-                                setState(() {
-                                  _deliveryType = val;
-                                  if (val == 'pickup_delivery') {
-                                    _deliveryFeeController.text = '15000';
-                                  } else {
-                                    _deliveryFeeController.text = '0';
+                      child: StreamBuilder<List<Map<String, dynamic>>>(
+                        stream: dbService.getLogisticsMethods(),
+                        builder: (context, logSnapshot) {
+                          final methods = logSnapshot.data ?? [];
+                          
+                          if (methods.isNotEmpty && !methods.any((m) => m['id'] == _deliveryType)) {
+                            _deliveryType = methods.first['id'];
+                          }
+
+                          final selectedMethod = methods.firstWhere(
+                            (m) => m['id'] == _deliveryType,
+                            orElse: () => {'requiresAddress': false, 'fee': 0.0},
+                          );
+                          final bool requiresAddress = selectedMethod['requiresAddress'] == true;
+
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Logistik & Pengantaran', style: Theme.of(context).textTheme.titleMedium),
+                              const SizedBox(height: 16),
+                              DropdownButtonFormField<String>(
+                                value: _deliveryType.isEmpty && methods.isNotEmpty ? methods.first['id'] : _deliveryType,
+                                decoration: const InputDecoration(
+                                  prefixIcon: Icon(Icons.local_shipping_outlined),
+                                ),
+                                items: methods.map((m) {
+                                  final fee = (m['fee'] ?? 0.0) as double;
+                                  final feeStr = fee > 0 ? ' (Rp ${fee.toStringAsFixed(0)})' : '';
+                                  return DropdownMenuItem<String>(
+                                    value: m['id'] as String,
+                                    child: Text('${m['name']}$feeStr'),
+                                  );
+                                }).toList(),
+                                onChanged: (val) {
+                                  if (val != null) {
+                                    final newMethod = methods.firstWhere((m) => m['id'] == val);
+                                    setState(() {
+                                      _deliveryType = val;
+                                      _deliveryFeeController.text = (newMethod['fee'] ?? 0.0).toStringAsFixed(0);
+                                    });
                                   }
-                                });
-                              }
-                            },
-                          ),
-                          if (_deliveryType == 'pickup_delivery') ...[
-                            const SizedBox(height: 12),
-                            TextFormField(
-                              controller: _deliveryAddressController,
-                              maxLines: 2,
-                              decoration: const InputDecoration(
-                                hintText: 'Alamat lengkap penjemputan/pengantaran',
-                                prefixIcon: Icon(Icons.location_on_outlined),
+                                },
                               ),
-                              validator: (v) => _deliveryType == 'pickup_delivery' && (v == null || v.isEmpty)
-                                  ? 'Alamat wajib diisi untuk kurir'
-                                  : null,
-                            ),
-                            const SizedBox(height: 12),
-                            TextFormField(
-                              controller: _deliveryFeeController,
-                              keyboardType: TextInputType.number,
-                              decoration: const InputDecoration(
-                                hintText: 'Ongkos Kirim / Delivery Fee (Rp)',
-                                prefixIcon: Icon(Icons.monetization_on_outlined),
+                              if (requiresAddress) ...[
+                                const SizedBox(height: 12),
+                                TextFormField(
+                                  controller: _deliveryAddressController,
+                                  maxLines: 2,
+                                  decoration: const InputDecoration(
+                                    hintText: 'Alamat lengkap penjemputan/pengantaran',
+                                    prefixIcon: Icon(Icons.location_on_outlined),
+                                  ),
+                                  validator: (v) => requiresAddress && (v == null || v.isEmpty)
+                                      ? 'Alamat wajib diisi untuk metode ini'
+                                      : null,
+                                ),
+                              ],
+                              const SizedBox(height: 12),
+                              TextFormField(
+                                controller: _deliveryFeeController,
+                                keyboardType: TextInputType.number,
+                                decoration: const InputDecoration(
+                                  labelText: 'Biaya Ongkir (Rp)',
+                                  prefixIcon: Icon(Icons.monetization_on_outlined),
+                                ),
+                                onChanged: (val) {
+                                  setState(() {}); // Recalculate total
+                                },
                               ),
-                              onChanged: (val) {
-                                setState(() {}); // Recalculate total
-                              },
-                            ),
-                          ],
-                        ],
+                            ],
+                          );
+                        },
                       ),
                     ),
                   ),

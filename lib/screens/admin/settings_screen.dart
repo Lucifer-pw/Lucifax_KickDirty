@@ -5,6 +5,7 @@ import '../../services/auth_service.dart';
 import '../../theme.dart';
 import '../../widgets/watermark.dart';
 import 'staff_permissions_screen.dart';
+import 'logistics_crud_screen.dart';
 
 class AdminSettingsScreen extends StatefulWidget {
   const AdminSettingsScreen({Key? key}) : super(key: key);
@@ -187,10 +188,23 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
                             if (showBusiness) ...[
                               _buildSettingTile(
                                 title: 'Poin & Ongkir',
-                                subtitle: 'Atur poin loyalitas & tarif ongkir default',
+                                subtitle: 'Atur poin loyalitas & tarif default',
                                 icon: Icons.stars_outlined,
                                 color: Colors.deepOrange,
                                 onTap: () => _showBusinessSettingsDialog(context),
+                              ),
+                              const Divider(height: 1, indent: 56),
+                              _buildSettingTile(
+                                title: 'Kelola Metode Logistik',
+                                subtitle: 'CRUD pilihan & tarif pengiriman',
+                                icon: Icons.local_shipping_outlined,
+                                color: Colors.blue,
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(builder: (_) => const LogisticsCrudScreen()),
+                                  );
+                                },
                               ),
                               const Divider(height: 1, indent: 56),
                             ],

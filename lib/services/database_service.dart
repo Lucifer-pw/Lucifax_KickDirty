@@ -556,4 +556,70 @@ class DatabaseService with ChangeNotifier {
       });
     } catch (_) {}
   }
+
+  // ==========================================
+  // DYNAMIC LOGISTICS METHODS CRUD
+  // ==========================================
+
+  // Get stream of all logistics methods
+  Stream<List<Map<String, dynamic>>> getLogisticsMethods() {
+    return _db.collection('logistics_methods').orderBy('createdAt', descending: false).snapshots().map((snapshot) {
+      if (snapshot.docs.isEmpty) {
+        // Auto-seed default methods to Firestore if empty
+        _seedDefaultLogistics();
+      }
+      return snapshot.docs.map((doc) {
+        final data = doc.data();
+        data['id'] = doc.id;
+        return data;
+      }).toList();
+    });
+  }
+
+  // Seed default logistics helper
+  void _seedDefaultLogistics() {
+    final batch = _db.batch();
+    
+    final ref1 = _db.collection('logistics_methods').doc('drop_off_only');
+    batch.set(ref1, {
+      'name': 'Drop-Off & Ambil Sendiri',
+      'fee': 0.0,
+      'requiresAddress': false,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+
+    final ref2 = _db.collection('logistics_methods').doc('pickup_delivery');
+    batch.set(ref2, {
+      'name': 'Penjemputan & Pengantaran (Kurir)',
+      'fee': 15000.0,
+      'requiresAddress': true,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+
+    batch.commit().catchError((_) {});
+  }
+
+  // Add logistics method
+  Future<void> addLogisticsMethod(String name, double fee, bool requiresAddress) async {
+    await _db.collection('logistics_methods').add({
+      'name': name,
+      'fee': fee,
+      'requiresAddress': requiresAddress,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  // Update logistics method
+  Future<void> updateLogisticsMethod(String id, String name, double fee, bool requiresAddress) async {
+    await _db.collection('logistics_methods').doc(id).update({
+      'name': name,
+      'fee': fee,
+      'requiresAddress': requiresAddress,
+    });
+  }
+
+  // Delete logistics method
+  Future<void> deleteLogisticsMethod(String id) async {
+    await _db.collection('logistics_methods').doc(id).delete();
+  }
 }

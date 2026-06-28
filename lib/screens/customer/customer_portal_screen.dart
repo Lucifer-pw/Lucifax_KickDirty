@@ -64,6 +64,7 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
     List<ServiceModel> services = [];
     int livePoints = 0;
     Map<String, dynamic> businessConfig = {};
+    List<Map<String, dynamic>> logisticsMethods = [];
     try {
       services = await dbService.getServices().first;
       final userSnap = await FirebaseFirestore.instance.collection('users').doc(currentUser.uid).get();
@@ -73,6 +74,19 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
       final configDoc = await FirebaseFirestore.instance.collection('app_config').doc('business_config').get();
       if (configDoc.exists) {
         businessConfig = configDoc.data() ?? {};
+      }
+      final logSnap = await FirebaseFirestore.instance.collection('logistics_methods').orderBy('createdAt', descending: false).get();
+      if (logSnap.docs.isNotEmpty) {
+        logisticsMethods = logSnap.docs.map((doc) {
+          final data = doc.data();
+          data['id'] = doc.id;
+          return data;
+        }).toList();
+      } else {
+        logisticsMethods = [
+          {'id': 'drop_off_only', 'name': 'Drop-Off & Ambil Sendiri', 'fee': 0.0, 'requiresAddress': false},
+          {'id': 'pickup_delivery', 'name': 'Penjemputan & Pengantaran (Kurir)', 'fee': 15000.0, 'requiresAddress': true},
+        ];
       }
     } catch (e) {
       print("Error fetching setup: $e");
@@ -95,7 +109,7 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
     final notesController = TextEditingController();
     final addressController = TextEditingController(text: currentUser?.addressDetail ?? '');
     ServiceModel? selectedService = services.first;
-    String deliveryType = 'drop_off_only';
+    String deliveryType = logisticsMethods.isNotEmpty ? logisticsMethods.first['id'] : 'drop_off_only';
     bool usePointsRedemption = false;
     final formKey = GlobalKey<FormState>();
     bool isSubmitting = false;
@@ -103,7 +117,6 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
     List<OrderItem> orderItems = [];
 
     // Business settings config
-    double defaultDeliveryFee = (businessConfig['deliveryFee'] as num?)?.toDouble() ?? 15000.0;
     int rupiahPerPoint = businessConfig['rupiahPerPoint'] as int? ?? 10000;
     int pointsNeeded = businessConfig['pointsNeeded'] as int? ?? 10;
     double discountValue = (businessConfig['discountValue'] as num?)?.toDouble() ?? 25000.0;
@@ -118,7 +131,14 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
         return StatefulBuilder(
           builder: (context, setStateSheet) {
             double servicePrice = orderItems.fold(0.0, (sum, item) => sum + item.price);
-            double deliveryFee = deliveryType == 'pickup_delivery' ? defaultDeliveryFee : 0.0;
+            
+            final selectedMethod = logisticsMethods.firstWhere(
+              (m) => m['id'] == deliveryType,
+              orElse: () => {'requiresAddress': false, 'fee': 0.0},
+            );
+            final bool requiresAddress = selectedMethod['requiresAddress'] == true;
+            double deliveryFee = (selectedMethod['fee'] ?? 0.0) as double;
+
             double discount = usePointsRedemption ? discountValue : 0.0;
             double totalPrice = servicePrice + deliveryFee - discount;
             if (totalPrice < 0) totalPrice = 0.0;
@@ -333,10 +353,14 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
                           labelText: 'Tipe Pengiriman / Penjemputan',
                           prefixIcon: Icon(Icons.local_shipping),
                         ),
-                        items: const [
-                          DropdownMenuItem(value: 'drop_off_only', child: Text('Drop-Off & Ambil Sendiri')),
-                          DropdownMenuItem(value: 'pickup_delivery', child: Text('Penjemputan & Pengantaran (Kurir)')),
-                        ],
+                        items: logisticsMethods.map((m) {
+                          final fee = (m['fee'] ?? 0.0) as double;
+                          final feeStr = fee > 0 ? ' (Rp ${fee.toStringAsFixed(0)})' : '';
+                          return DropdownMenuItem<String>(
+                            value: m['id'] as String,
+                            child: Text('${m['name']}$feeStr'),
+                          );
+                        }).toList(),
                         onChanged: (val) {
                           if (val != null) {
                             setStateSheet(() {
@@ -347,8 +371,8 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
                       ),
                       const SizedBox(height: 16),
 
-                      // Address input if pickup_delivery selected
-                      if (deliveryType == 'pickup_delivery') ...[
+                      // Address input if requiresAddress selected
+                      if (requiresAddress) ...[
                         TextFormField(
                           controller: addressController,
                           maxLines: 2,
@@ -358,21 +382,13 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
                             prefixIcon: Icon(Icons.location_on),
                           ),
                           validator: (value) {
-                            if (deliveryType == 'pickup_delivery' && (value == null || value.trim().isEmpty)) {
-                              return 'Alamat wajib diisi untuk penjemputan/pengantaran';
+                            if (requiresAddress && (value == null || value.trim().isEmpty)) {
+                              return 'Alamat wajib diisi untuk metode ini';
                             }
                             return null;
                           },
                         ),
                         const SizedBox(height: 8),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 4),
-                          child: Text(
-                            'Biaya Kurir Flat: Rp ${defaultDeliveryFee.toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")}',
-                            style: const TextStyle(fontSize: 12, color: AppTheme.primaryBlue, fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
                       ],
 
                       // Loyalty Points redemption
@@ -535,13 +551,13 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
                             ),
                           ],
                         ),
-                        if (deliveryType == 'pickup_delivery') ...[
+                        if (deliveryFee > 0) ...[
                           const SizedBox(height: 4),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               const Text('Ongkos Kirim:', style: TextStyle(fontSize: 13, color: AppTheme.textGray)),
-                              Text('Rp ${defaultDeliveryFee.toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")}', style: const TextStyle(fontSize: 13)),
+                              Text('Rp ${deliveryFee.toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")}', style: const TextStyle(fontSize: 13)),
                             ],
                           ),
                         ],
@@ -624,7 +640,7 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
                                       qrisImage: 'assets/qris_pembayaran.jpeg',
                                       notes: notesController.text.trim(),
                                       deliveryType: deliveryType,
-                                      deliveryAddress: deliveryType == 'pickup_delivery' ? addressController.text.trim() : '',
+                                      deliveryAddress: requiresAddress ? addressController.text.trim() : '',
                                       deliveryFee: deliveryFee,
                                       photoBefore: photoBeforeList,
                                       photoAfter: const [],
@@ -1378,7 +1394,7 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
                 )),
             
             // Delivery/Logistic Details
-            if (order.deliveryType == 'pickup_delivery') ...[
+            if (order.deliveryAddress.isNotEmpty) ...[
               const SizedBox(height: 8),
               Row(
                 children: [
