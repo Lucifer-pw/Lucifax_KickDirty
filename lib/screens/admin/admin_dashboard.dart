@@ -304,43 +304,51 @@ class _AdminDashboardState extends State<AdminDashboard> {
                     
                     // Notification banner for new & running orders
                     if (newOrdersCount > 0 || activeOrdersCount > 0) ...[
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(14),
-                        decoration: BoxDecoration(
-                          color: AppTheme.primaryBlue.withOpacity(0.08),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: AppTheme.primaryBlue.withOpacity(0.3)),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.notifications_active, color: AppTheme.primaryBlue, size: 24),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  if (newOrdersCount > 0)
+                      GestureDetector(
+                        onTap: () {
+                          final prosesIndex = navItems.indexWhere((item) => item['label'] == 'Proses');
+                          if (prosesIndex != -1) {
+                            _onTabTapped(prosesIndex);
+                          }
+                        },
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: AppTheme.primaryBlue.withOpacity(0.08),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: AppTheme.primaryBlue.withOpacity(0.3)),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.notifications_active, color: AppTheme.primaryBlue, size: 24),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    if (newOrdersCount > 0)
+                                      Text(
+                                        'Ada $newOrdersCount pesanan baru masuk!',
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold, 
+                                          color: AppTheme.primaryBlue,
+                                          fontSize: 13
+                                        ),
+                                      ),
                                     Text(
-                                      'Ada $newOrdersCount pesanan baru masuk!',
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.bold, 
-                                        color: AppTheme.primaryBlue,
-                                        fontSize: 13
+                                      'Total $activeOrdersCount transaksi berjalan belum selesai.',
+                                      style: TextStyle(
+                                        color: AppTheme.darkBlueText,
+                                        fontSize: 12,
+                                        fontWeight: newOrdersCount > 0 ? FontWeight.normal : FontWeight.bold
                                       ),
                                     ),
-                                  Text(
-                                    'Total $activeOrdersCount transaksi berjalan belum selesai.',
-                                    style: TextStyle(
-                                      color: AppTheme.darkBlueText,
-                                      fontSize: 12,
-                                      fontWeight: newOrdersCount > 0 ? FontWeight.normal : FontWeight.bold
-                                    ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
                       const SizedBox(height: 16),
