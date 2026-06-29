@@ -93,6 +93,89 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
     }
   }
 
+  Future<void> _confirmInvoicePaid(String monthCode) async {
+    setState(() => _isSaving = true);
+    try {
+      final now = DateTime.now();
+      // Update invoice document status to lunas
+      await FirebaseFirestore.instance
+          .collection('developer_billing_invoices')
+          .doc(monthCode)
+          .update({
+        'status': 'lunas',
+        'paidAt': Timestamp.fromDate(now),
+      });
+
+      // Update main billing config lastPaidMonth
+      await FirebaseFirestore.instance
+          .collection('developer_billing')
+          .doc('config')
+          .update({
+        'lastPaidMonth': monthCode,
+      });
+
+      setState(() {
+        _lastPaidMonth = monthCode;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Pembayaran bulan $monthCode berhasil dikonfirmasi lunas!')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal konfirmasi lunas: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
+  }
+
+  Future<void> _rejectInvoicePayment(String monthCode) async {
+    setState(() => _isSaving = true);
+    try {
+      // Revert invoice document status to belum_bayar and remove paymentProof
+      await FirebaseFirestore.instance
+          .collection('developer_billing_invoices')
+          .doc(monthCode)
+          .update({
+        'status': 'belum_bayar',
+        'paymentProof': '',
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      // If that month was marked paid, clear it from main config
+      if (_lastPaidMonth == monthCode) {
+        await FirebaseFirestore.instance
+            .collection('developer_billing')
+            .doc('config')
+            .update({
+          'lastPaidMonth': '',
+        });
+        setState(() {
+          _lastPaidMonth = '';
+        });
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Konfirmasi pembayaran untuk bulan $monthCode dibatalkan.')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal membatalkan konfirmasi: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
+  }
+
   Widget _buildQRPreview() {
     if (_qrImageBase64.isEmpty) {
       return Container(
@@ -130,6 +213,61 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
         child: const Icon(Icons.broken_image, size: 64, color: Colors.red),
       );
     }
+  }
+
+  Widget _buildBase64Image(String base64Str, {double height = 200}) {
+    if (base64Str.isEmpty) return const SizedBox();
+    String cleanBase64 = base64Str;
+    if (base64Str.contains(',')) {
+      cleanBase64 = base64Str.split(',')[1];
+    }
+    try {
+      final bytes = base64Decode(cleanBase64);
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Image.memory(
+          bytes,
+          height: height,
+          fit: BoxFit.contain,
+        ),
+      );
+    } catch (_) {
+      return const Icon(Icons.broken_image, size: 48, color: Colors.red);
+    }
+  }
+
+  void _showImageDialog(BuildContext context, String base64Str, String monthName) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Bukti Bayar - $monthName',
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                _buildBase64Image(base64Str, height: 350),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -298,6 +436,128 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
                         ),
                       ],
                     ),
+                  ),
+                  const SizedBox(height: 20),
+                  const Divider(),
+                  const SizedBox(height: 16),
+
+                  // INVOICE HISTORY SECTION
+                  const Text(
+                    'Riwayat Pembayaran & Konfirmasi',
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppTheme.darkBlueText),
+                  ),
+                  const SizedBox(height: 8),
+                  StreamBuilder<QuerySnapshot>(
+                    stream: FirebaseFirestore.instance
+                        .collection('developer_billing_invoices')
+                        .orderBy('monthCode', descending: true)
+                        .snapshots(),
+                    builder: (context, invSnap) {
+                      if (!invSnap.hasData) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+                      final docs = invSnap.data!.docs;
+                      if (docs.isEmpty) {
+                        return const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 16.0),
+                          child: Text(
+                            'Belum ada invoice yang dibuat.',
+                            style: TextStyle(fontSize: 12, color: AppTheme.textGray, fontStyle: FontStyle.italic),
+                          ),
+                        );
+                      }
+
+                      return ListView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: docs.length,
+                        itemBuilder: (context, index) {
+                          final data = docs[index].data() as Map<String, dynamic>;
+                          final monthCode = data['monthCode'] as String? ?? '';
+                          final amount = (data['amount'] as num?)?.toDouble() ?? 0.0;
+                          final status = data['status'] as String? ?? 'belum_bayar';
+                          final paymentProof = data['paymentProof'] as String? ?? '';
+                          final paidAt = (data['paidAt'] as Timestamp?)?.toDate();
+
+                          DateTime parsedMonth = DateTime.now();
+                          try {
+                            final parts = monthCode.split('-');
+                            parsedMonth = DateTime(int.parse(parts[0]), int.parse(parts[1]));
+                          } catch (_) {}
+                          final monthName = DateFormat('MMMM yyyy').format(parsedMonth);
+
+                          final amountFormatted = amount.toStringAsFixed(0).replaceAllMapped(
+                                RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+                                (Match m) => '${m[1]}.',
+                              );
+
+                          Color statusColor = Colors.red;
+                          String statusLabel = 'Belum Lunas';
+                          if (status == 'lunas') {
+                            statusColor = Colors.green;
+                            statusLabel = 'Lunas';
+                          } else if (status == 'menunggu_konfirmasi') {
+                            statusColor = Colors.orange;
+                            statusLabel = 'Menunggu Konfirmasi';
+                          }
+
+                          return Card(
+                            margin: const EdgeInsets.only(bottom: 8),
+                            child: Padding(
+                              padding: const EdgeInsets.all(12.0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(monthName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                                      Text(statusLabel, style: TextStyle(color: statusColor, fontWeight: FontWeight.bold, fontSize: 12)),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Text('Nominal: Rp $amountFormatted', style: const TextStyle(fontSize: 12)),
+                                  if (paidAt != null)
+                                    Text('Lunas Pada: ${DateFormat('dd/MM/yyyy HH:mm').format(paidAt)}', style: const TextStyle(fontSize: 11, color: AppTheme.textGray)),
+                                  if (paymentProof.isNotEmpty) ...[
+                                    const SizedBox(height: 8),
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        TextButton.icon(
+                                          onPressed: () => _showImageDialog(context, paymentProof, monthName),
+                                          icon: const Icon(Icons.receipt_long, size: 16),
+                                          label: const Text('Lihat Bukti Bayar', style: TextStyle(fontSize: 11)),
+                                        ),
+                                        if (status == 'menunggu_konfirmasi') ...[
+                                          Row(
+                                            children: [
+                                              TextButton(
+                                                onPressed: () => _rejectInvoicePayment(monthCode),
+                                                style: TextButton.styleFrom(foregroundColor: Colors.red),
+                                                child: const Text('Tolak', style: TextStyle(fontSize: 11)),
+                                              ),
+                                              ElevatedButton(
+                                                onPressed: () => _confirmInvoicePaid(monthCode),
+                                                style: ElevatedButton.styleFrom(
+                                                  backgroundColor: Colors.green,
+                                                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                                                ),
+                                                child: const Text('Konfirmasi Lunas', style: TextStyle(fontSize: 11, color: Colors.white)),
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                      ],
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      );
+                    },
                   ),
 
                   const SizedBox(height: 40),

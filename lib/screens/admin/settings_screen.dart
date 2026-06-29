@@ -5,6 +5,7 @@ import '../../services/auth_service.dart';
 import '../../theme.dart';
 import '../../widgets/watermark.dart';
 import 'staff_permissions_screen.dart';
+import 'owner_billing_history_screen.dart';
 import 'logistics_crud_screen.dart';
 import 'category_crud_screen.dart';
 import 'voucher_crud_screen.dart';
@@ -266,6 +267,19 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(builder: (_) => const StaffPermissionsScreen()),
+                                  );
+                                },
+                              ),
+                              const Divider(height: 1, indent: 56),
+                              _buildSettingTile(
+                                title: 'Riwayat Billing Aplikasi',
+                                subtitle: 'Riwayat pembayaran & bukti transfer bulanan',
+                                icon: Icons.receipt_long,
+                                color: Colors.purple,
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(builder: (_) => const OwnerBillingHistoryScreen()),
                                   );
                                 },
                               ),

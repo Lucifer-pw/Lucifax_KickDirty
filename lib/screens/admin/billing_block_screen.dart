@@ -1,13 +1,15 @@
 import 'dart:convert';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../services/auth_service.dart';
 import '../../services/in_app_notification_service.dart';
+import '../../services/image_service.dart';
 import '../../theme.dart';
 import '../login_screen.dart';
 
-class BillingBlockScreen extends StatelessWidget {
+class BillingBlockScreen extends StatefulWidget {
   final double amount;
   final DateTime dueDate;
   final String qrImage;
@@ -18,6 +20,13 @@ class BillingBlockScreen extends StatelessWidget {
     required this.dueDate,
     required this.qrImage,
   }) : super(key: key);
+
+  @override
+  State<BillingBlockScreen> createState() => _BillingBlockScreenState();
+}
+
+class _BillingBlockScreenState extends State<BillingBlockScreen> {
+  bool _isUploading = false;
 
   Widget _buildBase64Image(String base64Str, {double height = 240}) {
     if (base64Str.isEmpty) {
@@ -68,129 +77,276 @@ class BillingBlockScreen extends StatelessWidget {
     }
   }
 
+  Future<void> _uploadPaymentProof(String monthCode) async {
+    final String? image = await showModalBottomSheet<String?>(
+      context: context,
+      builder: (BuildContext context) {
+        return SafeArea(
+          child: Wrap(
+            children: [
+              ListTile(
+                leading: const Icon(Icons.camera_alt, color: AppTheme.primaryBlue),
+                title: const Text('Kamera (Ambil Foto Bukti)'),
+                onTap: () async {
+                  final img = await ImageService.pickImageFromCamera();
+                  if (context.mounted) Navigator.pop(context, img);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library, color: AppTheme.primaryBlue),
+                title: const Text('Galeri (Pilih Foto Bukti)'),
+                onTap: () async {
+                  final img = await ImageService.pickImageFromGallery();
+                  if (context.mounted) Navigator.pop(context, img);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+
+    if (image == null || image.isEmpty) return;
+
+    setState(() => _isUploading = true);
+
+    try {
+      // Save/update the invoice in developer_billing_invoices
+      await FirebaseFirestore.instance
+          .collection('developer_billing_invoices')
+          .doc(monthCode)
+          .set({
+        'monthCode': monthCode,
+        'amount': widget.amount,
+        'dueDate': Timestamp.fromDate(widget.dueDate),
+        'status': 'menunggu_konfirmasi',
+        'paymentProof': image,
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Bukti pembayaran berhasil diunggah! Menunggu konfirmasi developer.')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal mengunggah bukti bayar: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isUploading = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final String formattedAmount = amount.toStringAsFixed(0).replaceAllMapped(
+    final String currentMonthCode = DateFormat('yyyy-MM').format(DateTime.now());
+    final String monthName = DateFormat('MMMM yyyy').format(DateTime.now());
+
+    final String formattedAmount = widget.amount.toStringAsFixed(0).replaceAllMapped(
           RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
           (Match m) => '${m[1]}.',
         );
 
-    final String formattedDate = DateFormat('dd MMMM yyyy').format(dueDate);
+    final String formattedDate = DateFormat('dd MMMM yyyy').format(widget.dueDate);
 
     return Scaffold(
       backgroundColor: Colors.white,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
-          child: Center(
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(
-                    Icons.lock_person_outlined,
-                    size: 80,
-                    color: Colors.redAccent,
-                  ),
-                  const SizedBox(height: 20),
-                  const Text(
-                    'Layanan Ditangguhkan',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: AppTheme.darkBlueText,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  const Text(
-                    'Masa aktif aplikasi Anda telah habis. Harap lakukan pembayaran biaya pemeliharaan bulanan (maintenance billing) untuk mengaktifkan kembali layanan.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: AppTheme.textGray,
-                      height: 1.5,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.red.shade50,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.red.shade100),
-                    ),
-                    child: Column(
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      body: StreamBuilder<DocumentSnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection('developer_billing_invoices')
+            .doc(currentMonthCode)
+            .snapshots(),
+        builder: (context, snapshot) {
+          String status = 'belum_bayar';
+          String paymentProof = '';
+
+          if (snapshot.hasData && snapshot.data!.exists) {
+            final data = snapshot.data!.data() as Map<String, dynamic>?;
+            if (data != null) {
+              status = data['status'] as String? ?? 'belum_bayar';
+              paymentProof = data['paymentProof'] as String? ?? '';
+            }
+          }
+
+          // If somehow the status becomes lunas under a race condition, show a success loader
+          if (status == 'lunas') {
+            return const Scaffold(
+              body: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    CircularProgressIndicator(),
+                    SizedBox(height: 16),
+                    Text('Pembayaran terkonfirmasi! Membuka aplikasi...'),
+                  ],
+                ),
+              ),
+            );
+          }
+
+          return SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+              child: Center(
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        status == 'menunggu_konfirmasi'
+                            ? Icons.pending_actions_outlined
+                            : Icons.lock_person_outlined,
+                        size: 80,
+                        color: status == 'menunggu_konfirmasi' ? Colors.orange : Colors.redAccent,
+                      ),
+                      const SizedBox(height: 20),
+                      Text(
+                        status == 'menunggu_konfirmasi'
+                            ? 'Menunggu Konfirmasi'
+                            : 'Layanan Ditangguhkan',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.darkBlueText,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        status == 'menunggu_konfirmasi'
+                            ? 'Bukti pembayaran Anda untuk bulan $monthName telah dikirim ke Developer. Aplikasi akan otomatis terbuka begitu Developer memverifikasi transfer Anda.'
+                            : 'Masa aktif aplikasi Anda telah habis untuk bulan $monthName. Harap lakukan pembayaran biaya pemeliharaan bulanan (maintenance billing) untuk mengaktifkan kembali layanan.',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: AppTheme.textGray,
+                          height: 1.5,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: status == 'menunggu_konfirmasi' ? Colors.orange.shade50 : Colors.red.shade50,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: status == 'menunggu_konfirmasi' ? Colors.orange.shade100 : Colors.red.shade100,
+                          ),
+                        ),
+                        child: Column(
                           children: [
-                            const Text('Biaya Maintenance:', style: TextStyle(fontSize: 13, color: AppTheme.darkBlueText)),
-                            Text(
-                              'Rp $formattedAmount',
-                              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.red),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Text('Biaya Maintenance:', style: TextStyle(fontSize: 13, color: AppTheme.darkBlueText)),
+                                Text(
+                                  'Rp $formattedAmount',
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.bold,
+                                    color: status == 'menunggu_konfirmasi' ? Colors.orange : Colors.red,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Text('Jatuh Tempo:', style: TextStyle(fontSize: 13, color: AppTheme.darkBlueText)),
+                                Text(
+                                  formattedDate,
+                                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppTheme.darkBlueText),
+                                ),
+                              ],
                             ),
                           ],
                         ),
-                        const SizedBox(height: 8),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text('Jatuh Tempo:', style: TextStyle(fontSize: 13, color: AppTheme.darkBlueText)),
-                            Text(
-                              formattedDate,
-                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppTheme.darkBlueText),
+                      ),
+                      const SizedBox(height: 24),
+
+                      // If status is menunggu_konfirmasi, show receipt uploaded preview
+                      if (status == 'menunggu_konfirmasi') ...[
+                        const Text(
+                          'Bukti Transfer yang Anda Unggah:',
+                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppTheme.darkBlueText),
+                        ),
+                        const SizedBox(height: 12),
+                        _buildBase64Image(paymentProof, height: 220),
+                        const SizedBox(height: 20),
+                        SizedBox(
+                          width: double.infinity,
+                          height: 45,
+                          child: ElevatedButton.icon(
+                            onPressed: _isUploading ? null : () => _uploadPaymentProof(currentMonthCode),
+                            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryBlue),
+                            icon: const Icon(Icons.change_circle_outlined, color: Colors.white),
+                            label: const Text('Ubah/Unggah Ulang Bukti', style: TextStyle(color: Colors.white)),
+                          ),
+                        ),
+                      ] else ...[
+                        // Show QRIS and upload button
+                        const Text(
+                          'Scan QRIS di bawah ini untuk membayar:',
+                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.darkBlueText),
+                        ),
+                        const SizedBox(height: 12),
+                        _buildBase64Image(widget.qrImage, height: 240),
+                        const SizedBox(height: 20),
+                        SizedBox(
+                          width: double.infinity,
+                          height: 45,
+                          child: ElevatedButton.icon(
+                            onPressed: _isUploading ? null : () => _uploadPaymentProof(currentMonthCode),
+                            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+                            icon: _isUploading
+                                ? const SizedBox(
+                                    height: 16,
+                                    width: 16,
+                                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                                  )
+                                : const Icon(Icons.upload_file_outlined, color: Colors.white),
+                            label: Text(
+                              _isUploading ? 'Mengunggah...' : 'Unggah Bukti Pembayaran',
+                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                             ),
-                          ],
+                          ),
                         ),
                       ],
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  const Text(
-                    'Scan QRIS di bawah ini untuk membayar:',
-                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.darkBlueText),
-                  ),
-                  const SizedBox(height: 12),
-                  _buildBase64Image(qrImage, height: 260),
-                  const SizedBox(height: 24),
-                  const Text(
-                    'Setelah melakukan transfer, silakan kirim bukti bayar ke Developer untuk mengaktifkan kembali aplikasi.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: AppTheme.textGray,
-                      fontStyle: FontStyle.italic,
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 48,
-                    child: OutlinedButton.icon(
-                      onPressed: () async {
-                        InAppNotificationService.instance.stopListening();
-                        await Provider.of<AuthService>(context, listen: false).signOut();
-                        if (context.mounted) {
-                          Navigator.of(context).pushReplacement(
-                            MaterialPageRoute(builder: (_) => const LoginScreen()),
-                          );
-                        }
-                      },
-                      icon: const Icon(Icons.logout, size: 18),
-                      label: const Text('Keluar dari Akun'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.redAccent,
-                        side: const BorderSide(color: Colors.redAccent),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+
+                      const SizedBox(height: 24),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 48,
+                        child: OutlinedButton.icon(
+                          onPressed: () async {
+                            InAppNotificationService.instance.stopListening();
+                            await Provider.of<AuthService>(context, listen: false).signOut();
+                            if (context.mounted) {
+                              Navigator.of(context).pushReplacement(
+                                MaterialPageRoute(builder: (_) => const LoginScreen()),
+                              );
+                            }
+                          },
+                          icon: const Icon(Icons.logout, size: 18),
+                          label: const Text('Keluar dari Akun'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.redAccent,
+                            side: const BorderSide(color: Colors.redAccent),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                        ),
                       ),
-                    ),
+                    ],
                   ),
-                ],
+                ),
               ),
             ),
-          ),
-        ),
+          );
+        },
       ),
     );
   }
