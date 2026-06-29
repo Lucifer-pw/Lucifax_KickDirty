@@ -75,7 +75,11 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
           .get();
       categories = catSnap.docs.map((doc) => CategoryModel.fromMap(doc.data(), doc.id)).toList();
       categories.sort((a, b) => a.createdAt.compareTo(b.createdAt));
-      services = await dbService.getServices().first;
+      final servSnap = await FirebaseFirestore.instance
+          .collection('services')
+          .where('isActive', isEqualTo: true)
+          .get();
+      services = servSnap.docs.map((doc) => ServiceModel.fromMap(doc.data(), doc.id)).toList();
       
       final userSnap = await FirebaseFirestore.instance.collection('users').doc(currentUser.uid).get();
       if (userSnap.exists) {
