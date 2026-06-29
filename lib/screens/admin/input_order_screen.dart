@@ -851,12 +851,12 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Tambah Sepatu & Layanan', style: Theme.of(context).textTheme.titleMedium),
+                          Text('Tambah Layanan', style: Theme.of(context).textTheme.titleMedium),
                           const SizedBox(height: 16),
                           TextFormField(
                             controller: _itemNameController,
                             decoration: const InputDecoration(
-                              hintText: 'Merek & Model Sepatu (Contoh: Converse Chuck 70)',
+                              hintText: 'Nama / Model Barang (Contoh: Adidas Samba, Tas Fjallraven)',
                               prefixIcon: Icon(Icons.shopping_bag_outlined),
                             ),
                           ),
