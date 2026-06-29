@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:intl/intl.dart';
 import '../theme.dart';
 
 class InAppNotificationService {
@@ -13,9 +14,11 @@ class InAppNotificationService {
   // Cache to track changes and prevent notification spam on startup
   final Map<String, String> _orderStatusCache = {};
   final Map<String, String> _chatRoomMessageCache = {};
+  final Map<String, String> _billingInvoiceStatusCache = {};
   
   StreamSubscription? _orderSubscription;
   StreamSubscription? _chatSubscription;
+  StreamSubscription? _billingSubscription;
   String? _currentUserId;
   String? _currentUserRole;
   
@@ -130,6 +133,16 @@ class InAppNotificationService {
           .listen((snapshot) {
         _handleChatSnapshot(context, snapshot.docs, isAdminView: true);
       });
+
+      // Listen to billing invoices if developer role to show notification when owner uploads proof
+      if (role == 'developer') {
+        _billingSubscription = db
+            .collection('developer_billing_invoices')
+            .snapshots()
+            .listen((snapshot) {
+          _handleBillingSnapshot(context, snapshot.docs);
+        });
+      }
     } else {
       // Customer: Listen only to their own orders
       _orderSubscription = db
@@ -158,8 +171,10 @@ class InAppNotificationService {
   void stopListening() {
     _orderSubscription?.cancel();
     _chatSubscription?.cancel();
+    _billingSubscription?.cancel();
     _orderSubscription = null;
     _chatSubscription = null;
+    _billingSubscription = null;
   }
 
   void _handleOrderSnapshot(
@@ -326,6 +341,60 @@ class InAppNotificationService {
         return 'SUDAH DISERAHKAN';
       default:
         return status.toUpperCase();
+    }
+  }
+
+  void _handleBillingSnapshot(
+    BuildContext context,
+    List<QueryDocumentSnapshot<Map<String, dynamic>>> docs,
+  ) {
+    for (var doc in docs) {
+      final data = doc.data();
+      final monthCode = doc.id;
+      final status = data['status'] as String? ?? '';
+      final updatedAt = data['updatedAt'] as Timestamp?;
+
+      if (status.isEmpty) continue;
+
+      final previousStatus = _billingInvoiceStatusCache[monthCode];
+
+      // Update cache
+      _billingInvoiceStatusCache[monthCode] = status;
+
+      // Only notify if status has changed to 'menunggu_konfirmasi' and it's not initial caching
+      if (previousStatus != null && previousStatus != status && status == 'menunggu_konfirmasi') {
+        // Prevent notifying if timestamp is too old (e.g. startup catchup)
+        if (updatedAt != null &&
+            DateTime.now().difference(updatedAt.toDate()).inMinutes > 2) {
+          continue;
+        }
+
+        DateTime parsedMonth = DateTime.now();
+        try {
+          final parts = monthCode.split('-');
+          parsedMonth = DateTime(int.parse(parts[0]), int.parse(parts[1]));
+        } catch (_) {}
+        final monthName = DateFormat('MMMM yyyy').format(parsedMonth);
+
+        String title = 'Bukti Bayar Billing Diunggah';
+        String message = 'Owner telah mengunggah bukti transfer untuk bulan $monthName. Harap periksa dan konfirmasi.';
+
+        // Show native notification bar
+        showSystemNotification(
+          id: monthCode.hashCode,
+          title: title,
+          body: message,
+        );
+
+        // Show in-app banner overlay
+        showInAppBanner(
+          context,
+          title: title,
+          message: message,
+          icon: Icons.receipt_long,
+          color: Colors.purple,
+        );
+      }
     }
   }
 }

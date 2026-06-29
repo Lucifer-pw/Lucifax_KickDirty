@@ -145,6 +145,10 @@ class _BillingBlockScreenState extends State<BillingBlockScreen> {
     final String currentMonthCode = DateFormat('yyyy-MM').format(DateTime.now());
     final String monthName = DateFormat('MMMM yyyy').format(DateTime.now());
 
+    final authService = Provider.of<AuthService>(context, listen: false);
+    final String role = authService.currentUserModel?.role ?? 'staff';
+    final bool isOwner = role == 'owner' || role == 'developer';
+
     final String formattedAmount = widget.amount.toStringAsFixed(0).replaceAllMapped(
           RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
           (Match m) => '${m[1]}.',
@@ -217,8 +221,12 @@ class _BillingBlockScreenState extends State<BillingBlockScreen> {
                       const SizedBox(height: 12),
                       Text(
                         status == 'menunggu_konfirmasi'
-                            ? 'Bukti pembayaran Anda untuk bulan $monthName telah dikirim ke Developer. Aplikasi akan otomatis terbuka begitu Developer memverifikasi transfer Anda.'
-                            : 'Masa aktif aplikasi Anda telah habis untuk bulan $monthName. Harap lakukan pembayaran biaya pemeliharaan bulanan (maintenance billing) untuk mengaktifkan kembali layanan.',
+                            ? (isOwner
+                                ? 'Bukti pembayaran Anda untuk bulan $monthName telah dikirim ke Developer. Aplikasi akan otomatis terbuka begitu Developer memverifikasi transfer Anda.'
+                                : 'Bukti pembayaran telah dikirim ke Developer. Aplikasi akan otomatis terbuka begitu Developer memverifikasi transfer dari Owner.')
+                            : (isOwner
+                                ? 'Masa aktif aplikasi Anda telah habis untuk bulan $monthName. Harap lakukan pembayaran biaya pemeliharaan bulanan (maintenance billing) untuk mengaktifkan kembali layanan.'
+                                : 'Masa aktif aplikasi telah habis untuk bulan $monthName. Harap hubungi Owner toko untuk melakukan pembayaran maintenance agar aplikasi aktif kembali.'),
                         textAlign: TextAlign.center,
                         style: const TextStyle(
                           fontSize: 14,
@@ -268,55 +276,100 @@ class _BillingBlockScreenState extends State<BillingBlockScreen> {
                       ),
                       const SizedBox(height: 24),
 
-                      // If status is menunggu_konfirmasi, show receipt uploaded preview
-                      if (status == 'menunggu_konfirmasi') ...[
-                        const Text(
-                          'Bukti Transfer yang Anda Unggah:',
-                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppTheme.darkBlueText),
-                        ),
-                        const SizedBox(height: 12),
-                        _buildBase64Image(paymentProof, height: 220),
-                        const SizedBox(height: 20),
-                        SizedBox(
-                          width: double.infinity,
-                          height: 45,
-                          child: ElevatedButton.icon(
-                            onPressed: _isUploading ? null : () => _uploadPaymentProof(currentMonthCode),
-                            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryBlue),
-                            icon: const Icon(Icons.change_circle_outlined, color: Colors.white),
-                            label: const Text('Ubah/Unggah Ulang Bukti', style: TextStyle(color: Colors.white)),
-                          ),
-                        ),
-                      ] else ...[
-                        // Show QRIS and upload button
-                        const Text(
-                          'Scan QRIS di bawah ini untuk membayar:',
-                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.darkBlueText),
-                        ),
-                        const SizedBox(height: 12),
-                        _buildBase64Image(widget.qrImage, height: 240),
-                        const SizedBox(height: 20),
-                        SizedBox(
-                          width: double.infinity,
-                          height: 45,
-                          child: ElevatedButton.icon(
-                            onPressed: _isUploading ? null : () => _uploadPaymentProof(currentMonthCode),
-                            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-                            icon: _isUploading
-                                ? const SizedBox(
-                                    height: 16,
-                                    width: 16,
-                                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                                  )
-                                : const Icon(Icons.upload_file_outlined, color: Colors.white),
-                            label: Text(
-                              _isUploading ? 'Mengunggah...' : 'Unggah Bukti Pembayaran',
-                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                      // Restrict billing actions based on role
+                      if (!isOwner) ...[
+                        if (status == 'menunggu_konfirmasi')
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: Colors.amber.shade50,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.amber.shade200),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(Icons.hourglass_empty, color: Colors.orange[800]),
+                                const SizedBox(width: 12),
+                                const Expanded(
+                                  child: Text(
+                                    'Owner sudah mengunggah bukti pembayaran. Sedang menunggu persetujuan Developer.',
+                                    style: TextStyle(fontSize: 13, color: AppTheme.darkBlueText, fontWeight: FontWeight.w600),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
+                        else
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: Colors.red.shade50,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.red.shade200),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(Icons.warning_amber_rounded, color: Colors.red[800]),
+                                const SizedBox(width: 12),
+                                const Expanded(
+                                  child: Text(
+                                    'Pembayaran belum diselesaikan. Hanya Owner yang dapat melakukan pembayaran dan mengunggah bukti bayar.',
+                                    style: TextStyle(fontSize: 13, color: AppTheme.darkBlueText, fontWeight: FontWeight.w600),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                        ),
+                      ] else ...[
+                        // Owner/Developer layout: Show QRIS and upload button
+                        if (status == 'menunggu_konfirmasi') ...[
+                          const Text(
+                            'Bukti Transfer yang Anda Unggah:',
+                            style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppTheme.darkBlueText),
+                          ),
+                          const SizedBox(height: 12),
+                          _buildBase64Image(paymentProof, height: 220),
+                          const SizedBox(height: 20),
+                          SizedBox(
+                            width: double.infinity,
+                            height: 45,
+                            child: ElevatedButton.icon(
+                              onPressed: _isUploading ? null : () => _uploadPaymentProof(currentMonthCode),
+                              style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryBlue),
+                              icon: const Icon(Icons.change_circle_outlined, color: Colors.white),
+                              label: const Text('Ubah/Unggah Ulang Bukti', style: TextStyle(color: Colors.white)),
+                            ),
+                          ),
+                        ] else ...[
+                          // Show QRIS and upload button
+                          const Text(
+                            'Scan QRIS di bawah ini untuk membayar:',
+                            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.darkBlueText),
+                          ),
+                          const SizedBox(height: 12),
+                          _buildBase64Image(widget.qrImage, height: 240),
+                          const SizedBox(height: 20),
+                          SizedBox(
+                            width: double.infinity,
+                            height: 45,
+                            child: ElevatedButton.icon(
+                              onPressed: _isUploading ? null : () => _uploadPaymentProof(currentMonthCode),
+                              style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+                              icon: _isUploading
+                                  ? const SizedBox(
+                                      height: 16,
+                                      width: 16,
+                                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                                    )
+                                  : const Icon(Icons.upload_file_outlined, color: Colors.white),
+                              label: Text(
+                                _isUploading ? 'Mengunggah...' : 'Unggah Bukti Pembayaran',
+                                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          ),
+                        ],
                       ],
-
                       const SizedBox(height: 24),
                       SizedBox(
                         width: double.infinity,
