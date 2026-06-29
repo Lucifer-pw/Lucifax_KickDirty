@@ -5,8 +5,13 @@ import '../../services/database_service.dart';
 import '../../theme.dart';
 
 class ServiceCrudScreen extends StatefulWidget {
-  final bool isTab;
-  const ServiceCrudScreen({Key? key, this.isTab = false}) : super(key: key);
+  final String categoryId;
+  final String categoryName;
+  const ServiceCrudScreen({
+    Key? key,
+    required this.categoryId,
+    required this.categoryName,
+  }) : super(key: key);
 
   @override
   State<ServiceCrudScreen> createState() => _ServiceCrudScreenState();
@@ -96,6 +101,9 @@ class _ServiceCrudScreenState extends State<ServiceCrudScreen> {
                       name: name,
                       price: price,
                       description: desc,
+                      categoryId: widget.categoryId,
+                      categoryName: widget.categoryName,
+                      isActive: true,
                       createdAt: DateTime.now(),
                     ),
                   );
@@ -107,6 +115,9 @@ class _ServiceCrudScreenState extends State<ServiceCrudScreen> {
                       name: name,
                       price: price,
                       description: desc,
+                      categoryId: widget.categoryId,
+                      categoryName: widget.categoryName,
+                      isActive: service.isActive,
                       createdAt: service.createdAt,
                     ),
                   );
@@ -152,8 +163,7 @@ class _ServiceCrudScreenState extends State<ServiceCrudScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Layanan Cuci Sepatu'),
-        automaticallyImplyLeading: !widget.isTab,
+        title: Text('Layanan ${widget.categoryName}'),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showServiceDialog(),
@@ -161,7 +171,7 @@ class _ServiceCrudScreenState extends State<ServiceCrudScreen> {
         child: const Icon(Icons.add, color: Colors.white),
       ),
       body: StreamBuilder<List<ServiceModel>>(
-        stream: dbService.getServices(),
+        stream: dbService.getServicesByCategory(widget.categoryId),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -201,10 +211,14 @@ class _ServiceCrudScreenState extends State<ServiceCrudScreen> {
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: AppTheme.primaryBlue.withOpacity(0.08),
+                          color: (service.isActive ? AppTheme.primaryBlue : Colors.grey).withOpacity(0.08),
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(Icons.local_laundry_service, color: AppTheme.primaryBlue, size: 24),
+                        child: Icon(
+                          Icons.local_laundry_service,
+                          color: service.isActive ? AppTheme.primaryBlue : Colors.grey,
+                          size: 24,
+                        ),
                       ),
                       const SizedBox(width: 16),
                       // Text Info
@@ -212,17 +226,39 @@ class _ServiceCrudScreenState extends State<ServiceCrudScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              service.name,
-                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                    fontWeight: FontWeight.bold,
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    service.name,
+                                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                          fontWeight: FontWeight.bold,
+                                          color: service.isActive ? AppTheme.darkBlueText : Colors.grey,
+                                        ),
                                   ),
+                                ),
+                                if (!service.isActive) ...[
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: Colors.red.shade100,
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: const Text(
+                                      'Nonaktif',
+                                      style: TextStyle(color: Colors.red, fontSize: 10, fontWeight: FontWeight.bold),
+                                    ),
+                                  ),
+                                ],
+                              ],
                             ),
                             if (service.description.isNotEmpty) ...[
                               const SizedBox(height: 4),
                               Text(
                                 service.description,
-                                style: Theme.of(context).textTheme.bodyMedium,
+                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                      color: service.isActive ? Colors.black87 : Colors.grey,
+                                    ),
                               ),
                             ],
                             const SizedBox(height: 8),
@@ -230,13 +266,13 @@ class _ServiceCrudScreenState extends State<ServiceCrudScreen> {
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                               decoration: BoxDecoration(
-                                color: AppTheme.secondaryBlue.withOpacity(0.12),
+                                color: (service.isActive ? AppTheme.secondaryBlue : Colors.grey).withOpacity(0.12),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Text(
                                 'Rp ${service.price.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}',
-                                style: const TextStyle(
-                                  color: AppTheme.primaryBlue,
+                                style: TextStyle(
+                                  color: service.isActive ? AppTheme.primaryBlue : Colors.grey,
                                   fontWeight: FontWeight.bold,
                                   fontSize: 13,
                                 ),
@@ -245,16 +281,29 @@ class _ServiceCrudScreenState extends State<ServiceCrudScreen> {
                           ],
                         ),
                       ),
-                      // Actions
+                      const SizedBox(width: 8),
+                      // Actions (Switch for Active status, Edit, Delete)
                       Column(
                         children: [
-                          IconButton(
-                            icon: const Icon(Icons.edit_outlined, color: AppTheme.primaryBlue),
-                            onPressed: () => _showServiceDialog(service),
+                          Switch(
+                            value: service.isActive,
+                            onChanged: (value) async {
+                              await dbService.toggleServiceActive(service.id, value);
+                            },
+                            activeColor: AppTheme.primaryBlue,
                           ),
-                          IconButton(
-                            icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
-                            onPressed: () => _confirmDelete(service.id),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.edit_outlined, color: AppTheme.primaryBlue, size: 20),
+                                onPressed: () => _showServiceDialog(service),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 20),
+                                onPressed: () => _confirmDelete(service.id),
+                              ),
+                            ],
                           ),
                         ],
                       ),

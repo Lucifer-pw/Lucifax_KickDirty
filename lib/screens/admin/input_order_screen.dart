@@ -7,6 +7,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import '../../models/order_model.dart';
 import '../../models/service_model.dart';
+import '../../models/category_model.dart';
+import '../../models/voucher_model.dart';
 import '../../services/database_service.dart';
 import '../../services/image_service.dart';
 import '../../theme.dart';
@@ -33,6 +35,10 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
   final _itemNameController = TextEditingController();
   ServiceModel? _selectedService;
   List<ServiceModel> _availableServices = [];
+  CategoryModel? _selectedCategory;
+  List<CategoryModel> _availableCategories = [];
+  VoucherModel? _appliedVoucher;
+  final _voucherController = TextEditingController();
 
   // New features state
   String _selectedCustomerId = '';
@@ -68,6 +74,7 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
     _itemNameController.dispose();
     _deliveryAddressController.dispose();
     _deliveryFeeController.dispose();
+    _voucherController.dispose();
     super.dispose();
   }
 
@@ -91,11 +98,14 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
           itemName: _itemNameController.text,
           serviceId: _selectedService!.id,
           serviceName: _selectedService!.name,
+          categoryId: _selectedCategory?.id ?? '',
+          categoryName: _selectedCategory?.name ?? '',
           price: _selectedService!.price,
         ),
       );
       _itemNameController.clear();
       _selectedService = null;
+      _selectedCategory = null;
     });
   }
 
@@ -112,14 +122,17 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
     _itemNameController.clear();
     _deliveryAddressController.clear();
     _deliveryFeeController.text = '0';
+    _voucherController.clear();
     setState(() {
       _items.clear();
       _selectedService = null;
+      _selectedCategory = null;
       _selectedCustomerId = '';
       _selectedCustomerPoints = 0;
       _usePointsRedemption = false;
       _deliveryType = 'drop_off_only';
       _photoBeforeList = [];
+      _appliedVoucher = null;
       _generateIdempotencyToken();
     });
   }
@@ -128,8 +141,13 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
   
   double get _deliveryFee => double.tryParse(_deliveryFeeController.text) ?? 0.0;
 
+  double get _voucherDiscount {
+    if (_appliedVoucher == null) return 0.0;
+    return _appliedVoucher!.calculateDiscount(_itemsPrice);
+  }
+
   double get _totalPrice {
-    double total = _itemsPrice + _deliveryFee;
+    double total = _itemsPrice + _deliveryFee - _voucherDiscount;
     if (_usePointsRedemption && _selectedCustomerPoints >= 10) {
       total -= 25000;
     }
@@ -471,6 +489,8 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
         photoAfter: const [],
         pointsRedeemed: _usePointsRedemption ? 10 : 0,
         mapsLink: customerMapsLink,
+        voucherCode: _appliedVoucher?.code ?? '',
+        voucherDiscount: _voucherDiscount,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );
@@ -518,13 +538,21 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
         title: const Text('Input Pesanan Baru'),
         automaticallyImplyLeading: !widget.isTab,
       ),
-      body: StreamBuilder<List<ServiceModel>>(
-        stream: dbService.getServices(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
+      body: StreamBuilder<List<CategoryModel>>(
+        stream: dbService.getActiveCategories(),
+        builder: (context, catSnapshot) {
+          if (catSnapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
-          _availableServices = snapshot.data ?? [];
+          _availableCategories = catSnapshot.data ?? [];
+
+          return StreamBuilder<List<ServiceModel>>(
+            stream: dbService.getServices(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              _availableServices = snapshot.data ?? [];
 
           return SingleChildScrollView(
             padding: const EdgeInsets.all(16.0),
@@ -833,19 +861,41 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
                             ),
                           ),
                           const SizedBox(height: 12),
+                          DropdownButtonFormField<CategoryModel>(
+                            value: _selectedCategory,
+                            hint: const Text('Pilih Kategori Jasa'),
+                            decoration: const InputDecoration(
+                              prefixIcon: Icon(Icons.category_outlined),
+                            ),
+                            items: _availableCategories.map((cat) {
+                              return DropdownMenuItem<CategoryModel>(
+                                value: cat,
+                                child: Text(cat.name),
+                              );
+                            }).toList(),
+                            onChanged: (val) {
+                              setState(() {
+                                _selectedCategory = val;
+                                _selectedService = null;
+                              });
+                            },
+                          ),
+                          const SizedBox(height: 12),
                           DropdownButtonFormField<ServiceModel>(
                             value: _selectedService,
                             hint: const Text('Pilih Layanan'),
                             decoration: const InputDecoration(
                               prefixIcon: Icon(Icons.dry_cleaning_outlined),
                             ),
-                            items: _availableServices.map((service) {
+                            items: _availableServices
+                                .where((s) => s.isActive && s.categoryId == _selectedCategory?.id)
+                                .map((service) {
                               return DropdownMenuItem<ServiceModel>(
                                 value: service,
                                 child: Text('${service.name} (Rp ${service.price.toStringAsFixed(0)})'),
                               );
                             }).toList(),
-                            onChanged: (val) {
+                            onChanged: _selectedCategory == null ? null : (val) {
                               setState(() {
                                 _selectedService = val;
                               });
@@ -893,7 +943,7 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
                               child: const Icon(Icons.check, color: AppTheme.primaryBlue),
                             ),
                             title: Text(item.itemName, style: const TextStyle(fontWeight: FontWeight.bold)),
-                            subtitle: Text(item.serviceName),
+                            subtitle: Text('${item.categoryName} - ${item.serviceName}'),
                             trailing: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
@@ -910,6 +960,87 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
                     ),
                     const SizedBox(height: 16),
                   ],
+
+                  // Voucher Card
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Voucher Diskon', style: Theme.of(context).textTheme.titleMedium),
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: TextFormField(
+                                  controller: _voucherController,
+                                  decoration: const InputDecoration(
+                                    hintText: 'Masukkan Kode Voucher',
+                                    prefixIcon: Icon(Icons.confirmation_number_outlined),
+                                  ),
+                                  textCapitalization: TextCapitalization.characters,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              ElevatedButton(
+                                onPressed: () async {
+                                  final dbService = Provider.of<DatabaseService>(context, listen: false);
+                                  final code = _voucherController.text.trim();
+                                  if (code.isEmpty) return;
+
+                                  final v = await dbService.validateVoucher(code, _itemsPrice);
+                                  setState(() {
+                                    if (v != null) {
+                                      _appliedVoucher = v;
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(content: Text('Voucher "${v.name}" berhasil diterapkan!')),
+                                      );
+                                    } else {
+                                      _appliedVoucher = null;
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(content: Text('Kode voucher tidak valid atau minimal belanja tidak terpenuhi')),
+                                      );
+                                    }
+                                  });
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppTheme.primaryBlue,
+                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                                ),
+                                child: const Text('Gunakan'),
+                              ),
+                            ],
+                          ),
+                          if (_appliedVoucher != null) ...[
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                const Icon(Icons.check_circle, color: Colors.green, size: 18),
+                                const SizedBox(width: 6),
+                                Expanded(
+                                  child: Text(
+                                    'Terpasang: ${_appliedVoucher!.name} (-Rp ${_voucherDiscount.toStringAsFixed(0)})',
+                                    style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.close, color: Colors.redAccent, size: 18),
+                                  onPressed: () {
+                                    setState(() {
+                                      _appliedVoucher = null;
+                                      _voucherController.clear();
+                                    });
+                                  },
+                                ),
+                              ],
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
 
                   // Notes card
                   Card(
@@ -980,6 +1111,8 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
                 ],
               ),
             ),
+          );
+            },
           );
         },
       ),

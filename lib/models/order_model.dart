@@ -4,12 +4,16 @@ class OrderItem {
   final String itemName;
   final String serviceId;
   final String serviceName;
+  final String categoryId;
+  final String categoryName;
   final double price;
 
   OrderItem({
     required this.itemName,
     required this.serviceId,
     required this.serviceName,
+    this.categoryId = '',
+    this.categoryName = '',
     required this.price,
   });
 
@@ -18,6 +22,8 @@ class OrderItem {
       itemName: map['itemName'] ?? '',
       serviceId: map['serviceId'] ?? '',
       serviceName: map['serviceName'] ?? '',
+      categoryId: map['categoryId'] ?? '',
+      categoryName: map['categoryName'] ?? '',
       price: (map['price'] as num?)?.toDouble() ?? 0.0,
     );
   }
@@ -27,6 +33,8 @@ class OrderItem {
       'itemName': itemName,
       'serviceId': serviceId,
       'serviceName': serviceName,
+      'categoryId': categoryId,
+      'categoryName': categoryName,
       'price': price,
     };
   }
@@ -44,7 +52,7 @@ class OrderModel {
   final String paymentStatus; // 'belum_bayar' | 'sudah_bayar'
   final String qrisImage;
   final String notes;
-  final String deliveryType; // 'drop_off_only' | 'pickup_delivery'
+  final String deliveryType; // logistics method id
   final String deliveryAddress;
   final double deliveryFee;
   final List<String> photoBefore;
@@ -53,6 +61,8 @@ class OrderModel {
   final int pointsRedeemed;
   final String estimatedCompletion;
   final String mapsLink;
+  final String voucherCode;
+  final double voucherDiscount;
   final Map<String, DateTime> statusTimeline;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -78,6 +88,8 @@ class OrderModel {
     this.pointsRedeemed = 0,
     this.estimatedCompletion = '',
     this.mapsLink = '',
+    this.voucherCode = '',
+    this.voucherDiscount = 0.0,
     this.statusTimeline = const {},
     required this.createdAt,
     required this.updatedAt,
@@ -120,6 +132,8 @@ class OrderModel {
       pointsRedeemed: map['pointsRedeemed'] ?? 0,
       estimatedCompletion: map['estimatedCompletion'] ?? '',
       mapsLink: map['mapsLink'] ?? '',
+      voucherCode: map['voucherCode'] ?? '',
+      voucherDiscount: (map['voucherDiscount'] as num?)?.toDouble() ?? 0.0,
       statusTimeline: timeline,
       createdAt: (map['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       updatedAt: (map['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
@@ -152,6 +166,8 @@ class OrderModel {
       'pointsRedeemed': pointsRedeemed,
       'estimatedCompletion': estimatedCompletion,
       'mapsLink': mapsLink,
+      'voucherCode': voucherCode,
+      'voucherDiscount': voucherDiscount,
       'statusTimeline': timelineDb,
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': Timestamp.fromDate(updatedAt),

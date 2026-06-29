@@ -6,6 +6,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../models/order_model.dart';
 import '../../models/service_model.dart';
 import '../../models/user_model.dart';
+import '../../models/category_model.dart';
+import '../../models/voucher_model.dart';
 import '../../services/auth_service.dart';
 import '../../services/database_service.dart';
 import '../../services/image_service.dart';
@@ -52,7 +54,7 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
 
     if (currentUser == null) return;
 
-    // Show loading dialog while fetching services list once
+    // Show loading dialog while fetching setup options
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -61,12 +63,20 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
       ),
     );
 
+    List<CategoryModel> categories = [];
     List<ServiceModel> services = [];
     int livePoints = 0;
     Map<String, dynamic> businessConfig = {};
     List<Map<String, dynamic>> logisticsMethods = [];
     try {
+      final catSnap = await FirebaseFirestore.instance
+          .collection('categories')
+          .where('isActive', isEqualTo: true)
+          .orderBy('createdAt', descending: false)
+          .get();
+      categories = catSnap.docs.map((doc) => CategoryModel.fromMap(doc.data(), doc.id)).toList();
       services = await dbService.getServices().first;
+      
       final userSnap = await FirebaseFirestore.instance.collection('users').doc(currentUser.uid).get();
       if (userSnap.exists) {
         livePoints = (userSnap.data()?['loyaltyPoints'] as int?) ?? 0;
@@ -96,10 +106,10 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
       Navigator.pop(context); // Close loading dialog
     }
 
-    if (services.isEmpty) {
+    if (categories.isEmpty) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Layanan tidak tersedia. Silakan hubungi admin.')),
+          const SnackBar(content: Text('Kategori layanan tidak tersedia. Silakan hubungi admin.')),
         );
       }
       return;
@@ -107,10 +117,20 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
 
     final nameController = TextEditingController();
     final notesController = TextEditingController();
-    final addressController = TextEditingController(text: currentUser?.addressDetail ?? '');
-    ServiceModel? selectedService = services.first;
+    final addressController = TextEditingController(text: currentUser.addressDetail);
+    final voucherController = TextEditingController();
+
+    CategoryModel? selectedCategory = categories.isNotEmpty ? categories.first : null;
+    
+    // Filter active services for this category
+    List<ServiceModel> filteredServices = services
+        .where((s) => s.isActive && s.categoryId == selectedCategory?.id)
+        .toList();
+    ServiceModel? selectedService = filteredServices.isNotEmpty ? filteredServices.first : null;
+
     String deliveryType = logisticsMethods.isNotEmpty ? logisticsMethods.first['id'] : 'drop_off_only';
     bool usePointsRedemption = false;
+    VoucherModel? appliedVoucher;
     final formKey = GlobalKey<FormState>();
     bool isSubmitting = false;
     List<String> photoBeforeList = [];
@@ -139,8 +159,10 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
             final bool requiresAddress = selectedMethod['requiresAddress'] == true;
             double deliveryFee = (selectedMethod['fee'] ?? 0.0) as double;
 
-            double discount = usePointsRedemption ? discountValue : 0.0;
-            double totalPrice = servicePrice + deliveryFee - discount;
+            double pointsDiscount = usePointsRedemption ? discountValue : 0.0;
+            double voucherDiscount = appliedVoucher != null ? appliedVoucher!.calculateDiscount(servicePrice) : 0.0;
+            
+            double totalPrice = servicePrice + deliveryFee - pointsDiscount - voucherDiscount;
             if (totalPrice < 0) totalPrice = 0.0;
 
             return Container(
@@ -176,7 +198,7 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
                       ),
                       const SizedBox(height: 20),
                       const Text(
-                        'Pesan Layanan Cuci Sepatu',
+                        'Pesan Layanan KickDirty',
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -185,12 +207,12 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
                       ),
                       const SizedBox(height: 8),
                       const Text(
-                        'Silakan masukkan merk sepatu dan pilih jenis layanan.',
+                        'Pilih kategori jasa, jenis layanan, dan masukkan tipe barang.',
                         style: TextStyle(fontSize: 12, color: AppTheme.textGray),
                       ),
                       const SizedBox(height: 20),
 
-                      // Input section for adding a shoe
+                      // Input section for adding a shoe/item
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
@@ -202,30 +224,60 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             const Text(
-                              'Form Tambah Sepatu',
+                              'Form Tambah Barang',
                               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.darkBlueText),
                             ),
                             const SizedBox(height: 10),
                             TextFormField(
                               controller: nameController,
                               decoration: const InputDecoration(
-                                labelText: 'Nama Merk Sepatu',
-                                hintText: 'Contoh: Adidas Samba, Nike Jordan',
-                                prefixIcon: Icon(Icons.abc),
+                                labelText: 'Merk & Deskripsi Barang',
+                                hintText: 'Contoh: Sepatu Converse Chuck 70, Tas Fjallraven',
+                                prefixIcon: Icon(Icons.shopping_bag_outlined),
                                 fillColor: Colors.white,
                                 filled: true,
                               ),
                             ),
                             const SizedBox(height: 12),
+                            
+                            // Category Dropdown
+                            DropdownButtonFormField<CategoryModel>(
+                              value: selectedCategory,
+                              decoration: const InputDecoration(
+                                labelText: 'Pilih Kategori Jasa',
+                                prefixIcon: Icon(Icons.category_outlined),
+                                fillColor: Colors.white,
+                                filled: true,
+                              ),
+                              items: categories.map((cat) {
+                                return DropdownMenuItem<CategoryModel>(
+                                  value: cat,
+                                  child: Text(cat.name),
+                                );
+                              }).toList(),
+                              onChanged: (val) {
+                                setStateSheet(() {
+                                  selectedCategory = val;
+                                  // Update services filter
+                                  filteredServices = services
+                                      .where((s) => s.isActive && s.categoryId == val?.id)
+                                      .toList();
+                                  selectedService = filteredServices.isNotEmpty ? filteredServices.first : null;
+                                });
+                              },
+                            ),
+                            const SizedBox(height: 12),
+
+                            // Service Dropdown
                             DropdownButtonFormField<ServiceModel>(
                               value: selectedService,
                               decoration: const InputDecoration(
-                                labelText: 'Pilih Layanan',
+                                labelText: 'Pilih Layanan Jasa',
                                 prefixIcon: Icon(Icons.dry_cleaning),
                                 fillColor: Colors.white,
                                 filled: true,
                               ),
-                              items: services.map((service) {
+                              items: filteredServices.map((service) {
                                 return DropdownMenuItem<ServiceModel>(
                                   value: service,
                                   child: Text(
@@ -234,7 +286,7 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
                                   ),
                                 );
                               }).toList(),
-                              onChanged: (val) {
+                              onChanged: selectedCategory == null ? null : (val) {
                                 setStateSheet(() {
                                   selectedService = val;
                                 });
@@ -257,7 +309,7 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
                                   final name = nameController.text.trim();
                                   if (name.isEmpty) {
                                     ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(content: Text('Masukkan nama merk sepatu terlebih dahulu')),
+                                      const SnackBar(content: Text('Masukkan nama / merk barang terlebih dahulu')),
                                     );
                                     return;
                                   }
@@ -272,13 +324,15 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
                                       itemName: name,
                                       serviceId: selectedService!.id,
                                       serviceName: selectedService!.name,
+                                      categoryId: selectedCategory?.id ?? '',
+                                      categoryName: selectedCategory?.name ?? '',
                                       price: selectedService!.price,
                                     ));
                                     nameController.clear();
                                   });
                                 },
                                 icon: const Icon(Icons.add, size: 16, color: Colors.white),
-                                label: const Text('Tambahkan Sepatu ke Daftar', style: TextStyle(color: Colors.white)),
+                                label: const Text('Tambahkan Barang ke Daftar', style: TextStyle(color: Colors.white)),
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: AppTheme.primaryBlue,
                                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -290,11 +344,11 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
                         ),
                       ),
 
-                      // List of added shoes
+                      // List of added items
                       if (orderItems.isNotEmpty) ...[
                         const SizedBox(height: 16),
                         const Text(
-                          'Daftar Sepatu & Layanan:',
+                          'Daftar Barang & Layanan:',
                           style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppTheme.darkBlueText),
                         ),
                         const SizedBox(height: 8),
@@ -318,7 +372,7 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
                                 child: ListTile(
                                   contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
                                   title: Text(item.itemName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-                                  subtitle: Text(item.serviceName, style: const TextStyle(color: AppTheme.textGray, fontSize: 10)),
+                                  subtitle: Text('${item.categoryName} - ${item.serviceName}', style: const TextStyle(color: AppTheme.textGray, fontSize: 10)),
                                   trailing: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
@@ -430,12 +484,100 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
                         const SizedBox(height: 16),
                       ],
 
+                      // Voucher input for Customer
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.green.withOpacity(0.05),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.green.withOpacity(0.2)),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Gunakan Voucher Diskon',
+                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.darkBlueText),
+                            ),
+                            const SizedBox(height: 10),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: TextFormField(
+                                    controller: voucherController,
+                                    decoration: const InputDecoration(
+                                      hintText: 'Kode Voucher',
+                                      prefixIcon: Icon(Icons.confirmation_number_outlined),
+                                      fillColor: Colors.white,
+                                      filled: true,
+                                    ),
+                                    textCapitalization: TextCapitalization.characters,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                ElevatedButton(
+                                  onPressed: () async {
+                                    final code = voucherController.text.trim();
+                                    if (code.isEmpty) return;
+
+                                    final v = await dbService.validateVoucher(code, servicePrice);
+                                    setStateSheet(() {
+                                      if (v != null) {
+                                        appliedVoucher = v;
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(content: Text('Voucher "${v.name}" berhasil diterapkan!')),
+                                        );
+                                      } else {
+                                        appliedVoucher = null;
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(content: Text('Kode voucher tidak valid atau minimal belanja tidak terpenuhi')),
+                                        );
+                                      }
+                                    });
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppTheme.primaryBlue,
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                  ),
+                                  child: const Text('Terapkan'),
+                                ),
+                              ],
+                            ),
+                            if (appliedVoucher != null) ...[
+                              const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  const Icon(Icons.check_circle, color: Colors.green, size: 16),
+                                  const SizedBox(width: 6),
+                                  Expanded(
+                                    child: Text(
+                                      'Voucher Aktif: ${appliedVoucher!.name} (-Rp ${voucherDiscount.toStringAsFixed(0)})',
+                                      style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 12),
+                                    ),
+                                  ),
+                                  GestureDetector(
+                                    onTap: () {
+                                      setStateSheet(() {
+                                        appliedVoucher = null;
+                                        voucherController.clear();
+                                      });
+                                    },
+                                    child: const Icon(Icons.close, color: Colors.red, size: 16),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
                       // Notes input
                       TextFormField(
                         controller: notesController,
                         decoration: const InputDecoration(
                           labelText: 'Catatan (Opsional)',
-                          hintText: 'Contoh: Kotor sekali di bagian sol, tali dilepas',
+                          hintText: 'Contoh: Kotor sekali di bagian sol, request khusus',
                           prefixIcon: Icon(Icons.edit_note),
                         ),
                         maxLines: 2,
@@ -444,12 +586,12 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
 
                       // Foto Kondisi Awal (Before)
                       const Text(
-                        'Foto Kondisi Awal (Before) - Opsional',
+                        'Foto Kondisi Awal (Before) - Wajib',
                         style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppTheme.darkBlueText),
                       ),
                       const SizedBox(height: 4),
                       const Text(
-                        'Unggah foto kondisi sepatu saat ini sebagai dokumentasi.',
+                        'Unggah foto kondisi barang saat ini (Wajib minimal 1 foto).',
                         style: TextStyle(color: AppTheme.textGray, fontSize: 11),
                       ),
                       const SizedBox(height: 12),
@@ -576,13 +718,23 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
                             ],
                           ),
                         ],
+                        if (voucherDiscount > 0) ...[
+                          const SizedBox(height: 4),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text('Diskon Voucher:', style: TextStyle(fontSize: 13, color: Colors.green)),
+                              Text('-Rp ${voucherDiscount.toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")}', style: const TextStyle(fontSize: 13, color: Colors.green, fontWeight: FontWeight.bold)),
+                            ],
+                          ),
+                        ],
                         const SizedBox(height: 8),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             const Text('Total Pembayaran:', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
                             Text(
-                              'Rp ${(orderItems.isEmpty && selectedService != null ? (selectedService!.price + deliveryFee - discount < 0 ? 0.0 : selectedService!.price + deliveryFee - discount) : totalPrice).toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")}',
+                              'Rp ${(orderItems.isEmpty && selectedService != null ? (selectedService!.price + deliveryFee - pointsDiscount - voucherDiscount < 0 ? 0.0 : selectedService!.price + deliveryFee - pointsDiscount - voucherDiscount) : totalPrice).toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")}',
                               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.primaryBlue),
                             ),
                           ],
@@ -607,6 +759,8 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
                                         itemName: name,
                                         serviceId: selectedService!.id,
                                         serviceName: selectedService!.name,
+                                        categoryId: selectedCategory?.id ?? '',
+                                        categoryName: selectedCategory?.name ?? '',
                                         price: selectedService!.price,
                                       ));
                                     }
@@ -614,7 +768,15 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
 
                                   if (orderItems.isEmpty) {
                                     ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(content: Text('Tambahkan minimal 1 sepatu ke daftar pesanan')),
+                                      const SnackBar(content: Text('Tambahkan minimal 1 barang ke daftar pesanan')),
+                                    );
+                                    return;
+                                  }
+
+                                  // Photo Before validation: MANDATORY (wajib)
+                                  if (photoBeforeList.isEmpty) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(content: Text('Foto kondisi awal (Before) wajib diambil minimal 1 foto!')),
                                     );
                                     return;
                                   }
@@ -626,7 +788,8 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
                                   try {
                                     // Recalculate final totals
                                     double finalServicePrice = orderItems.fold(0.0, (sum, item) => sum + item.price);
-                                    double finalTotalPrice = finalServicePrice + deliveryFee - discount;
+                                    double finalVoucherDiscount = appliedVoucher != null ? appliedVoucher!.calculateDiscount(finalServicePrice) : 0.0;
+                                    double finalTotalPrice = finalServicePrice + deliveryFee - pointsDiscount - finalVoucherDiscount;
                                     if (finalTotalPrice < 0) finalTotalPrice = 0.0;
 
                                     // Generate a deterministic unique ID
@@ -652,6 +815,8 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
                                       pointsEarned: (finalServicePrice / rupiahPerPoint).floor(),
                                       pointsRedeemed: usePointsRedemption ? pointsNeeded : 0,
                                       mapsLink: currentUser.mapsLink,
+                                      voucherCode: appliedVoucher?.code ?? '',
+                                      voucherDiscount: finalVoucherDiscount,
                                       createdAt: DateTime.now(),
                                       updatedAt: DateTime.now(),
                                     );

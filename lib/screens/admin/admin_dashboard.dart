@@ -13,7 +13,8 @@ import '../login_screen.dart';
 import 'input_order_screen.dart';
 import 'process_order_screen.dart';
 import 'history_orders_screen.dart';
-import 'service_crud_screen.dart';
+import 'category_crud_screen.dart';
+import 'voucher_crud_screen.dart';
 import 'financial_report_screen.dart';
 import 'admin_chat_list_screen.dart';
 import 'sales_detail_screen.dart';
@@ -150,7 +151,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
         // 5. Layanan (Conditional)
         int indexCounter = 4;
         if (showServices) {
-          screens.add(const ServiceCrudScreen(isTab: true));
+          screens.add(const CategoryCrudScreen());
           navItems.add({'index': indexCounter, 'icon': Icons.cleaning_services_outlined, 'label': 'Layanan'});
           indexCounter++;
         }
@@ -663,6 +664,19 @@ class _AdminDashboardState extends State<AdminDashboard> {
           );
         },
         'permKey': 'canViewFinancialReport',
+      },
+      {
+        'title': 'Kelola Voucher',
+        'subtitle': 'Diskon & promo belanja',
+        'icon': Icons.confirmation_number_outlined,
+        'color': Colors.orange,
+        'onTap': () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const VoucherCrudScreen()),
+          );
+        },
+        'permKey': 'canManageServices',
       },
     ];
 

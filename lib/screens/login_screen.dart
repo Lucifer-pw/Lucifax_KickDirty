@@ -16,10 +16,12 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
+  final _phoneLoginController = TextEditingController();
   final _passwordController = TextEditingController();
 
   // For Registration
   bool _isRegistering = false;
+  bool _isPhoneLogin = false;
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
 
@@ -30,6 +32,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   void dispose() {
     _emailController.dispose();
+    _phoneLoginController.dispose();
     _passwordController.dispose();
     _nameController.dispose();
     _phoneController.dispose();
@@ -58,10 +61,17 @@ class _LoginScreenState extends State<LoginScreen> {
         );
       } else {
         // Logging in
-        await authService.signIn(
-          _emailController.text,
-          _passwordController.text,
-        );
+        if (_isPhoneLogin) {
+          await authService.signInWithPhone(
+            _phoneLoginController.text,
+            _passwordController.text,
+          );
+        } else {
+          await authService.signIn(
+            _emailController.text,
+            _passwordController.text,
+          );
+        }
       }
 
       // Check role and navigate
@@ -82,6 +92,41 @@ class _LoginScreenState extends State<LoginScreen> {
         _errorMessage = e
             .toString()
             .replaceAll(RegExp(r'\[.*?\]'), ''); // Clean Firebase error codes
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _handleGoogleSignIn() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = '';
+    });
+
+    final authService = Provider.of<AuthService>(context, listen: false);
+
+    try {
+      final credential = await authService.signInWithGoogle();
+      if (credential != null && mounted) {
+        final role = authService.currentUserModel?.role;
+        if (role == 'owner' || role == 'staff') {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (_) => const AdminDashboard()),
+          );
+        } else {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (_) => const CustomerPortalScreen()),
+          );
+        }
+      }
+    } catch (e) {
+      setState(() {
+        _errorMessage = e.toString().replaceAll(RegExp(r'\[.*?\]'), '');
       });
     } finally {
       if (mounted) {
@@ -143,14 +188,16 @@ class _LoginScreenState extends State<LoginScreen> {
                           Theme.of(context).textTheme.headlineMedium?.copyWith(
                                 color: AppTheme.darkBlueText,
                                 fontWeight: FontWeight.bold,
-                              ),
+                                                      ),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 8),
                     Text(
                       _isRegistering
                           ? "Daftar untuk memantau cucian sepatu Anda secara real-time"
-                          : "Silakan masuk menggunakan email terdaftar",
+                          : _isPhoneLogin
+                              ? "Silakan masuk menggunakan nomor WhatsApp terdaftar"
+                              : "Silakan masuk menggunakan email terdaftar",
                       style: Theme.of(context).textTheme.bodyMedium,
                       textAlign: TextAlign.center,
                     ),
@@ -183,6 +230,67 @@ class _LoginScreenState extends State<LoginScreen> {
                       const SizedBox(height: 16),
                     ],
 
+                    // Switch between Email and Phone Login (only when not registering)
+                    if (!_isRegistering) ...[
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade100,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: ChoiceChip(
+                                label: const Center(child: Text("Email")),
+                                selected: !_isPhoneLogin,
+                                onSelected: (val) {
+                                  setState(() {
+                                    _isPhoneLogin = false;
+                                    _errorMessage = '';
+                                  });
+                                },
+                                selectedColor: AppTheme.primaryBlue,
+                                labelStyle: TextStyle(
+                                  color: !_isPhoneLogin ? Colors.white : Colors.black87,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                backgroundColor: Colors.transparent,
+                                elevation: 0,
+                                pressElevation: 0,
+                                shadowColor: Colors.transparent,
+                                selectedShadowColor: Colors.transparent,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                            ),
+                            Expanded(
+                              child: ChoiceChip(
+                                label: const Center(child: Text("Nomor WA")),
+                                selected: _isPhoneLogin,
+                                onSelected: (val) {
+                                  setState(() {
+                                    _isPhoneLogin = true;
+                                    _errorMessage = '';
+                                  });
+                                },
+                                selectedColor: AppTheme.primaryBlue,
+                                labelStyle: TextStyle(
+                                  color: _isPhoneLogin ? Colors.white : Colors.black87,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                backgroundColor: Colors.transparent,
+                                elevation: 0,
+                                pressElevation: 0,
+                                shadowColor: Colors.transparent,
+                                selectedShadowColor: Colors.transparent,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+
                     if (_isRegistering) ...[
                       // Name field
                       TextFormField(
@@ -198,46 +306,73 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       const SizedBox(height: 16),
 
-                      // Phone field
+                      // Phone field (Registration)
                       TextFormField(
                         controller: _phoneController,
                         keyboardType: TextInputType.phone,
                         decoration: const InputDecoration(
-                          hintText: 'Nomor WhatsApp (Contoh: 628123456789)',
+                          hintText: 'Nomor WhatsApp (Contoh: 08123456789 atau 628123456789)',
                           prefixIcon: Icon(Icons.phone_outlined,
                               color: AppTheme.textGray),
                         ),
                         validator: (value) {
-                          if (value == null || value.isEmpty)
+                          if (value == null || value.isEmpty) {
                             return 'Nomor WhatsApp tidak boleh kosong';
-                          if (!value.startsWith('62'))
-                            return 'Gunakan format kode negara (62...)';
+                          }
+                          if (!value.startsWith('0') && !value.startsWith('62')) {
+                            return 'Gunakan format 08... atau 628...';
+                          }
                           return null;
                         },
                       ),
                       const SizedBox(height: 16),
                     ],
 
-                    // Email Field
-                    TextFormField(
-                      controller: _emailController,
-                      keyboardType: TextInputType.emailAddress,
-                      decoration: const InputDecoration(
-                        hintText: 'Email',
-                        prefixIcon: Icon(Icons.email_outlined,
-                            color: AppTheme.textGray),
+                    // Email / Phone field for Login
+                    if (!_isRegistering && _isPhoneLogin) ...[
+                      // Phone input
+                      TextFormField(
+                        controller: _phoneLoginController,
+                        keyboardType: TextInputType.phone,
+                        decoration: const InputDecoration(
+                          hintText: 'Nomor WhatsApp (Contoh: 08132... atau 628132...)',
+                          prefixIcon: Icon(Icons.phone_outlined,
+                              color: AppTheme.textGray),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Nomor WhatsApp tidak boleh kosong';
+                          }
+                          if (!value.startsWith('0') && !value.startsWith('62')) {
+                            return 'Gunakan format 08... atau 628...';
+                          }
+                          return null;
+                        },
                       ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty)
-                          return 'Email tidak boleh kosong';
-                        if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
-                            .hasMatch(value)) {
-                          return 'Format email tidak valid';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
+                      const SizedBox(height: 16),
+                    ] else ...[
+                      // Email Field
+                      TextFormField(
+                        controller: _emailController,
+                        keyboardType: TextInputType.emailAddress,
+                        decoration: const InputDecoration(
+                          hintText: 'Email',
+                          prefixIcon: Icon(Icons.email_outlined,
+                              color: AppTheme.textGray),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Email tidak boleh kosong';
+                          }
+                          if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
+                              .hasMatch(value)) {
+                            return 'Format email tidak valid';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                    ],
 
                     // Password Field
                     TextFormField(
@@ -262,10 +397,12 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                       validator: (value) {
-                        if (value == null || value.isEmpty)
+                        if (value == null || value.isEmpty) {
                           return 'Password tidak boleh kosong';
-                        if (value.length < 6)
+                        }
+                        if (value.length < 6) {
                           return 'Password minimal 6 karakter';
+                        }
                         return null;
                       },
                     ),
@@ -289,6 +426,36 @@ class _LoginScreenState extends State<LoginScreen> {
                               )
                             : Text(
                                 _isRegistering ? 'Daftar Sekarang' : 'Masuk'),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Google Sign-In Button
+                    SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: OutlinedButton.icon(
+                        onPressed: _isLoading ? null : _handleGoogleSignIn,
+                        icon: Image.network(
+                          'https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg',
+                          height: 18,
+                          errorBuilder: (context, error, stackTrace) {
+                            return const Icon(Icons.g_mobiledata, size: 24);
+                          },
+                        ),
+                        label: const Text(
+                          'Masuk dengan Google',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: AppTheme.darkBlueText,
+                          ),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          side: BorderSide(color: Colors.grey.shade300),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
                       ),
                     ),
                     const SizedBox(height: 16),

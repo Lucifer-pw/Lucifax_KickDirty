@@ -3,6 +3,8 @@ import 'package:flutter/foundation.dart';
 import '../models/service_model.dart';
 import '../models/order_model.dart';
 import '../models/expense_model.dart';
+import '../models/category_model.dart';
+import '../models/voucher_model.dart';
 import 'whatsapp_service.dart';
 
 class DatabaseService with ChangeNotifier {
@@ -173,6 +175,8 @@ class DatabaseService with ChangeNotifier {
       pointsRedeemed: order.pointsRedeemed,
       estimatedCompletion: order.estimatedCompletion,
       mapsLink: order.mapsLink,
+      voucherCode: order.voucherCode,
+      voucherDiscount: order.voucherDiscount,
       statusTimeline: timeline,
       createdAt: order.createdAt,
       updatedAt: order.updatedAt,
@@ -621,5 +625,163 @@ class DatabaseService with ChangeNotifier {
   // Delete logistics method
   Future<void> deleteLogisticsMethod(String id) async {
     await _db.collection('logistics_methods').doc(id).delete();
+  }
+
+  // ==========================================
+  // CATEGORIES CRUD
+  // ==========================================
+
+  // Get stream of all categories
+  Stream<List<CategoryModel>> getCategories() {
+    return _db.collection('categories').orderBy('createdAt', descending: false).snapshots().map((snapshot) {
+      if (snapshot.docs.isEmpty) {
+        _seedDefaultCategory();
+      }
+      return snapshot.docs.map((doc) => CategoryModel.fromMap(doc.data(), doc.id)).toList();
+    });
+  }
+
+  // Get stream of active categories only
+  Stream<List<CategoryModel>> getActiveCategories() {
+    return _db.collection('categories')
+        .where('isActive', isEqualTo: true)
+        .orderBy('createdAt', descending: false)
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs.map((doc) => CategoryModel.fromMap(doc.data(), doc.id)).toList();
+    });
+  }
+
+  // Seed default category helper
+  void _seedDefaultCategory() {
+    _db.collection('categories').add({
+      'name': 'Sepatu',
+      'description': 'Layanan cuci dan perawatan sepatu',
+      'isActive': true,
+      'createdAt': FieldValue.serverTimestamp(),
+    }).catchError((_) {});
+  }
+
+  // Add category
+  Future<void> addCategory(CategoryModel category) async {
+    await _db.collection('categories').add(category.toMap());
+  }
+
+  // Update category
+  Future<void> updateCategory(CategoryModel category) async {
+    await _db.collection('categories').doc(category.id).update(category.toMap());
+  }
+
+  // Delete category (only if no services reference it)
+  Future<bool> deleteCategory(String categoryId) async {
+    final servicesCheck = await _db.collection('services').where('categoryId', isEqualTo: categoryId).limit(1).get();
+    if (servicesCheck.docs.isNotEmpty) {
+      return false; // Cannot delete - has associated services
+    }
+    await _db.collection('categories').doc(categoryId).delete();
+    return true;
+  }
+
+  // Toggle category active status
+  Future<void> toggleCategoryActive(String categoryId, bool isActive) async {
+    await _db.collection('categories').doc(categoryId).update({'isActive': isActive});
+  }
+
+  // Get services filtered by category
+  Stream<List<ServiceModel>> getServicesByCategory(String categoryId) {
+    return _db.collection('services')
+        .where('categoryId', isEqualTo: categoryId)
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs.map((doc) => ServiceModel.fromMap(doc.data(), doc.id)).toList();
+    });
+  }
+
+  // Get active services filtered by category
+  Stream<List<ServiceModel>> getActiveServicesByCategory(String categoryId) {
+    return _db.collection('services')
+        .where('categoryId', isEqualTo: categoryId)
+        .where('isActive', isEqualTo: true)
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs.map((doc) => ServiceModel.fromMap(doc.data(), doc.id)).toList();
+    });
+  }
+
+  // Toggle service active status
+  Future<void> toggleServiceActive(String serviceId, bool isActive) async {
+    await _db.collection('services').doc(serviceId).update({'isActive': isActive});
+  }
+
+  // ==========================================
+  // VOUCHERS CRUD
+  // ==========================================
+
+  // Get stream of all vouchers
+  Stream<List<VoucherModel>> getVouchers() {
+    return _db.collection('vouchers').orderBy('createdAt', descending: true).snapshots().map((snapshot) {
+      return snapshot.docs.map((doc) => VoucherModel.fromMap(doc.data(), doc.id)).toList();
+    });
+  }
+
+  // Get active vouchers (for customer view)
+  Stream<List<VoucherModel>> getActiveVouchers() {
+    return _db.collection('vouchers')
+        .where('isActive', isEqualTo: true)
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snapshot) {
+      final now = DateTime.now();
+      return snapshot.docs
+          .map((doc) => VoucherModel.fromMap(doc.data(), doc.id))
+          .where((v) {
+            if (v.validFrom != null && now.isBefore(v.validFrom!)) return false;
+            if (v.validTo != null && now.isAfter(v.validTo!)) return false;
+            return true;
+          })
+          .toList();
+    });
+  }
+
+  // Add voucher
+  Future<void> addVoucher(VoucherModel voucher) async {
+    await _db.collection('vouchers').add(voucher.toMap());
+  }
+
+  // Update voucher
+  Future<void> updateVoucher(VoucherModel voucher) async {
+    await _db.collection('vouchers').doc(voucher.id).update(voucher.toMap());
+  }
+
+  // Delete voucher
+  Future<void> deleteVoucher(String voucherId) async {
+    await _db.collection('vouchers').doc(voucherId).delete();
+  }
+
+  // Toggle voucher active status
+  Future<void> toggleVoucherActive(String voucherId, bool isActive) async {
+    await _db.collection('vouchers').doc(voucherId).update({'isActive': isActive});
+  }
+
+  // Validate a voucher code and return the voucher if valid
+  Future<VoucherModel?> validateVoucher(String code, double orderTotal) async {
+    final snapshot = await _db.collection('vouchers')
+        .where('code', isEqualTo: code.toUpperCase().trim())
+        .where('isActive', isEqualTo: true)
+        .limit(1)
+        .get();
+
+    if (snapshot.docs.isEmpty) return null;
+
+    final voucher = VoucherModel.fromMap(snapshot.docs.first.data(), snapshot.docs.first.id);
+    final now = DateTime.now();
+
+    if (voucher.validFrom != null && now.isBefore(voucher.validFrom!)) return null;
+    if (voucher.validTo != null && now.isAfter(voucher.validTo!)) return null;
+    if (orderTotal < voucher.minOrder) return null;
+
+    return voucher;
   }
 }

@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import '../models/user_model.dart';
 
 class AuthService with ChangeNotifier {
@@ -24,6 +25,15 @@ class AuthService with ChangeNotifier {
     });
   }
 
+  // Normalize phone number: convert 08xx or +62xx to 628xx format
+  static String normalizePhone(String phone) {
+    String cleaned = phone.replaceAll(RegExp(r'[^0-9]'), '');
+    if (cleaned.startsWith('0')) {
+      cleaned = '62${cleaned.substring(1)}';
+    }
+    return cleaned;
+  }
+
   // Fetch user model from Firestore
   Future<void> _fetchUserModel(String uid) async {
     try {
@@ -31,7 +41,7 @@ class AuthService with ChangeNotifier {
       if (doc.exists) {
         _currentUserModel = UserModel.fromMap(doc.data() as Map<String, dynamic>, doc.id);
       } else {
-        // If user document does not exist, create it as a customer (e.g. web customer)
+        // If user document does not exist, create it as a customer (e.g. Google Sign-In new user)
         if (_auth.currentUser != null) {
           _currentUserModel = UserModel(
             uid: uid,
@@ -64,6 +74,51 @@ class AuthService with ChangeNotifier {
     }
   }
 
+  // Sign In with Phone/WhatsApp (lookup email from phone, then authenticate)
+  Future<UserCredential?> signInWithPhone(String phoneNumber, String password) async {
+    try {
+      final normalized = normalizePhone(phoneNumber);
+      final query = await _db
+          .collection('users')
+          .where('phoneNumber', isEqualTo: normalized)
+          .limit(1)
+          .get();
+
+      if (query.docs.isEmpty) {
+        throw FirebaseAuthException(
+          code: 'user-not-found',
+          message: 'Nomor WhatsApp tidak terdaftar. Silakan daftar akun baru.',
+        );
+      }
+
+      final email = query.docs.first.get('email') as String;
+      return await signIn(email, password);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // Sign In with Google
+  Future<UserCredential?> signInWithGoogle() async {
+    try {
+      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
+      if (googleUser == null) return null; // Cancelled by user
+
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      final credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      UserCredential userCredential = await _auth.signInWithCredential(credential);
+      await _fetchUserModel(userCredential.user!.uid);
+      notifyListeners();
+      return userCredential;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   // Register (Customer or other roles)
   Future<UserCredential?> register({
     required String email,
@@ -82,7 +137,7 @@ class AuthService with ChangeNotifier {
         uid: userCredential.user!.uid,
         name: name.trim(),
         email: email.trim(),
-        phoneNumber: phoneNumber.trim(),
+        phoneNumber: normalizePhone(phoneNumber),
         role: role,
         createdAt: DateTime.now(),
       );

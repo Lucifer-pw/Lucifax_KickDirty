@@ -6,6 +6,8 @@ import '../../theme.dart';
 import '../../widgets/watermark.dart';
 import 'staff_permissions_screen.dart';
 import 'logistics_crud_screen.dart';
+import 'category_crud_screen.dart';
+import 'voucher_crud_screen.dart';
 
 class AdminSettingsScreen extends StatefulWidget {
   const AdminSettingsScreen({Key? key}) : super(key: key);
@@ -192,6 +194,32 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
                                 icon: Icons.stars_outlined,
                                 color: Colors.deepOrange,
                                 onTap: () => _showBusinessSettingsDialog(context),
+                              ),
+                              const Divider(height: 1, indent: 56),
+                              _buildSettingTile(
+                                title: 'Kelola Kategori & Layanan',
+                                subtitle: 'CRUD kategori & harga cuci jasa',
+                                icon: Icons.category_outlined,
+                                color: Colors.indigo,
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(builder: (_) => const CategoryCrudScreen()),
+                                  );
+                                },
+                              ),
+                              const Divider(height: 1, indent: 56),
+                              _buildSettingTile(
+                                title: 'Kelola Voucher Diskon',
+                                subtitle: 'CRUD voucher & potongan belanja',
+                                icon: Icons.confirmation_number_outlined,
+                                color: Colors.orange,
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(builder: (_) => const VoucherCrudScreen()),
+                                  );
+                                },
                               ),
                               const Divider(height: 1, indent: 56),
                               _buildSettingTile(

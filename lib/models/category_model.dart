@@ -1,34 +1,25 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-class ServiceModel {
+class CategoryModel {
   final String id;
   final String name;
-  final double price;
   final String description;
-  final String categoryId;
-  final String categoryName;
   final bool isActive;
   final DateTime createdAt;
 
-  ServiceModel({
+  CategoryModel({
     required this.id,
     required this.name,
-    required this.price,
     required this.description,
-    this.categoryId = '',
-    this.categoryName = '',
     this.isActive = true,
     required this.createdAt,
   });
 
-  factory ServiceModel.fromMap(Map<String, dynamic> map, String documentId) {
-    return ServiceModel(
+  factory CategoryModel.fromMap(Map<String, dynamic> map, String documentId) {
+    return CategoryModel(
       id: documentId,
       name: map['name'] ?? '',
-      price: (map['price'] as num?)?.toDouble() ?? 0.0,
       description: map['description'] ?? '',
-      categoryId: map['categoryId'] ?? '',
-      categoryName: map['categoryName'] ?? '',
       isActive: map['isActive'] ?? true,
       createdAt: (map['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
     );
@@ -37,10 +28,7 @@ class ServiceModel {
   Map<String, dynamic> toMap() {
     return {
       'name': name,
-      'price': price,
       'description': description,
-      'categoryId': categoryId,
-      'categoryName': categoryName,
       'isActive': isActive,
       'createdAt': Timestamp.fromDate(createdAt),
     };
@@ -49,7 +37,7 @@ class ServiceModel {
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
-    return other is ServiceModel && other.id == id;
+    return other is CategoryModel && other.id == id;
   }
 
   @override
