@@ -342,6 +342,7 @@ class InvoiceDetailModal extends StatelessWidget {
           ),
         ],
       ),
+    );
   }
 
   Widget _buildPriceSummaryRow(String label, String value, {bool isBold = false, Color? color}) {
