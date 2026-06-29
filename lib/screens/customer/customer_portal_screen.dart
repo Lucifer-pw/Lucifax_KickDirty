@@ -751,43 +751,53 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
                           onPressed: isSubmitting
                               ? null
                               : () async {
-                                  // Fallback: if list is empty but textfields have content, auto-add
-                                  if (orderItems.isEmpty) {
-                                    final name = nameController.text.trim();
-                                    if (name.isNotEmpty && selectedService != null) {
-                                      orderItems.add(OrderItem(
-                                        itemName: name,
-                                        serviceId: selectedService!.id,
-                                        serviceName: selectedService!.name,
-                                        categoryId: selectedCategory?.id ?? '',
-                                        categoryName: selectedCategory?.name ?? '',
-                                        price: selectedService!.price,
-                                      ));
-                                    }
-                                  }
-
-                                  if (orderItems.isEmpty) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(content: Text('Tambahkan minimal 1 barang ke daftar pesanan')),
-                                    );
-                                    return;
-                                  }
-
-                                  // Photo Before validation: MANDATORY (wajib)
-                                  if (photoBeforeList.isEmpty) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text('Silakan cek kembali kelengkapan isian formulir Anda! Foto kondisi awal (Before) wajib diunggah minimal 1 foto.'),
-                                      ),
-                                    );
-                                    return;
-                                  }
-
-                                  setStateSheet(() {
-                                    isSubmitting = true;
-                                  });
-
                                   try {
+                                    // 1. Validate Form Fields (e.g. address)
+                                    if (formKey.currentState != null && !formKey.currentState!.validate()) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(
+                                          content: Text('Silakan periksa kembali formulir Anda untuk kolom yang belum lengkap.'),
+                                        ),
+                                      );
+                                      return;
+                                    }
+
+                                    // Fallback: if list is empty but textfields have content, auto-add
+                                    if (orderItems.isEmpty) {
+                                      final name = nameController.text.trim();
+                                      if (name.isNotEmpty && selectedService != null) {
+                                        orderItems.add(OrderItem(
+                                          itemName: name,
+                                          serviceId: selectedService!.id,
+                                          serviceName: selectedService!.name,
+                                          categoryId: selectedCategory?.id ?? '',
+                                          categoryName: selectedCategory?.name ?? '',
+                                          price: selectedService!.price,
+                                        ));
+                                      }
+                                    }
+
+                                    if (orderItems.isEmpty) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(content: Text('Tambahkan minimal 1 barang ke daftar pesanan')),
+                                      );
+                                      return;
+                                    }
+
+                                    // Photo Before validation: MANDATORY (wajib)
+                                    if (photoBeforeList.isEmpty) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(
+                                          content: Text('Silakan cek kembali kelengkapan isian formulir Anda! Foto kondisi awal (Before) wajib diunggah minimal 1 foto.'),
+                                        ),
+                                      );
+                                      return;
+                                    }
+
+                                    setStateSheet(() {
+                                      isSubmitting = true;
+                                    });
+
                                     // Recalculate final totals
                                     double finalServicePrice = orderItems.fold(0.0, (sum, item) => sum + item.price);
                                     double finalVoucherDiscount = appliedVoucher != null ? appliedVoucher!.calculateDiscount(finalServicePrice) : 0.0;
@@ -843,6 +853,7 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
                                       _showCustomerQrisDialog(invoiceId, order);
                                     }
                                   } catch (e) {
+                                    print("Submit Order Error: $e");
                                     if (context.mounted) {
                                       ScaffoldMessenger.of(context).showSnackBar(
                                         SnackBar(content: Text('Gagal membuat pesanan: $e')),
