@@ -776,7 +776,9 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
                                   // Photo Before validation: MANDATORY (wajib)
                                   if (photoBeforeList.isEmpty) {
                                     ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(content: Text('Foto kondisi awal (Before) wajib diambil minimal 1 foto!')),
+                                      const SnackBar(
+                                        content: Text('Silakan cek kembali kelengkapan isian formulir Anda! Foto kondisi awal (Before) wajib diunggah minimal 1 foto.'),
+                                      ),
                                     );
                                     return;
                                   }
