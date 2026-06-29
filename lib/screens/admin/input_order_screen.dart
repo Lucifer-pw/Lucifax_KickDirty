@@ -435,7 +435,7 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
     }
     if (_photoBeforeList.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Foto barang (Before) wajib diambil minimal 1 foto!')),
+        const SnackBar(content: Text('Foto kondisi awal (Before) wajib diunggah minimal 1 foto!')),
       );
       return;
     }
