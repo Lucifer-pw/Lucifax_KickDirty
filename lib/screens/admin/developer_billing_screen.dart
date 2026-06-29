@@ -339,57 +339,90 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
                   const SizedBox(height: 12),
 
                   // Current Month Billing Status card
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: isCurrentMonthPaid ? Colors.green.shade50 : Colors.red.shade50,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: isCurrentMonthPaid ? Colors.green.shade100 : Colors.red.shade100),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Tagihan Bulan Ini (${DateFormat('MMMM yyyy').format(DateTime.now())}):',
-                          style: const TextStyle(fontSize: 12, color: AppTheme.textGray),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          isCurrentMonthPaid ? 'LUNAS (Aplikasi Aktif)' : 'BELUM DIBAYAR (Aplikasi Terkunci)',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: isCurrentMonthPaid ? Colors.green : Colors.red,
+                  (() {
+                    final now = DateTime.now();
+                    final bool isBillingActive = now.isAfter(_nextDueDate) || now.isAtSameMomentAs(_nextDueDate);
+                    
+                    Color cardBgColor = Colors.red.shade50;
+                    Color cardBorderColor = Colors.red.shade100;
+                    Color statusColor = Colors.red;
+                    String statusText = 'BELUM DIBAYAR (Aplikasi Terkunci)';
+                    
+                    if (isCurrentMonthPaid) {
+                      cardBgColor = Colors.green.shade50;
+                      cardBorderColor = Colors.green.shade100;
+                      statusColor = Colors.green;
+                      statusText = 'LUNAS (Aplikasi Aktif)';
+                    } else if (!isBillingActive) {
+                      cardBgColor = Colors.amber.shade50;
+                      cardBorderColor = Colors.amber.shade100;
+                      statusColor = Colors.amber.shade800;
+                      statusText = 'BELUM DIBAYAR (Kunci Belum Aktif)';
+                    }
+
+                    return Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: cardBgColor,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: cardBorderColor),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Tagihan Bulan Ini (${DateFormat('MMMM yyyy').format(DateTime.now())}):',
+                            style: const TextStyle(fontSize: 12, color: AppTheme.textGray),
                           ),
-                        ),
-                        const SizedBox(height: 16),
-                        SizedBox(
-                          width: double.infinity,
-                          height: 38,
-                          child: ElevatedButton(
-                            onPressed: () {
-                              setState(() {
-                                if (isCurrentMonthPaid) {
-                                  _lastPaidMonth = ''; // Mark unpaid
-                                } else {
-                                  _lastPaidMonth = currentMonthCode; // Mark paid
-                                }
-                              });
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: isCurrentMonthPaid ? Colors.redAccent : Colors.green,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                            ),
-                            child: Text(
-                              isCurrentMonthPaid ? 'Batalkan Konfirmasi / Tandai Belum Lunas' : 'Konfirmasi Pembayaran / Tandai Lunas',
-                              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+                          const SizedBox(height: 4),
+                          Text(
+                            statusText,
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                              color: statusColor,
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                  ),
+                          if (!isCurrentMonthPaid && !isBillingActive) ...[
+                            const SizedBox(height: 4),
+                            Text(
+                              'Sistem kunci otomatis baru aktif pada jatuh tempo ${DateFormat('dd/MM/yyyy').format(_nextDueDate)}',
+                              style: TextStyle(fontSize: 10, color: Colors.amber.shade900, fontStyle: FontStyle.italic),
+                            ),
+                          ],
+                          const SizedBox(height: 16),
+                          SizedBox(
+                            width: double.infinity,
+                            height: 46,
+                            child: ElevatedButton(
+                              onPressed: () {
+                                setState(() {
+                                  if (isCurrentMonthPaid) {
+                                    _lastPaidMonth = ''; // Mark unpaid
+                                  } else {
+                                    _lastPaidMonth = currentMonthCode; // Mark paid
+                                  }
+                                });
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: isCurrentMonthPaid ? Colors.redAccent : Colors.green,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                padding: const EdgeInsets.symmetric(horizontal: 12),
+                              ),
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Text(
+                                  isCurrentMonthPaid ? 'Batalkan Konfirmasi / Tandai Belum Lunas' : 'Konfirmasi Pembayaran / Tandai Lunas',
+                                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  })(),
                   const SizedBox(height: 16),
                   const Divider(),
                   const SizedBox(height: 12),
