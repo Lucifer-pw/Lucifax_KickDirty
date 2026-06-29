@@ -228,7 +228,39 @@ class InvoiceDetailModal extends StatelessWidget {
                   
                   const Divider(height: 20, color: AppTheme.lightGray),
 
-                  // Pricing Summary
+                  // Pricing Calculations
+                  double subtotal = order.items.fold(0.0, (sum, item) => sum + item.price);
+                  double pointsDiscount = (subtotal + order.deliveryFee - order.voucherDiscount) - order.totalAmount;
+                  if (pointsDiscount < 0) pointsDiscount = 0.0;
+
+                  // Pricing Summary Details
+                  _buildPriceSummaryRow(
+                    'Subtotal Layanan',
+                    'Rp ${subtotal.toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")}',
+                  );
+                  if (order.deliveryFee > 0) {
+                    _buildPriceSummaryRow(
+                      'Ongkos Kirim',
+                      'Rp ${order.deliveryFee.toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")}',
+                    );
+                  }
+                  if (order.voucherDiscount > 0) {
+                    _buildPriceSummaryRow(
+                      'Diskon Voucher (${order.voucherCode})',
+                      '-Rp ${order.voucherDiscount.toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")}',
+                      color: Colors.green,
+                    );
+                  }
+                  if (order.pointsRedeemed > 0 && pointsDiscount > 0) {
+                    _buildPriceSummaryRow(
+                      'Diskon Poin (${order.pointsRedeemed} Poin)',
+                      '-Rp ${pointsDiscount.toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")}',
+                      color: Colors.green,
+                    );
+                  }
+                  const Divider(height: 16, color: AppTheme.lightGray),
+
+                  // Pricing Summary Total
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -239,16 +271,6 @@ class InvoiceDetailModal extends StatelessWidget {
                       ),
                     ],
                   ),
-                  if (order.pointsRedeemed > 0) ...[
-                    const SizedBox(height: 4),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text('Poin Ditukar:', style: TextStyle(color: Colors.green, fontSize: 11)),
-                        Text('${order.pointsRedeemed} Poin (Diskon Rp 25.000)', style: const TextStyle(color: Colors.green, fontSize: 11, fontWeight: FontWeight.bold)),
-                      ],
-                    ),
-                  ],
                   if (order.pointsEarned > 0) ...[
                     const SizedBox(height: 4),
                     Row(
@@ -321,6 +343,32 @@ class InvoiceDetailModal extends StatelessWidget {
                 fontWeight: FontWeight.w600, 
                 color: valueColor ?? AppTheme.darkBlueText
               ),
+            ),
+          ),
+        ],
+      ),
+  }
+
+  Widget _buildPriceSummaryRow(String label, String value, {bool isBold = false, Color? color}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
+              color: color ?? AppTheme.darkBlueText,
+            ),
+          ),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: isBold ? FontWeight.bold : FontWeight.w600,
+              color: color ?? AppTheme.darkBlueText,
             ),
           ),
         ],

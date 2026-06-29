@@ -138,18 +138,41 @@ class _HistoryOrdersScreenState extends State<HistoryOrdersScreen> {
               ),
               pw.SizedBox(height: 8),
 
-              // Total Summary
+              // Total Summary and Notes
               pw.Row(
-                mainAxisAlignment: pw.MainAxisAlignment.end,
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
                 children: [
+                  // Left side: Catatan
+                  pw.Expanded(
+                    child: pw.Column(
+                      crossAxisAlignment: pw.CrossAxisAlignment.start,
+                      children: [
+                        if (order.notes.isNotEmpty) ...[
+                          pw.Text('Catatan:', style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: PdfColors.orange800)),
+                          pw.SizedBox(height: 2),
+                          pw.Text(order.notes, style: pw.TextStyle(fontSize: 8, fontStyle: pw.FontStyle.italic, color: PdfColors.orange800)),
+                        ],
+                      ],
+                    ),
+                  ),
+                  pw.SizedBox(width: 20),
+                  // Right side: Price Summary
                   pw.Column(
                     crossAxisAlignment: pw.CrossAxisAlignment.end,
                     children: [
+                      pw.Text('Subtotal: Rp ${order.items.fold(0.0, (sum, item) => sum + item.price).toStringAsFixed(0)}', style: const pw.TextStyle(fontSize: 8)),
                       if (order.deliveryFee > 0)
                         pw.Text('Ongkir: Rp ${order.deliveryFee.toStringAsFixed(0)}', style: const pw.TextStyle(fontSize: 8)),
-                      if (order.pointsRedeemed > 0)
-                        pw.Text('Diskon Poin: -Rp 25.000', style: const pw.TextStyle(fontSize: 8, color: PdfColors.green)),
-                      pw.SizedBox(height: 2),
+                      if (order.voucherDiscount > 0)
+                        pw.Text('Diskon Voucher: -Rp ${order.voucherDiscount.toStringAsFixed(0)}', style: const pw.TextStyle(fontSize: 8, color: PdfColors.green)),
+                      if (order.pointsRedeemed > 0) ...[
+                        // Calculate points discount dynamically
+                        pw.Text(
+                          'Diskon Poin: -Rp ${((order.items.fold(0.0, (sum, item) => sum + item.price) + order.deliveryFee - order.voucherDiscount) - order.totalAmount).clamp(0.0, double.infinity).toStringAsFixed(0)}',
+                          style: const pw.TextStyle(fontSize: 8, color: PdfColors.green),
+                        ),
+                      ],
+                      pw.SizedBox(height: 4),
                       pw.Text(
                         'TOTAL: Rp ${order.totalAmount.toStringAsFixed(0)}',
                         style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold, color: PdfColor.fromHex('#0D47A1')),
@@ -158,18 +181,14 @@ class _HistoryOrdersScreenState extends State<HistoryOrdersScreen> {
                   ),
                 ],
               ),
-              pw.SizedBox(height: 10),
-              if (order.notes.isNotEmpty)
-                pw.Text('Catatan: ${order.notes}', style: pw.TextStyle(fontSize: 7, fontStyle: pw.FontStyle.italic, color: PdfColors.orange)),
+              pw.SizedBox(height: 16),
 
-              pw.Spacer(),
-
-              // Footer Note
+              // Footer Note (dynamic height, no Spacer)
               pw.Center(
                 child: pw.Column(
                   children: [
                     pw.Text('Terima kasih atas kunjungan Anda!', style: const pw.TextStyle(fontSize: 8)),
-                    pw.SizedBox(height: 1),
+                    pw.SizedBox(height: 2),
                     pw.Text('HP/WA: $shopPhone • $shopName', style: const pw.TextStyle(fontSize: 7)),
                   ],
                 ),
