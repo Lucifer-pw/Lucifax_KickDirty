@@ -362,6 +362,11 @@ class DatabaseService with ChangeNotifier {
     await _db.collection('expenses').doc(expenseId).delete();
   }
 
+  // Update an expense
+  Future<void> updateExpense(ExpenseModel expense) async {
+    await _db.collection('expenses').doc(expense.id).update(expense.toMap());
+  }
+
   // ==========================================
   // DASHBOARD SALES RECAPS
   // ==========================================

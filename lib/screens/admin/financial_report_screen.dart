@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
 import '../../models/expense_model.dart';
 import '../../models/order_model.dart';
 import '../../services/database_service.dart';
@@ -13,13 +14,15 @@ class FinancialReportScreen extends StatefulWidget {
 }
 
 class _FinancialReportScreenState extends State<FinancialReportScreen> {
-  String _selectedTimeframe = 'monthly'; // 'daily' | 'weekly' | 'monthly' | 'yearly'
+  String _selectedTimeframe = 'monthly'; // 'daily' | 'weekly' | 'monthly' | 'yearly' | 'custom'
+  DateTimeRange? _customDateRange;
 
   void _showAddExpenseDialog() {
     final dbService = Provider.of<DatabaseService>(context, listen: false);
     final titleController = TextEditingController();
     final amountController = TextEditingController();
     String selectedCategory = 'Sabun & Bahan Kimia';
+    DateTime selectedDate = DateTime.now();
     final formKey = GlobalKey<FormState>();
     bool isSubmitting = false;
 
@@ -78,6 +81,29 @@ class _FinancialReportScreenState extends State<FinancialReportScreen> {
                           return null;
                         },
                       ),
+                      const SizedBox(height: 12),
+                      ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: const Icon(Icons.calendar_today, color: AppTheme.primaryBlue),
+                        title: const Text('Tanggal Pengeluaran', style: TextStyle(fontSize: 12, color: AppTheme.textGray)),
+                        subtitle: Text(
+                          DateFormat('dd MMMM yyyy').format(selectedDate),
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                        ),
+                        onTap: () async {
+                          final date = await showDatePicker(
+                            context: context,
+                            initialDate: selectedDate,
+                            firstDate: DateTime(2020),
+                            lastDate: DateTime.now().add(const Duration(days: 365)),
+                          );
+                          if (date != null) {
+                            setStateDialog(() {
+                              selectedDate = date;
+                            });
+                          }
+                        },
+                      ),
                     ],
                   ),
                 ),
@@ -102,7 +128,7 @@ class _FinancialReportScreenState extends State<FinancialReportScreen> {
                               title: titleController.text.trim(),
                               amount: double.parse(amountController.text.trim()),
                               category: selectedCategory,
-                              createdAt: DateTime.now(),
+                              createdAt: selectedDate,
                             );
                             await dbService.addExpense(expense);
                             if (context.mounted) {
@@ -115,6 +141,151 @@ class _FinancialReportScreenState extends State<FinancialReportScreen> {
                             if (context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(content: Text('Gagal mencatat pengeluaran: $e')),
+                              );
+                            }
+                          } finally {
+                            setStateDialog(() {
+                              isSubmitting = false;
+                            });
+                          }
+                        },
+                  style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryBlue),
+                  child: isSubmitting
+                      ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                      : const Text('Simpan'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showEditExpenseDialog(ExpenseModel expense) {
+    final dbService = Provider.of<DatabaseService>(context, listen: false);
+    final titleController = TextEditingController(text: expense.title);
+    final amountController = TextEditingController(text: expense.amount.toStringAsFixed(0));
+    String selectedCategory = expense.category;
+    DateTime selectedDate = expense.createdAt;
+    final formKey = GlobalKey<FormState>();
+    bool isSubmitting = false;
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            return AlertDialog(
+              title: const Text('Edit Catatan Pengeluaran'),
+              content: Form(
+                key: formKey,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      TextFormField(
+                        controller: titleController,
+                        decoration: const InputDecoration(
+                          labelText: 'Nama Pengeluaran / Keterangan',
+                          hintText: 'Contoh: Beli Parfum Sepatu 2L',
+                        ),
+                        validator: (v) => v == null || v.trim().isEmpty ? 'Keterangan wajib diisi' : null,
+                      ),
+                      const SizedBox(height: 12),
+                      DropdownButtonFormField<String>(
+                        value: selectedCategory,
+                        decoration: const InputDecoration(labelText: 'Kategori'),
+                        items: const [
+                          DropdownMenuItem(value: 'Sabun & Bahan Kimia', child: Text('Sabun & Bahan Kimia')),
+                          DropdownMenuItem(value: 'Gaji Karyawan', child: Text('Gaji Karyawan')),
+                          DropdownMenuItem(value: 'Transportasi & Kurir', child: Text('Transportasi & Kurir')),
+                          DropdownMenuItem(value: 'Sewa & Utilitas', child: Text('Sewa & Utilitas (Listrik/Air)')),
+                          DropdownMenuItem(value: 'Lain-lain', child: Text('Lain-lain')),
+                        ],
+                        onChanged: (val) {
+                          if (val != null) {
+                            setStateDialog(() {
+                              selectedCategory = val;
+                            });
+                          }
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: amountController,
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(
+                          labelText: 'Jumlah Pengeluaran (Rp)',
+                          hintText: 'Contoh: 150000',
+                        ),
+                        validator: (v) {
+                          if (v == null || v.trim().isEmpty) return 'Jumlah wajib diisi';
+                          if (double.tryParse(v) == null) return 'Harus berupa angka';
+                          if (double.parse(v) <= 0) return 'Harus lebih dari 0';
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: const Icon(Icons.calendar_today, color: AppTheme.primaryBlue),
+                        title: const Text('Tanggal Pengeluaran', style: TextStyle(fontSize: 12, color: AppTheme.textGray)),
+                        subtitle: Text(
+                          DateFormat('dd MMMM yyyy').format(selectedDate),
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                        ),
+                        onTap: () async {
+                          final date = await showDatePicker(
+                            context: context,
+                            initialDate: selectedDate,
+                            firstDate: DateTime(2020),
+                            lastDate: DateTime.now().add(const Duration(days: 365)),
+                          );
+                          if (date != null) {
+                            setStateDialog(() {
+                              selectedDate = date;
+                            });
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Batal', style: TextStyle(color: AppTheme.textGray)),
+                ),
+                ElevatedButton(
+                  onPressed: isSubmitting
+                      ? null
+                      : () async {
+                          if (!formKey.currentState!.validate()) return;
+                          setStateDialog(() {
+                            isSubmitting = true;
+                          });
+
+                          try {
+                            final updated = ExpenseModel(
+                              id: expense.id,
+                              title: titleController.text.trim(),
+                              amount: double.parse(amountController.text.trim()),
+                              category: selectedCategory,
+                              createdAt: selectedDate,
+                            );
+                            await dbService.updateExpense(updated);
+                            if (context.mounted) {
+                              Navigator.pop(context);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Pengeluaran berhasil diperbarui!')),
+                              );
+                            }
+                          } catch (e) {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('Gagal memperbarui pengeluaran: $e')),
                               );
                             }
                           } finally {
@@ -164,6 +335,37 @@ class _FinancialReportScreenState extends State<FinancialReportScreen> {
     }
   }
 
+  Future<void> _selectCustomDateRange() async {
+    final DateTimeRange? picked = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+      initialDateRange: _customDateRange ?? DateTimeRange(
+        start: DateTime.now().subtract(const Duration(days: 7)),
+        end: DateTime.now(),
+      ),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: AppTheme.primaryBlue,
+              onPrimary: Colors.white,
+              onSurface: AppTheme.darkBlueText,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null) {
+      setState(() {
+        _selectedTimeframe = 'custom';
+        _customDateRange = picked;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final dbService = Provider.of<DatabaseService>(context);
@@ -192,8 +394,30 @@ class _FinancialReportScreenState extends State<FinancialReportScreen> {
               final expensesRecap = dbService.calculateExpensesRecap(expenses);
 
               // Extract values based on selected timeframe
-              double revenue = salesRecap[_selectedTimeframe] ?? 0.0;
-              double totalExpense = expensesRecap[_selectedTimeframe] ?? 0.0;
+              double revenue = 0.0;
+              double totalExpense = 0.0;
+
+              if (_selectedTimeframe == 'custom' && _customDateRange != null) {
+                final start = DateTime(_customDateRange!.start.year, _customDateRange!.start.month, _customDateRange!.start.day);
+                final end = DateTime(_customDateRange!.end.year, _customDateRange!.end.month, _customDateRange!.end.day, 23, 59, 59);
+
+                final customOrders = orders.where((o) {
+                  if (o.paymentStatus != 'sudah_bayar') return false;
+                  return o.createdAt.isAfter(start.subtract(const Duration(seconds: 1))) &&
+                         o.createdAt.isBefore(end.add(const Duration(seconds: 1)));
+                }).toList();
+                revenue = customOrders.fold(0.0, (sum, o) => sum + o.totalAmount);
+
+                final customExpenses = expenses.where((e) {
+                  return e.createdAt.isAfter(start.subtract(const Duration(seconds: 1))) &&
+                         e.createdAt.isBefore(end.add(const Duration(seconds: 1)));
+                }).toList();
+                totalExpense = customExpenses.fold(0.0, (sum, e) => sum + e.amount);
+              } else {
+                revenue = salesRecap[_selectedTimeframe] ?? 0.0;
+                totalExpense = expensesRecap[_selectedTimeframe] ?? 0.0;
+              }
+
               double netProfit = revenue - totalExpense;
 
               return SingleChildScrollView(
@@ -203,6 +427,26 @@ class _FinancialReportScreenState extends State<FinancialReportScreen> {
                   children: [
                     // Timeframe Filter Buttons
                     _buildTimeframeFilter(),
+                    if (_selectedTimeframe == 'custom' && _customDateRange != null) ...[
+                      const SizedBox(height: 8),
+                      Center(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: AppTheme.primaryBlue.withOpacity(0.08),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            'Rentang: ${DateFormat('dd/MM/yyyy').format(_customDateRange!.start)} - ${DateFormat('dd/MM/yyyy').format(_customDateRange!.end)}',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: AppTheme.primaryBlue,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 20),
 
                     // Financial Cards (Revenue, Expenses, Net Profit)
@@ -250,20 +494,41 @@ class _FinancialReportScreenState extends State<FinancialReportScreen> {
   }
 
   Widget _buildTimeframeFilter() {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppTheme.lightGray.withOpacity(0.5),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      padding: const EdgeInsets.all(4),
-      child: Row(
-        children: [
-          _buildFilterButton('daily', 'Hari Ini'),
-          _buildFilterButton('weekly', 'Minggu Ini'),
-          _buildFilterButton('monthly', 'Bulan Ini'),
-          _buildFilterButton('yearly', 'Tahun Ini'),
-        ],
-      ),
+    return Row(
+      children: [
+        Expanded(
+          child: Container(
+            decoration: BoxDecoration(
+              color: AppTheme.lightGray.withOpacity(0.5),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            padding: const EdgeInsets.all(4),
+            child: Row(
+              children: [
+                _buildFilterButton('daily', 'Hari Ini'),
+                _buildFilterButton('weekly', 'Minggu Ini'),
+                _buildFilterButton('monthly', 'Bulan Ini'),
+                _buildFilterButton('yearly', 'Tahun Ini'),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        IconButton(
+          onPressed: _selectCustomDateRange,
+          icon: Icon(
+            Icons.calendar_month,
+            color: _selectedTimeframe == 'custom' ? AppTheme.primaryBlue : AppTheme.textGray,
+          ),
+          style: IconButton.styleFrom(
+            backgroundColor: _selectedTimeframe == 'custom'
+                ? AppTheme.primaryBlue.withOpacity(0.12)
+                : AppTheme.lightGray.withOpacity(0.5),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            padding: const EdgeInsets.all(10),
+          ),
+        ),
+      ],
     );
   }
 
@@ -495,7 +760,6 @@ class _FinancialReportScreenState extends State<FinancialReportScreen> {
   }
 
   Widget _buildCategoryBreakdown(List<ExpenseModel> expenses) {
-    // Group expenses by category for current timeframe
     Map<String, double> categories = {
       'Sabun & Bahan Kimia': 0.0,
       'Gaji Karyawan': 0.0,
@@ -505,12 +769,12 @@ class _FinancialReportScreenState extends State<FinancialReportScreen> {
     };
 
     double total = 0;
-    DateTime now = DateTime.now();
-    DateTime today = DateTime(now.year, now.month, now.day);
-    int weekdayDiff = now.weekday - 1;
-    DateTime startOfWeek = today.subtract(Duration(days: weekdayDiff));
-    DateTime startOfMonth = DateTime(now.year, now.month, 1);
-    DateTime startOfYear = DateTime(now.year, 1, 1);
+    final DateTime now = DateTime.now();
+    final DateTime today = DateTime(now.year, now.month, now.day);
+    final int weekdayDiff = now.weekday - 1;
+    final DateTime startOfWeek = today.subtract(Duration(days: weekdayDiff));
+    final DateTime startOfMonth = DateTime(now.year, now.month, 1);
+    final DateTime startOfYear = DateTime(now.year, 1, 1);
 
     for (var exp in expenses) {
       bool isMatch = false;
@@ -522,6 +786,13 @@ class _FinancialReportScreenState extends State<FinancialReportScreen> {
         isMatch = true;
       } else if (_selectedTimeframe == 'yearly' && (exp.createdAt.isAfter(startOfYear) || exp.createdAt.isAtSameMomentAs(startOfYear))) {
         isMatch = true;
+      } else if (_selectedTimeframe == 'custom' && _customDateRange != null) {
+        final start = DateTime(_customDateRange!.start.year, _customDateRange!.start.month, _customDateRange!.start.day);
+        final end = DateTime(_customDateRange!.end.year, _customDateRange!.end.month, _customDateRange!.end.day, 23, 59, 59);
+        if (exp.createdAt.isAfter(start.subtract(const Duration(seconds: 1))) &&
+            exp.createdAt.isBefore(end.add(const Duration(seconds: 1)))) {
+          isMatch = true;
+        }
       }
 
       if (isMatch) {
@@ -586,7 +857,32 @@ class _FinancialReportScreenState extends State<FinancialReportScreen> {
   }
 
   Widget _buildExpensesList(List<ExpenseModel> expenses) {
-    if (expenses.isEmpty) {
+    final DateTime now = DateTime.now();
+    final DateTime today = DateTime(now.year, now.month, now.day);
+    final int weekdayDiff = now.weekday - 1;
+    final DateTime startOfWeek = today.subtract(Duration(days: weekdayDiff));
+    final DateTime startOfMonth = DateTime(now.year, now.month, 1);
+    final DateTime startOfYear = DateTime(now.year, 1, 1);
+
+    final filtered = expenses.where((exp) {
+      if (_selectedTimeframe == 'daily') {
+        return exp.createdAt.isAfter(today) || exp.createdAt.isAtSameMomentAs(today);
+      } else if (_selectedTimeframe == 'weekly') {
+        return exp.createdAt.isAfter(startOfWeek) || exp.createdAt.isAtSameMomentAs(startOfWeek);
+      } else if (_selectedTimeframe == 'monthly') {
+        return exp.createdAt.isAfter(startOfMonth) || exp.createdAt.isAtSameMomentAs(startOfMonth);
+      } else if (_selectedTimeframe == 'yearly') {
+        return exp.createdAt.isAfter(startOfYear) || exp.createdAt.isAtSameMomentAs(startOfYear);
+      } else if (_selectedTimeframe == 'custom' && _customDateRange != null) {
+        final start = DateTime(_customDateRange!.start.year, _customDateRange!.start.month, _customDateRange!.start.day);
+        final end = DateTime(_customDateRange!.end.year, _customDateRange!.end.month, _customDateRange!.end.day, 23, 59, 59);
+        return exp.createdAt.isAfter(start.subtract(const Duration(seconds: 1))) &&
+               exp.createdAt.isBefore(end.add(const Duration(seconds: 1)));
+      }
+      return true;
+    }).toList();
+
+    if (filtered.isEmpty) {
       return Container(
         width: double.infinity,
         padding: const EdgeInsets.symmetric(vertical: 24),
@@ -603,9 +899,9 @@ class _FinancialReportScreenState extends State<FinancialReportScreen> {
     return ListView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      itemCount: expenses.length > 10 ? 10 : expenses.length, // Show up to 10 latest
+      itemCount: filtered.length,
       itemBuilder: (context, index) {
-        final exp = expenses[index];
+        final exp = filtered[index];
         String day = exp.createdAt.day.toString().padLeft(2, '0');
         String month = exp.createdAt.month.toString().padLeft(2, '0');
         String year = exp.createdAt.year.toString();
@@ -634,6 +930,10 @@ class _FinancialReportScreenState extends State<FinancialReportScreen> {
                 Text(
                   'Rp $amountFormatted',
                   style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.red),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.edit_outlined, color: Colors.blueAccent, size: 18),
+                  onPressed: () => _showEditExpenseDialog(exp),
                 ),
                 IconButton(
                   icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 18),

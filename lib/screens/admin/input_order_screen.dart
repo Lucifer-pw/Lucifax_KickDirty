@@ -340,8 +340,132 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
     return merged.values.toList();
   }
 
+  Future<void> _showEditCustomerDialog(BuildContext context, String currentName, String currentPhone, String customerId, int currentPoints, VoidCallback onUpdated) async {
+    final nameController = TextEditingController(text: currentName);
+    final phoneController = TextEditingController(text: currentPhone);
+    final formKey = GlobalKey<FormState>();
+
+    await showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Edit Informasi Pelanggan'),
+          content: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  controller: nameController,
+                  decoration: const InputDecoration(labelText: 'Nama Pelanggan'),
+                  validator: (v) => v == null || v.trim().isEmpty ? 'Nama wajib diisi' : null,
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: phoneController,
+                  decoration: const InputDecoration(labelText: 'Nomor WhatsApp'),
+                  keyboardType: TextInputType.phone,
+                  validator: (v) {
+                    if (v == null || v.trim().isEmpty) return 'Nomor WA wajib diisi';
+                    return null;
+                  },
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Batal'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                if (!formKey.currentState!.validate()) return;
+                final newName = nameController.text.trim();
+                final newPhone = phoneController.text.trim();
+
+                try {
+                  // If phone number changed, we need to delete the old document and create a new one
+                  if (newPhone != currentPhone) {
+                    await FirebaseFirestore.instance.collection('customers').doc(currentPhone).delete();
+                  }
+
+                  // Set new/updated doc
+                  await FirebaseFirestore.instance.collection('customers').doc(newPhone).set({
+                    'name': newName,
+                    'phone': newPhone,
+                    'loyaltyPoints': currentPoints,
+                    if (customerId.isNotEmpty) 'uid': customerId,
+                    'updatedAt': FieldValue.serverTimestamp(),
+                  });
+
+                  // If user account exists, we can also update their name in 'users' collection
+                  if (customerId.isNotEmpty) {
+                    await FirebaseFirestore.instance.collection('users').doc(customerId).update({
+                      'name': newName,
+                      'phoneNumber': newPhone,
+                    });
+                  }
+
+                  Navigator.pop(context); // Close edit dialog
+                  onUpdated();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Informasi pelanggan berhasil diperbarui')),
+                  );
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Gagal memperbarui: $e')),
+                  );
+                }
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryBlue),
+              child: const Text('Simpan'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _showDeleteCustomerDialog(BuildContext context, String name, String phone, VoidCallback onDeleted) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Hapus Pelanggan'),
+          content: Text('Apakah Anda yakin ingin menghapus pelanggan "$name" (+$phone) dari daftar?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Batal'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              style: TextButton.styleFrom(foregroundColor: Colors.red),
+              child: const Text('Hapus'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirm == true) {
+      try {
+        await FirebaseFirestore.instance.collection('customers').doc(phone).delete();
+        onDeleted();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Pelanggan berhasil dihapus')),
+        );
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal menghapus: $e')),
+        );
+      }
+    }
+  }
+
   Future<void> _showCustomerSearchDialog() async {
-    final customersFuture = _fetchAllCustomers();
+    Future<List<Map<String, String>>> customersFuture = _fetchAllCustomers();
     showDialog(
       context: context,
       builder: (context) {
@@ -403,6 +527,31 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
                                 ),
                                 title: Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
                                 subtitle: Text('WA: +$phone • Poin: $points'),
+                                trailing: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    IconButton(
+                                      icon: const Icon(Icons.edit, color: Colors.blue, size: 20),
+                                      onPressed: () async {
+                                        await _showEditCustomerDialog(context, name, phone, item['customerId'] ?? '', points, () {
+                                          setStateDialog(() {
+                                            customersFuture = _fetchAllCustomers();
+                                          });
+                                        });
+                                      },
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(Icons.delete, color: Colors.red, size: 20),
+                                      onPressed: () async {
+                                        await _showDeleteCustomerDialog(context, name, phone, () {
+                                          setStateDialog(() {
+                                            customersFuture = _fetchAllCustomers();
+                                          });
+                                        });
+                                      },
+                                    ),
+                                  ],
+                                ),
                                 onTap: () {
                                   setState(() {
                                     _nameController.text = name;

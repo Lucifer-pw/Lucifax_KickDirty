@@ -139,18 +139,48 @@ class AuthService with ChangeNotifier {
         password: password,
       );
 
+      final normalized = normalizePhone(phoneNumber);
+
+      // Check if there is an existing record in customers collection with ID matching normalized
+      int existingPoints = 0;
+      try {
+        DocumentSnapshot customerDoc = await _db.collection('customers').doc(normalized).get();
+        if (customerDoc.exists) {
+          final data = customerDoc.data() as Map<String, dynamic>? ?? {};
+          existingPoints = data['loyaltyPoints'] as int? ?? 0;
+
+          // Update the customers document with user's UID and user's registered name
+          await _db.collection('customers').doc(normalized).update({
+            'uid': userCredential.user!.uid,
+            'name': name.trim(),
+            'updatedAt': FieldValue.serverTimestamp(),
+          });
+        } else {
+          // If no record exists, create one in the customers collection
+          await _db.collection('customers').doc(normalized).set({
+            'name': name.trim(),
+            'phone': normalized,
+            'uid': userCredential.user!.uid,
+            'loyaltyPoints': 0,
+            'createdAt': FieldValue.serverTimestamp(),
+          });
+        }
+      } catch (e) {
+        if (kDebugMode) print("Error linking customer record on register: $e");
+      }
+
       _currentUserModel = UserModel(
         uid: userCredential.user!.uid,
         name: name.trim(),
         email: email.trim(),
-        phoneNumber: normalizePhone(phoneNumber),
+        phoneNumber: normalized,
         role: role,
+        loyaltyPoints: existingPoints,
         createdAt: DateTime.now(),
       );
 
       await _db.collection('users').doc(userCredential.user!.uid).set(_currentUserModel!.toMap());
       
-      final normalized = normalizePhone(phoneNumber);
       await _db.collection('phone_lookups').doc(normalized).set({
         'email': email.trim(),
         'uid': userCredential.user!.uid,
