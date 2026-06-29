@@ -55,9 +55,19 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
   late String _idempotencyToken;
   bool _isSubmitting = false;
 
+  late Stream<List<CategoryModel>> _categoriesStream;
+  late Stream<List<ServiceModel>> _servicesStream;
+  late Stream<List<Map<String, dynamic>>> _logisticsStream;
+  late Stream<List<VoucherModel>> _vouchersStream;
+
   @override
   void initState() {
     super.initState();
+    final dbService = Provider.of<DatabaseService>(context, listen: false);
+    _categoriesStream = dbService.getActiveCategories();
+    _servicesStream = dbService.getServices();
+    _logisticsStream = dbService.getLogisticsMethods();
+    _vouchersStream = dbService.getActiveVouchers();
     _generateIdempotencyToken();
   }
 
@@ -540,7 +550,7 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
         automaticallyImplyLeading: !widget.isTab,
       ),
       body: StreamBuilder<List<CategoryModel>>(
-        stream: dbService.getActiveCategories(),
+        stream: _categoriesStream,
         builder: (context, catSnapshot) {
           if (catSnapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -548,7 +558,7 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
           _availableCategories = catSnapshot.data ?? [];
 
           return StreamBuilder<List<ServiceModel>>(
-            stream: dbService.getServices(),
+            stream: _servicesStream,
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return const Center(child: CircularProgressIndicator());
@@ -881,7 +891,7 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
                     child: Padding(
                       padding: const EdgeInsets.all(16.0),
                       child: StreamBuilder<List<Map<String, dynamic>>>(
-                        stream: dbService.getLogisticsMethods(),
+                        stream: _logisticsStream,
                         builder: (context, logSnapshot) {
                           final methods = logSnapshot.data ?? [];
                           
@@ -972,7 +982,7 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
                           Text('Voucher Diskon', style: Theme.of(context).textTheme.titleMedium),
                           const SizedBox(height: 12),
                           StreamBuilder<List<VoucherModel>>(
-                            stream: dbService.getActiveVouchers(),
+                            stream: _vouchersStream,
                             builder: (context, snapshot) {
                               final activeVouchers = snapshot.data ?? [];
                               final eligibleVouchers = activeVouchers.where((v) => _itemsPrice >= v.minOrder).toList();

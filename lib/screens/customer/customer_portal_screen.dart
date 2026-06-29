@@ -29,9 +29,18 @@ class CustomerPortalScreen extends StatefulWidget {
 class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
   int _currentIndex = 0;
 
+  late Stream<List<CategoryModel>> _categoriesStream;
+  late Stream<List<ServiceModel>> _servicesStream;
+  late Stream<List<VoucherModel>> _vouchersStream;
+
   @override
   void initState() {
     super.initState();
+    final dbService = Provider.of<DatabaseService>(context, listen: false);
+    _categoriesStream = dbService.getActiveCategories();
+    _servicesStream = dbService.getServices();
+    _vouchersStream = dbService.getActiveVouchers();
+
     // Run update check on customer portal load
     WidgetsBinding.instance.addPostFrameCallback((_) {
       UpdateDialog.checkAndShow(context);
@@ -246,7 +255,7 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
                             
                              // Category & Service Realtime StreamBuilders
                              StreamBuilder<List<CategoryModel>>(
-                               stream: dbService.getActiveCategories(),
+                               stream: _categoriesStream,
                                builder: (context, catSnapshot) {
                                  final activeCategories = catSnapshot.data ?? categories;
                                  if (selectedCategory != null && !activeCategories.contains(selectedCategory)) {
@@ -254,7 +263,7 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
                                  }
 
                                  return StreamBuilder<List<ServiceModel>>(
-                                   stream: dbService.getServices(),
+                                   stream: _servicesStream,
                                    builder: (context, serviceSnapshot) {
                                      final allServices = serviceSnapshot.data ?? services;
                                      
@@ -539,7 +548,7 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
                             ),
                             const SizedBox(height: 10),
                             StreamBuilder<List<VoucherModel>>(
-                              stream: dbService.getActiveVouchers(),
+                              stream: _vouchersStream,
                               builder: (context, snapshot) {
                                 final activeVouchers = snapshot.data ?? [];
                                 final eligibleVouchers = activeVouchers.where((v) => servicePrice >= v.minOrder).toList();
