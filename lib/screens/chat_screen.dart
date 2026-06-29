@@ -176,7 +176,9 @@ class _ChatScreenState extends State<ChatScreen> {
                   itemCount: messages.length,
                   itemBuilder: (context, index) {
                     final msg = messages[index];
-                    final bool isMe = msg['senderId'] == widget.senderId;
+                    final bool isMe = widget.isAdmin
+                        ? (msg['senderId'] != widget.customerId)
+                        : (msg['senderId'] == widget.senderId);
                     
                     DateTime? date;
                     if (msg['timestamp'] is Timestamp) {
