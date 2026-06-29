@@ -117,16 +117,43 @@ void main() {
       // Run recap calculation
       final recaps = dbService.calculateSalesRecap(testOrders);
 
-      // Verify daily (only today paid order: KD-1 = 100,000)
-      expect(recaps['daily'], equals(100000));
+      // Dynamically calculate expected values based on real-time date
+      final today = DateTime(now.year, now.month, now.day);
+      
+      double expectedDaily = 100000.0; // KD-1 is today
+      if (dateThisWeek.isAfter(today) || dateThisWeek.isAtSameMomentAs(today)) {
+        expectedDaily += 150000.0; // KD-4 falls on today
+      }
 
-      // Verify weekly (today paid + yesterday paid + this week paid)
-      // KD-1 (100k) + KD-3 (50k) + KD-4 (150k) = 300,000
-      expect(recaps['weekly'], greaterThanOrEqualTo(300000));
+      double expectedWeekly = 100000.0 + 150000.0; // KD-1 + KD-4 (both this week)
+      double expectedYearly = 100000.0 + 150000.0; // KD-1 + KD-4
 
-      // Verify yearly (all paid orders)
-      // KD-1 (100k) + KD-3 (50k) + KD-4 (150k) + KD-5 (300k) = 600,000
-      expect(recaps['yearly'], equals(600000));
+      final startOfWeek = today.subtract(Duration(days: now.weekday - 1));
+      final startOfYear = DateTime(now.year, 1, 1);
+
+      // Check if KD-3 (yesterday) falls in this week and this year
+      final yesterday = now.subtract(const Duration(days: 1));
+      if (yesterday.isAfter(startOfWeek) || yesterday.isAtSameMomentAs(startOfWeek)) {
+        expectedWeekly += 50000.0;
+      }
+      if (yesterday.isAfter(startOfYear) || yesterday.isAtSameMomentAs(startOfYear)) {
+        expectedYearly += 50000.0;
+      }
+
+      // Check if KD-5 (45 days ago) falls in this year
+      final fortyFiveDaysAgo = now.subtract(const Duration(days: 45));
+      if (fortyFiveDaysAgo.isAfter(startOfYear) || fortyFiveDaysAgo.isAtSameMomentAs(startOfYear)) {
+        expectedYearly += 300000.0;
+      }
+
+      // Verify daily
+      expect(recaps['daily'], equals(expectedDaily));
+
+      // Verify weekly
+      expect(recaps['weekly'], equals(expectedWeekly));
+
+      // Verify yearly
+      expect(recaps['yearly'], equals(expectedYearly));
     });
   });
 }
