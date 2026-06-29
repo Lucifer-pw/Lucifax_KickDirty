@@ -21,6 +21,9 @@ class InvoiceDetailModal extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final dateFormat = DateFormat('dd-MM-yyyy HH:mm');
+    final subtotal = order.items.fold(0.0, (sum, item) => sum + item.price);
+    double pointsDiscount = (subtotal + order.deliveryFee - order.voucherDiscount) - order.totalAmount;
+    if (pointsDiscount < 0) pointsDiscount = 0.0;
     
     // Status colors
     Color statusColor = Colors.grey;
@@ -228,36 +231,28 @@ class InvoiceDetailModal extends StatelessWidget {
                   
                   const Divider(height: 20, color: AppTheme.lightGray),
 
-                  // Pricing Calculations
-                  double subtotal = order.items.fold(0.0, (sum, item) => sum + item.price);
-                  double pointsDiscount = (subtotal + order.deliveryFee - order.voucherDiscount) - order.totalAmount;
-                  if (pointsDiscount < 0) pointsDiscount = 0.0;
-
                   // Pricing Summary Details
                   _buildPriceSummaryRow(
                     'Subtotal Layanan',
                     'Rp ${subtotal.toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")}',
-                  );
-                  if (order.deliveryFee > 0) {
+                  ),
+                  if (order.deliveryFee > 0)
                     _buildPriceSummaryRow(
                       'Ongkos Kirim',
                       'Rp ${order.deliveryFee.toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")}',
-                    );
-                  }
-                  if (order.voucherDiscount > 0) {
+                    ),
+                  if (order.voucherDiscount > 0)
                     _buildPriceSummaryRow(
                       'Diskon Voucher (${order.voucherCode})',
                       '-Rp ${order.voucherDiscount.toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")}',
                       color: Colors.green,
-                    );
-                  }
-                  if (order.pointsRedeemed > 0 && pointsDiscount > 0) {
+                    ),
+                  if (order.pointsRedeemed > 0 && pointsDiscount > 0)
                     _buildPriceSummaryRow(
                       'Diskon Poin (${order.pointsRedeemed} Poin)',
                       '-Rp ${pointsDiscount.toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")}',
                       color: Colors.green,
-                    );
-                  }
+                    ),
                   const Divider(height: 16, color: AppTheme.lightGray),
 
                   // Pricing Summary Total
