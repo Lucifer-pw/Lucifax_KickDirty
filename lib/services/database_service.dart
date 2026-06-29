@@ -645,10 +645,11 @@ class DatabaseService with ChangeNotifier {
   Stream<List<CategoryModel>> getActiveCategories() {
     return _db.collection('categories')
         .where('isActive', isEqualTo: true)
-        .orderBy('createdAt', descending: false)
         .snapshots()
         .map((snapshot) {
-      return snapshot.docs.map((doc) => CategoryModel.fromMap(doc.data(), doc.id)).toList();
+      final list = snapshot.docs.map((doc) => CategoryModel.fromMap(doc.data(), doc.id)).toList();
+      list.sort((a, b) => a.createdAt.compareTo(b.createdAt)); // ascending
+      return list;
     });
   }
 
@@ -691,10 +692,11 @@ class DatabaseService with ChangeNotifier {
   Stream<List<ServiceModel>> getServicesByCategory(String categoryId) {
     return _db.collection('services')
         .where('categoryId', isEqualTo: categoryId)
-        .orderBy('createdAt', descending: true)
         .snapshots()
         .map((snapshot) {
-      return snapshot.docs.map((doc) => ServiceModel.fromMap(doc.data(), doc.id)).toList();
+      final list = snapshot.docs.map((doc) => ServiceModel.fromMap(doc.data(), doc.id)).toList();
+      list.sort((a, b) => b.createdAt.compareTo(a.createdAt)); // descending
+      return list;
     });
   }
 
@@ -703,10 +705,11 @@ class DatabaseService with ChangeNotifier {
     return _db.collection('services')
         .where('categoryId', isEqualTo: categoryId)
         .where('isActive', isEqualTo: true)
-        .orderBy('createdAt', descending: true)
         .snapshots()
         .map((snapshot) {
-      return snapshot.docs.map((doc) => ServiceModel.fromMap(doc.data(), doc.id)).toList();
+      final list = snapshot.docs.map((doc) => ServiceModel.fromMap(doc.data(), doc.id)).toList();
+      list.sort((a, b) => b.createdAt.compareTo(a.createdAt)); // descending
+      return list;
     });
   }
 
@@ -730,11 +733,10 @@ class DatabaseService with ChangeNotifier {
   Stream<List<VoucherModel>> getActiveVouchers() {
     return _db.collection('vouchers')
         .where('isActive', isEqualTo: true)
-        .orderBy('createdAt', descending: true)
         .snapshots()
         .map((snapshot) {
       final now = DateTime.now();
-      return snapshot.docs
+      final list = snapshot.docs
           .map((doc) => VoucherModel.fromMap(doc.data(), doc.id))
           .where((v) {
             if (v.validFrom != null && now.isBefore(v.validFrom!)) return false;
@@ -742,6 +744,8 @@ class DatabaseService with ChangeNotifier {
             return true;
           })
           .toList();
+      list.sort((a, b) => b.createdAt.compareTo(a.createdAt)); // descending
+      return list;
     });
   }
 

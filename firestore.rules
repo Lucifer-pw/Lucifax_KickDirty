@@ -69,6 +69,14 @@ service cloud.firestore {
     }
 
     // ============================================
+    // PHONE LOOKUPS COLLECTION (public phone number mapping for WA login)
+    // ============================================
+    match /phone_lookups/{phone} {
+      allow read, create: if true;
+      allow update, delete: if request.auth != null && request.auth.uid == resource.data.uid;
+    }
+
+    // ============================================
     // COUNTERS COLLECTION (invoice number generator)
     // ============================================
     match /counters/{counterId} {

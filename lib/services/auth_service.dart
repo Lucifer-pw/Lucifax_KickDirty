@@ -40,6 +40,13 @@ class AuthService with ChangeNotifier {
       DocumentSnapshot doc = await _db.collection('users').doc(uid).get();
       if (doc.exists) {
         _currentUserModel = UserModel.fromMap(doc.data() as Map<String, dynamic>, doc.id);
+        if (_currentUserModel!.phoneNumber.isNotEmpty) {
+          final normalized = normalizePhone(_currentUserModel!.phoneNumber);
+          _db.collection('phone_lookups').doc(normalized).set({
+            'email': _currentUserModel!.email,
+            'uid': uid,
+          }).catchError((_) {});
+        }
       } else {
         // If user document does not exist, create it as a customer (e.g. Google Sign-In new user)
         if (_auth.currentUser != null) {
@@ -78,20 +85,19 @@ class AuthService with ChangeNotifier {
   Future<UserCredential?> signInWithPhone(String phoneNumber, String password) async {
     try {
       final normalized = normalizePhone(phoneNumber);
-      final query = await _db
-          .collection('users')
-          .where('phoneNumber', isEqualTo: normalized)
-          .limit(1)
+      final lookupDoc = await _db
+          .collection('phone_lookups')
+          .doc(normalized)
           .get();
 
-      if (query.docs.isEmpty) {
+      if (!lookupDoc.exists) {
         throw FirebaseAuthException(
           code: 'user-not-found',
           message: 'Nomor WhatsApp tidak terdaftar. Silakan daftar akun baru.',
         );
       }
 
-      final email = query.docs.first.get('email') as String;
+      final email = lookupDoc.get('email') as String;
       return await signIn(email, password);
     } catch (e) {
       rethrow;
@@ -143,6 +149,13 @@ class AuthService with ChangeNotifier {
       );
 
       await _db.collection('users').doc(userCredential.user!.uid).set(_currentUserModel!.toMap());
+      
+      final normalized = normalizePhone(phoneNumber);
+      await _db.collection('phone_lookups').doc(normalized).set({
+        'email': email.trim(),
+        'uid': userCredential.user!.uid,
+      }).catchError((_) {});
+
       notifyListeners();
       return userCredential;
     } catch (e) {
