@@ -561,7 +561,7 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Customer details card
+                  // 1. Customer details card
                   Card(
                     child: Padding(
                       padding: const EdgeInsets.all(16.0),
@@ -570,7 +570,7 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
                         children: [
                           Text('Informasi Pelanggan', style: Theme.of(context).textTheme.titleMedium),
                           const SizedBox(height: 16),
-                           TextFormField(
+                          TextFormField(
                             controller: _nameController,
                             decoration: InputDecoration(
                               hintText: 'Nama Pelanggan',
@@ -604,9 +604,9 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
                               deleteIcon: const Icon(Icons.clear, size: 18),
                               onDeleted: () {
                                 setState(() {
-                                    _selectedCustomerId = '';
-                                    _selectedCustomerPoints = 0;
-                                    _usePointsRedemption = false;
+                                  _selectedCustomerId = '';
+                                  _selectedCustomerPoints = 0;
+                                  _usePointsRedemption = false;
                                 });
                               },
                             ),
@@ -649,93 +649,124 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Delivery & Logistics Card
+                  // 2. Add Item Form Card (Tambah Layanan)
                   Card(
                     child: Padding(
                       padding: const EdgeInsets.all(16.0),
-                      child: StreamBuilder<List<Map<String, dynamic>>>(
-                        stream: dbService.getLogisticsMethods(),
-                        builder: (context, logSnapshot) {
-                          final methods = logSnapshot.data ?? [];
-                          
-                          if (methods.isNotEmpty && !methods.any((m) => m['id'] == _deliveryType)) {
-                            _deliveryType = methods.first['id'];
-                          }
-
-                          final selectedMethod = methods.firstWhere(
-                            (m) => m['id'] == _deliveryType,
-                            orElse: () => {'requiresAddress': false, 'fee': 0.0},
-                          );
-                          final bool requiresAddress = selectedMethod['requiresAddress'] == true;
-
-                          return Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('Logistik & Pengantaran', style: Theme.of(context).textTheme.titleMedium),
-                              const SizedBox(height: 16),
-                              DropdownButtonFormField<String>(
-                                isExpanded: true,
-                                value: _deliveryType.isEmpty && methods.isNotEmpty ? methods.first['id'] : _deliveryType,
-                                decoration: const InputDecoration(
-                                  prefixIcon: Icon(Icons.local_shipping_outlined),
-                                ),
-                                items: methods.map((m) {
-                                  final fee = (m['fee'] ?? 0.0) as double;
-                                  final feeStr = fee > 0 ? ' (Rp ${fee.toStringAsFixed(0)})' : '';
-                                  return DropdownMenuItem<String>(
-                                    value: m['id'] as String,
-                                    child: Text(
-                                      '${m['name']}$feeStr',
-                                      overflow: TextOverflow.ellipsis,
-                                      maxLines: 1,
-                                    ),
-                                  );
-                                }).toList(),
-                                onChanged: (val) {
-                                  if (val != null) {
-                                    final newMethod = methods.firstWhere((m) => m['id'] == val);
-                                    setState(() {
-                                      _deliveryType = val;
-                                      _deliveryFeeController.text = (newMethod['fee'] ?? 0.0).toStringAsFixed(0);
-                                    });
-                                  }
-                                },
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Tambah Layanan', style: Theme.of(context).textTheme.titleMedium),
+                          const SizedBox(height: 16),
+                          TextFormField(
+                            controller: _itemNameController,
+                            decoration: const InputDecoration(
+                              hintText: 'Nama / Model Barang (Contoh: Adidas Samba, Tas Fjallraven)',
+                              prefixIcon: Icon(Icons.shopping_bag_outlined),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          DropdownButtonFormField<CategoryModel>(
+                            value: _selectedCategory,
+                            hint: const Text('Pilih Kategori Jasa'),
+                            decoration: const InputDecoration(
+                              prefixIcon: Icon(Icons.category_outlined),
+                            ),
+                            items: _availableCategories.map((cat) {
+                              return DropdownMenuItem<CategoryModel>(
+                                value: cat,
+                                child: Text(cat.name),
+                              );
+                            }).toList(),
+                            onChanged: (val) {
+                              setState(() {
+                                _selectedCategory = val;
+                                _selectedService = null;
+                              });
+                            },
+                          ),
+                          const SizedBox(height: 12),
+                          DropdownButtonFormField<ServiceModel>(
+                            value: _selectedService,
+                            hint: const Text('Pilih Layanan'),
+                            decoration: const InputDecoration(
+                              prefixIcon: Icon(Icons.dry_cleaning_outlined),
+                            ),
+                            items: _availableServices
+                                .where((s) => s.isActive && s.categoryId == _selectedCategory?.id)
+                                .map((service) {
+                              return DropdownMenuItem<ServiceModel>(
+                                value: service,
+                                child: Text('${service.name} (Rp ${service.price.toStringAsFixed(0)})'),
+                              );
+                            }).toList(),
+                            onChanged: _selectedCategory == null ? null : (val) {
+                              setState(() {
+                                _selectedService = val;
+                              });
+                            },
+                          ),
+                          const SizedBox(height: 16),
+                          SizedBox(
+                            width: double.infinity,
+                            child: OutlinedButton.icon(
+                              onPressed: _addItem,
+                              icon: const Icon(Icons.add, color: AppTheme.primaryBlue),
+                              label: const Text('Tambahkan Sepatu', style: TextStyle(color: AppTheme.primaryBlue)),
+                              style: OutlinedButton.styleFrom(
+                                side: const BorderSide(color: AppTheme.primaryBlue),
+                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                               ),
-                              if (requiresAddress) ...[
-                                const SizedBox(height: 12),
-                                TextFormField(
-                                  controller: _deliveryAddressController,
-                                  maxLines: 2,
-                                  decoration: const InputDecoration(
-                                    hintText: 'Alamat lengkap penjemputan/pengantaran',
-                                    prefixIcon: Icon(Icons.location_on_outlined),
-                                  ),
-                                  validator: (v) => requiresAddress && (v == null || v.isEmpty)
-                                      ? 'Alamat wajib diisi untuk metode ini'
-                                      : null,
-                                ),
-                              ],
-                              const SizedBox(height: 12),
-                              TextFormField(
-                                controller: _deliveryFeeController,
-                                keyboardType: TextInputType.number,
-                                decoration: const InputDecoration(
-                                  labelText: 'Biaya Ongkir (Rp)',
-                                  prefixIcon: Icon(Icons.monetization_on_outlined),
-                                ),
-                                onChanged: (val) {
-                                  setState(() {}); // Recalculate total
-                                },
-                              ),
-                            ],
-                          );
-                        },
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
                   const SizedBox(height: 16),
 
-                  // Photo Documentation Card
+                  // 3. List of added items
+                  if (_items.isNotEmpty) ...[
+                    Text('Daftar Sepatu di Keranjang', style: Theme.of(context).textTheme.titleMedium),
+                    const SizedBox(height: 8),
+                    ListView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: _items.length,
+                      itemBuilder: (context, idx) {
+                        final item = _items[idx];
+                        return Card(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          child: ListTile(
+                            leading: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: AppTheme.primaryBlue.withOpacity(0.08),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(Icons.check, color: AppTheme.primaryBlue),
+                            ),
+                            title: Text(item.itemName, style: const TextStyle(fontWeight: FontWeight.bold)),
+                            subtitle: Text('${item.categoryName} - ${item.serviceName}'),
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                  Text('Rp ${item.price.toStringAsFixed(0)}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                                  IconButton(
+                                    icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                                    onPressed: () => _removeItem(idx),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+
+                  // 4. Photo Documentation Card (foto kondisi awal Before)
                   Card(
                     child: Padding(
                       padding: const EdgeInsets.all(16.0),
@@ -844,124 +875,93 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Add Item Form
+                  // 5. Delivery & Logistics Card (Logistik & pengantaran)
                   Card(
                     child: Padding(
                       padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Tambah Layanan', style: Theme.of(context).textTheme.titleMedium),
-                          const SizedBox(height: 16),
-                          TextFormField(
-                            controller: _itemNameController,
-                            decoration: const InputDecoration(
-                              hintText: 'Nama / Model Barang (Contoh: Adidas Samba, Tas Fjallraven)',
-                              prefixIcon: Icon(Icons.shopping_bag_outlined),
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          DropdownButtonFormField<CategoryModel>(
-                            value: _selectedCategory,
-                            hint: const Text('Pilih Kategori Jasa'),
-                            decoration: const InputDecoration(
-                              prefixIcon: Icon(Icons.category_outlined),
-                            ),
-                            items: _availableCategories.map((cat) {
-                              return DropdownMenuItem<CategoryModel>(
-                                value: cat,
-                                child: Text(cat.name),
-                              );
-                            }).toList(),
-                            onChanged: (val) {
-                              setState(() {
-                                _selectedCategory = val;
-                                _selectedService = null;
-                              });
-                            },
-                          ),
-                          const SizedBox(height: 12),
-                          DropdownButtonFormField<ServiceModel>(
-                            value: _selectedService,
-                            hint: const Text('Pilih Layanan'),
-                            decoration: const InputDecoration(
-                              prefixIcon: Icon(Icons.dry_cleaning_outlined),
-                            ),
-                            items: _availableServices
-                                .where((s) => s.isActive && s.categoryId == _selectedCategory?.id)
-                                .map((service) {
-                              return DropdownMenuItem<ServiceModel>(
-                                value: service,
-                                child: Text('${service.name} (Rp ${service.price.toStringAsFixed(0)})'),
-                              );
-                            }).toList(),
-                            onChanged: _selectedCategory == null ? null : (val) {
-                              setState(() {
-                                _selectedService = val;
-                              });
-                            },
-                          ),
-                          const SizedBox(height: 16),
-                          SizedBox(
-                            width: double.infinity,
-                            child: OutlinedButton.icon(
-                              onPressed: _addItem,
-                              icon: const Icon(Icons.add, color: AppTheme.primaryBlue),
-                              label: const Text('Tambahkan Sepatu', style: TextStyle(color: AppTheme.primaryBlue)),
-                              style: OutlinedButton.styleFrom(
-                                side: const BorderSide(color: AppTheme.primaryBlue),
-                                padding: const EdgeInsets.symmetric(vertical: 14),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      child: StreamBuilder<List<Map<String, dynamic>>>(
+                        stream: dbService.getLogisticsMethods(),
+                        builder: (context, logSnapshot) {
+                          final methods = logSnapshot.data ?? [];
+                          
+                          if (methods.isNotEmpty && !methods.any((m) => m['id'] == _deliveryType)) {
+                            _deliveryType = methods.first['id'];
+                          }
+
+                          final selectedMethod = methods.firstWhere(
+                            (m) => m['id'] == _deliveryType,
+                            orElse: () => {'requiresAddress': false, 'fee': 0.0},
+                          );
+                          final bool requiresAddress = selectedMethod['requiresAddress'] == true;
+
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Logistik & Pengantaran', style: Theme.of(context).textTheme.titleMedium),
+                              const SizedBox(height: 16),
+                              DropdownButtonFormField<String>(
+                                isExpanded: true,
+                                value: _deliveryType.isEmpty && methods.isNotEmpty ? methods.first['id'] : _deliveryType,
+                                decoration: const InputDecoration(
+                                  prefixIcon: Icon(Icons.local_shipping_outlined),
+                                ),
+                                items: methods.map((m) {
+                                  final fee = (m['fee'] ?? 0.0) as double;
+                                  final feeStr = fee > 0 ? ' (Rp ${fee.toStringAsFixed(0)})' : '';
+                                  return DropdownMenuItem<String>(
+                                    value: m['id'] as String,
+                                    child: Text(
+                                      '${m['name']}$feeStr',
+                                      overflow: TextOverflow.ellipsis,
+                                      maxLines: 1,
+                                    ),
+                                  );
+                                }).toList(),
+                                onChanged: (val) {
+                                  if (val != null) {
+                                    final newMethod = methods.firstWhere((m) => m['id'] == val);
+                                    setState(() {
+                                      _deliveryType = val;
+                                      _deliveryFeeController.text = (newMethod['fee'] ?? 0.0).toStringAsFixed(0);
+                                    });
+                                  }
+                                },
                               ),
-                            ),
-                          ),
-                        ],
+                              if (requiresAddress) ...[
+                                const SizedBox(height: 12),
+                                TextFormField(
+                                  controller: _deliveryAddressController,
+                                  maxLines: 2,
+                                  decoration: const InputDecoration(
+                                    hintText: 'Alamat lengkap penjemputan/pengantaran',
+                                    prefixIcon: Icon(Icons.location_on_outlined),
+                                  ),
+                                  validator: (v) => requiresAddress && (v == null || v.isEmpty)
+                                      ? 'Alamat wajib diisi untuk metode ini'
+                                      : null,
+                                ),
+                              ],
+                              const SizedBox(height: 12),
+                              TextFormField(
+                                controller: _deliveryFeeController,
+                                keyboardType: TextInputType.number,
+                                decoration: const InputDecoration(
+                                  labelText: 'Biaya Ongkir (Rp)',
+                                  prefixIcon: Icon(Icons.monetization_on_outlined),
+                                ),
+                                onChanged: (val) {
+                                  setState(() {}); // Recalculate total
+                                },
+                              ),
+                            ],
+                          );
+                        },
                       ),
                     ),
                   ),
                   const SizedBox(height: 16),
 
-                  // List of added items
-                  if (_items.isNotEmpty) ...[
-                    Text('Daftar Sepatu di Keranjang', style: Theme.of(context).textTheme.titleMedium),
-                    const SizedBox(height: 8),
-                    ListView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: _items.length,
-                      itemBuilder: (context, idx) {
-                        final item = _items[idx];
-                        return Card(
-                          margin: const EdgeInsets.only(bottom: 8),
-                          child: ListTile(
-                            leading: Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: AppTheme.primaryBlue.withOpacity(0.08),
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(Icons.check, color: AppTheme.primaryBlue),
-                            ),
-                            title: Text(item.itemName, style: const TextStyle(fontWeight: FontWeight.bold)),
-                            subtitle: Text('${item.categoryName} - ${item.serviceName}'),
-                            trailing: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text('Rp ${item.price.toStringAsFixed(0)}', style: const TextStyle(fontWeight: FontWeight.bold)),
-                                IconButton(
-                                  icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
-                                  onPressed: () => _removeItem(idx),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                  ],
-
-                  // Voucher Card
+                  // 6. Voucher Card (Voucher diskon)
                   Card(
                     child: Padding(
                       padding: const EdgeInsets.all(16.0),
@@ -1042,7 +1042,7 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Notes card
+                  // 7. Notes Card (catatan Tambahan)
                   Card(
                     child: Padding(
                       padding: const EdgeInsets.all(16.0),
