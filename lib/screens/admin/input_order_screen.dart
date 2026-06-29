@@ -637,7 +637,7 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
         customerId: _selectedCustomerId,
         items: _items,
         totalAmount: _totalPrice,
-        status: 'diterima',
+        status: 'dibayar',
         paymentStatus: 'belum_bayar',
         qrisImage: 'assets/qris_pembayaran.jpeg',
         paymentProof: '',

@@ -158,6 +158,15 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
     String successMsg = '';
 
     if (currentStatus == 'dibayar') {
+      // Require payment proof to transition to 'diterima'
+      if (order.paymentStatus != 'sudah_bayar' || order.paymentProof.isEmpty) {
+        final paymentProof = await _showUploadPaymentProofDialog();
+        if (paymentProof == null) {
+          return; // Batal
+        }
+        await dbService.updateOfflineOrderPayment(orderId, paymentProof);
+      }
+
       nextStatus = 'diterima';
       successMsg = 'Pembayaran dikonfirmasi & pesanan diterima!';
       await dbService.updateOrderStatus(orderId, nextStatus);
