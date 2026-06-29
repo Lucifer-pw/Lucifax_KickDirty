@@ -713,7 +713,7 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
                             child: OutlinedButton.icon(
                               onPressed: _addItem,
                               icon: const Icon(Icons.add, color: AppTheme.primaryBlue),
-                              label: const Text('Tambahkan Sepatu', style: TextStyle(color: AppTheme.primaryBlue)),
+                              label: const Text('Tambahkan Produk', style: TextStyle(color: AppTheme.primaryBlue)),
                               style: OutlinedButton.styleFrom(
                                 side: const BorderSide(color: AppTheme.primaryBlue),
                                 padding: const EdgeInsets.symmetric(vertical: 14),
@@ -996,9 +996,9 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
                               return Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  DropdownButtonFormField<VoucherModel>(
+                                  DropdownButtonFormField<String>(
                                     isExpanded: true,
-                                    value: _appliedVoucher,
+                                    value: _appliedVoucher?.id,
                                     hint: const Text('Pilih Voucher Diskon', style: TextStyle(fontSize: 12)),
                                     decoration: const InputDecoration(
                                       prefixIcon: Icon(Icons.confirmation_number_outlined),
@@ -1007,8 +1007,8 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
                                       final discStr = v.discountType == 'percentage'
                                           ? 'Diskon ${v.discountValue.toStringAsFixed(0)}%'
                                           : 'Diskon Rp ${v.discountValue.toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")}';
-                                      return DropdownMenuItem<VoucherModel>(
-                                        value: v,
+                                      return DropdownMenuItem<String>(
+                                        value: v.id,
                                         child: Text(
                                           '${v.name} ($discStr)',
                                           style: const TextStyle(fontSize: 12),
@@ -1018,7 +1018,7 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
                                     }).toList(),
                                     onChanged: (val) {
                                       setState(() {
-                                        _appliedVoucher = val;
+                                        _appliedVoucher = eligibleVouchers.firstWhere((v) => v.id == val);
                                       });
                                     },
                                   ),
@@ -1098,10 +1098,28 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text('Total Pembayaran', style: TextStyle(color: AppTheme.textGray, fontSize: 12)),
+                               const Text('Total Pembayaran', style: TextStyle(color: AppTheme.textGray, fontSize: 12)),
                               const SizedBox(height: 4),
+                              if (_voucherDiscount + (_usePointsRedemption && _selectedCustomerPoints >= 10 ? 25000 : 0.0) > 0) ...[
+                                Text(
+                                  'Rp ${(_itemsPrice + _deliveryFee).toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")}',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    decoration: TextDecoration.lineThrough,
+                                    color: Colors.red,
+                                  ),
+                                ),
+                                Text(
+                                  'Diskon: -Rp ${(_voucherDiscount + (_usePointsRedemption && _selectedCustomerPoints >= 10 ? 25000 : 0.0)).toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")}',
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.green,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
                               Text(
-                                'Rp ${_totalPrice.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}',
+                                'Rp ${_totalPrice.toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")}',
                                 style: const TextStyle(
                                   fontSize: 20,
                                   fontWeight: FontWeight.bold,
