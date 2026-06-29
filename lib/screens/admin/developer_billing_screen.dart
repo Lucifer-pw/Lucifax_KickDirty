@@ -15,7 +15,7 @@ class DeveloperBillingScreen extends StatefulWidget {
 class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
   final _amountController = TextEditingController(text: '150000');
   DateTime _nextDueDate = DateTime(2026, 8, 1);
-  bool _isPaid = false;
+  String _lastPaidMonth = '';
   String _qrImageBase64 = '';
   bool _isLoading = true;
   bool _isSaving = false;
@@ -35,7 +35,7 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
           setState(() {
             _amountController.text = (data['amount'] as num?)?.toDouble().toStringAsFixed(0) ?? '150000';
             _nextDueDate = (data['nextDueDate'] as Timestamp?)?.toDate() ?? DateTime(2026, 8, 1);
-            _isPaid = data['isPaid'] as bool? ?? false;
+            _lastPaidMonth = data['lastPaidMonth'] as String? ?? '';
             _qrImageBase64 = data['qrImage'] as String? ?? '';
           });
         }
@@ -44,7 +44,7 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
         setState(() {
           _amountController.text = '150000';
           _nextDueDate = DateTime(2026, 8, 1);
-          _isPaid = false;
+          _lastPaidMonth = '';
           _qrImageBase64 = '';
         });
       }
@@ -71,7 +71,7 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
       await FirebaseFirestore.instance.collection('developer_billing').doc('config').set({
         'amount': amount,
         'nextDueDate': Timestamp.fromDate(_nextDueDate),
-        'isPaid': _isPaid,
+        'lastPaidMonth': _lastPaidMonth,
         'qrImage': _qrImageBase64,
         'updatedAt': FieldValue.serverTimestamp(),
       });
@@ -134,6 +134,9 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final String currentMonthCode = DateFormat('yyyy-MM').format(DateTime.now());
+    final bool isCurrentMonthPaid = _lastPaidMonth == currentMonthCode;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Developer Billing Panel'),
@@ -171,7 +174,7 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Due Date Selection
+                  // Due Date Selection (Start date of billing)
                   ListTile(
                     contentPadding: EdgeInsets.zero,
                     leading: const Icon(Icons.calendar_month, color: AppTheme.primaryBlue),
@@ -195,23 +198,61 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
                     },
                   ),
                   const Divider(),
+                  const SizedBox(height: 12),
 
-                  // Payment Switch (Lunas / Belum)
-                  SwitchListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: const Text('Status Pembayaran Bulan Ini', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppTheme.darkBlueText)),
-                    subtitle: Text(
-                      _isPaid ? 'Lunas (Aplikasi Aktif)' : 'Belum Lunas (Terkunci setelah jatuh tempo)',
-                      style: TextStyle(fontSize: 12, color: _isPaid ? Colors.green : Colors.red, fontWeight: FontWeight.w600),
+                  // Current Month Billing Status card
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: isCurrentMonthPaid ? Colors.green.shade50 : Colors.red.shade50,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: isCurrentMonthPaid ? Colors.green.shade100 : Colors.red.shade100),
                     ),
-                    value: _isPaid,
-                    onChanged: (val) {
-                      setState(() {
-                        _isPaid = val;
-                      });
-                    },
-                    activeColor: Colors.green,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Tagihan Bulan Ini (${DateFormat('MMMM yyyy').format(DateTime.now())}):',
+                          style: const TextStyle(fontSize: 12, color: AppTheme.textGray),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          isCurrentMonthPaid ? 'LUNAS (Aplikasi Aktif)' : 'BELUM DIBAYAR (Aplikasi Terkunci)',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: isCurrentMonthPaid ? Colors.green : Colors.red,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        SizedBox(
+                          width: double.infinity,
+                          height: 38,
+                          child: ElevatedButton(
+                            onPressed: () {
+                              setState(() {
+                                if (isCurrentMonthPaid) {
+                                  _lastPaidMonth = ''; // Mark unpaid
+                                } else {
+                                  _lastPaidMonth = currentMonthCode; // Mark paid
+                                }
+                              });
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: isCurrentMonthPaid ? Colors.redAccent : Colors.green,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            ),
+                            child: Text(
+                              isCurrentMonthPaid ? 'Batalkan Konfirmasi / Tandai Belum Lunas' : 'Konfirmasi Pembayaran / Tandai Lunas',
+                              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
+                  const SizedBox(height: 16),
                   const Divider(),
                   const SizedBox(height: 12),
 

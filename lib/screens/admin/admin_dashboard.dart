@@ -20,6 +20,7 @@ import 'admin_chat_list_screen.dart';
 import 'sales_detail_screen.dart';
 import 'developer_billing_screen.dart';
 import 'billing_block_screen.dart';
+import 'package:intl/intl.dart';
 
 import 'settings_screen.dart';
 import '../../services/in_app_notification_service.dart';
@@ -129,16 +130,20 @@ class _AdminDashboardState extends State<AdminDashboard> {
           final bData = billingSnapshot.data!.data() as Map<String, dynamic>?;
           if (bData != null) {
             final nextDueDate = (bData['nextDueDate'] as Timestamp?)?.toDate();
-            final isPaid = bData['isPaid'] as bool? ?? false;
+            final lastPaidMonth = bData['lastPaidMonth'] as String? ?? '';
             billingAmount = (bData['amount'] as num?)?.toDouble() ?? 150000.0;
             billingQr = bData['qrImage'] as String? ?? '';
             if (nextDueDate != null) {
               billingDueDate = nextDueDate;
             }
 
-            if (nextDueDate != null && DateTime.now().isAfter(nextDueDate) && !isPaid) {
-              if (role == 'owner' || role == 'staff') {
-                isBlocked = true;
+            final now = DateTime.now();
+            if (nextDueDate != null && (now.isAfter(nextDueDate) || now.isAtSameMomentAs(nextDueDate))) {
+              final currentMonthCode = DateFormat('yyyy-MM').format(now);
+              if (lastPaidMonth != currentMonthCode) {
+                if (role == 'owner' || role == 'staff') {
+                  isBlocked = true;
+                }
               }
             }
           }
