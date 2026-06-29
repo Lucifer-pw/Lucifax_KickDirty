@@ -23,7 +23,7 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 4, vsync: this);
   }
 
   @override
@@ -79,7 +79,16 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
     String nextStatus = '';
     String successMsg = '';
 
-    if (currentStatus == 'diterima') {
+    if (currentStatus == 'dibayar') {
+      nextStatus = 'diterima';
+      successMsg = 'Pembayaran dikonfirmasi & pesanan diterima!';
+      await dbService.updateOrderStatus(orderId, nextStatus);
+      await dbService.updateOrderPaymentStatus(orderId, 'sudah_bayar');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(successMsg)));
+      }
+      return;
+    } else if (currentStatus == 'diterima') {
       final estimation = await _showEstimationDialog('');
       if (estimation == null || estimation.isEmpty) {
         return; // Batal
@@ -334,8 +343,9 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
           unselectedLabelColor: AppTheme.textGray,
           indicatorColor: AppTheme.primaryBlue,
           tabs: const [
-            Tab(icon: Icon(Icons.receipt_long_outlined), text: 'Diterima'),
-            Tab(icon: Icon(Icons.engineering_outlined), text: 'Diproses'),
+            Tab(icon: Icon(Icons.payments_outlined), text: 'Di Bayar'),
+            Tab(icon: Icon(Icons.receipt_long_outlined), text: 'Di Terima'),
+            Tab(icon: Icon(Icons.engineering_outlined), text: 'Di Proses'),
             Tab(icon: Icon(Icons.check_circle_outline), text: 'Selesai'),
           ],
         ),
@@ -353,6 +363,7 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
           final allOrders = snapshot.data ?? [];
           
           // Filter active orders based on tabs (ignore status 'diambil' in active process screen)
+          final ordersDiBayar = allOrders.where((o) => o.status == 'dibayar').toList();
           final ordersDiterima = allOrders.where((o) => o.status == 'diterima').toList();
           final ordersDiproses = allOrders.where((o) => o.status == 'sedang_diproses').toList();
           final ordersSelesai = allOrders.where((o) => o.status == 'selesai').toList();
@@ -360,6 +371,7 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
           return TabBarView(
             controller: _tabController,
             children: [
+              _buildOrderList(ordersDiBayar, 'dibayar'),
               _buildOrderList(ordersDiterima, 'diterima'),
               _buildOrderList(ordersDiproses, 'sedang_diproses'),
               _buildOrderList(ordersSelesai, 'selesai'),
@@ -378,11 +390,13 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              status == 'diterima'
-                  ? Icons.receipt_long_outlined
-                  : status == 'sedang_diproses'
-                      ? Icons.engineering_outlined
-                      : Icons.check_circle_outline,
+              status == 'dibayar'
+                  ? Icons.payments_outlined
+                  : status == 'diterima'
+                      ? Icons.receipt_long_outlined
+                      : status == 'sedang_diproses'
+                          ? Icons.engineering_outlined
+                          : Icons.check_circle_outline,
               size: 64,
               color: AppTheme.textGray.withOpacity(0.5),
             ),
@@ -612,6 +626,22 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
                   ),
                 ],
 
+                if (order.paymentProof.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  const Padding(
+                    padding: EdgeInsets.only(left: 26),
+                    child: Text(
+                      'Bukti Transfer:',
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.darkBlueText),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 26),
+                    child: _buildBase64Image(order.paymentProof, 'Bukti Transfer', height: 120),
+                  ),
+                ],
+
                 const Divider(height: 24, color: AppTheme.lightGray),
 
                 // Footer section with pricing, payment toggle, and transition buttons
@@ -651,32 +681,36 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
                       ),
                     ),
 
-                    // Advance status button
-                    ElevatedButton.icon(
-                      onPressed: () => _updateStatus(order),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.primaryBlue,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                      ),
-                      icon: Icon(
-                        status == 'diterima'
-                            ? Icons.play_arrow
-                            : status == 'sedang_diproses'
-                                ? Icons.done
-                                : Icons.local_shipping,
-                        size: 16,
-                      ),
-                      label: Text(
-                        status == 'diterima'
-                            ? 'Proses'
-                            : status == 'sedang_diproses'
-                                ? 'Selesai'
-                                : 'Serahkan',
-                        style: const TextStyle(fontSize: 12),
-                      ),
-                    ),
+                     // Advance status button
+                     ElevatedButton.icon(
+                       onPressed: () => _updateStatus(order),
+                       style: ElevatedButton.styleFrom(
+                         backgroundColor: AppTheme.primaryBlue,
+                         foregroundColor: Colors.white,
+                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                       ),
+                       icon: Icon(
+                         status == 'dibayar'
+                             ? Icons.check
+                             : status == 'diterima'
+                                 ? Icons.play_arrow
+                                 : status == 'sedang_diproses'
+                                     ? Icons.done
+                                     : Icons.local_shipping,
+                         size: 16,
+                       ),
+                       label: Text(
+                         status == 'dibayar'
+                             ? 'Konfirmasi'
+                             : status == 'diterima'
+                                 ? 'Proses'
+                                 : status == 'sedang_diproses'
+                                     ? 'Selesai'
+                                     : 'Serahkan',
+                         style: const TextStyle(fontSize: 12),
+                       ),
+                     ),
                   ],
                 ),
               ],
@@ -765,4 +799,78 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
       },
     );
   }
+
+  Widget _buildBase64Image(String base64Str, String label, {double height = 110}) {
+    try {
+      String cleanBase64 = base64Str;
+      if (base64Str.contains(',')) {
+        cleanBase64 = base64Str.split(',')[1];
+      }
+      final bytes = base64Decode(cleanBase64);
+      return GestureDetector(
+        onTap: () {
+          showDialog(
+            context: context,
+            builder: (context) => Dialog(
+              backgroundColor: Colors.black.withOpacity(0.9),
+              insetPadding: const EdgeInsets.all(16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  AppBar(
+                    backgroundColor: Colors.transparent,
+                    elevation: 0,
+                    title: Text(label, style: const TextStyle(color: Colors.white)),
+                    leading: IconButton(
+                      icon: const Icon(Icons.close, color: Colors.white),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: InteractiveViewer(
+                        child: Image.memory(
+                          bytes,
+                          fit: BoxFit.contain,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            height: height,
+            width: 120,
+            decoration: BoxDecoration(
+              border: Border.all(color: AppTheme.lightGray),
+            ),
+            child: Image.memory(
+              bytes,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) => const Center(
+                child: Icon(Icons.broken_image, color: Colors.grey),
+              ),
+            ),
+          ),
+        ),
+      );
+    } catch (e) {
+      return Container(
+        height: height,
+        width: 120,
+        decoration: BoxDecoration(
+          color: Colors.grey[200],
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: const Icon(Icons.broken_image, color: Colors.grey),
+      );
+    }
+  }
 }
+

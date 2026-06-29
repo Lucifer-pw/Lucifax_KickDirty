@@ -139,7 +139,13 @@ class WhatsAppService {
   /// Sends automatic status/payment notification to WhatsApp
   static Future<void> sendAutomaticStatusNotification(OrderModel order, String eventType) async {
     String statusText = '';
-    if (eventType == 'diterima') {
+    if (eventType == 'belum_bayar') {
+      statusText = 'telah berhasil dibuat dan sedang menunggu pembayaran. Silakan lakukan pembayaran menggunakan QRIS melalui aplikasi.';
+    } else if (eventType == 'dibayar') {
+      statusText = 'pembayarannya telah terkirim dan sedang menunggu verifikasi dari toko.';
+    } else if (eventType == 'sudah_bayar') {
+      statusText = 'pembayarannya dinyatakan LUNAS. Terima kasih!';
+    } else if (eventType == 'diterima') {
       statusText = 'telah kami terima dan segera diproses.';
     } else if (eventType == 'sedang_diproses') {
       statusText = 'sedang dalam proses pencucian/servis.';
@@ -147,8 +153,6 @@ class WhatsAppService {
       statusText = 'telah SELESAI dan siap diambil.';
     } else if (eventType == 'diambil') {
       statusText = 'telah diserahkan ke pelanggan. Terima kasih atas kepercayaan Anda!';
-    } else if (eventType == 'dibayar') {
-      statusText = 'pembayarannya dinyatakan LUNAS. Terima kasih!';
     }
 
     String paymentText = order.paymentStatus == 'sudah_bayar' ? 'Lunas' : 'Belum Lunas';

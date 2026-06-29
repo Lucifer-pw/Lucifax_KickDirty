@@ -873,9 +873,10 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
                                       customerId: currentUser.uid,
                                       items: orderItems,
                                       totalAmount: finalTotalPrice,
-                                      status: 'diterima',
+                                      status: 'belum_bayar',
                                       paymentStatus: 'belum_bayar',
                                       qrisImage: 'assets/qris_pembayaran.jpeg',
+                                      paymentProof: '',
                                       notes: notesController.text.trim(),
                                       deliveryType: deliveryType,
                                       deliveryAddress: requiresAddress ? addressController.text.trim() : '',
@@ -944,102 +945,193 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
   }
 
   void _showCustomerQrisDialog(String invoiceId, OrderModel order) {
+    String? selectedProof;
+    bool isUploading = false;
+
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) {
-        return AlertDialog(
-          title: const Text('Pembayaran QRIS (Cashless)', textAlign: TextAlign.center),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text('Invoice: $invoiceId', style: const TextStyle(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 8),
-              Text(
-                'Total: Rp ${order.totalAmount.toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")}',
-                style: const TextStyle(fontSize: 16, color: AppTheme.primaryBlue, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 16),
-              // QRIS Image
-              Image.asset(
-                'assets/qris_pembayaran.jpeg',
-                height: 250,
-                fit: BoxFit.contain,
-                errorBuilder: (context, error, stackTrace) => Container(
-                  height: 150,
-                  color: AppTheme.lightGray,
-                  child: const Center(child: Icon(Icons.qr_code, size: 80, color: AppTheme.textGray)),
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            return AlertDialog(
+              title: const Text('Pembayaran QRIS (Cashless)', textAlign: TextAlign.center),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text('Invoice: $invoiceId', style: const TextStyle(fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Total: Rp ${order.totalAmount.toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")}',
+                      style: const TextStyle(fontSize: 16, color: AppTheme.primaryBlue, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 12),
+                    // QRIS Image
+                    Image.asset(
+                      'assets/qris_pembayaran.jpeg',
+                      height: 180,
+                      fit: BoxFit.contain,
+                      errorBuilder: (context, error, stackTrace) => Container(
+                        height: 120,
+                        color: AppTheme.lightGray,
+                        child: const Center(child: Icon(Icons.qr_code, size: 60, color: AppTheme.textGray)),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    const Text(
+                      'Silakan scan QRIS di atas untuk melakukan transfer pembayaran cashless.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 11, color: AppTheme.textGray),
+                    ),
+                    const Divider(height: 20),
+                    const Text(
+                      'Unggah Bukti Transfer (Wajib)',
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppTheme.darkBlueText),
+                    ),
+                    const SizedBox(height: 8),
+                    if (selectedProof != null) ...[
+                      Stack(
+                        children: [
+                          Container(
+                            height: 120,
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(8),
+                              image: DecorationImage(
+                                image: MemoryImage(base64Decode(selectedProof!.split(',')[1])),
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                          ),
+                          Positioned(
+                            top: 4,
+                            right: 4,
+                            child: GestureDetector(
+                              onTap: () {
+                                setStateDialog(() {
+                                  selectedProof = null;
+                                });
+                              },
+                              child: CircleAvatar(
+                                radius: 12,
+                                backgroundColor: Colors.black.withOpacity(0.5),
+                                child: const Icon(Icons.close, size: 14, color: Colors.white),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                    ] else ...[
+                      Container(
+                        height: 80,
+                        width: double.infinity,
+                        color: Colors.grey[100],
+                        child: const Center(
+                          child: Text(
+                            'Belum ada bukti transfer dipilih',
+                            style: TextStyle(color: AppTheme.textGray, fontSize: 11),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                    ],
+                    if (selectedProof == null)
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: () async {
+                                final img = await ImageService.pickImageFromCamera();
+                                if (img != null) {
+                                  setStateDialog(() {
+                                    selectedProof = img;
+                                  });
+                                }
+                              },
+                              icon: const Icon(Icons.camera_alt_outlined, size: 16),
+                              label: const Text('Kamera', style: TextStyle(fontSize: 11)),
+                              style: OutlinedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(vertical: 8),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: () async {
+                                final img = await ImageService.pickImageFromGallery();
+                                if (img != null) {
+                                  setStateDialog(() {
+                                    selectedProof = img;
+                                  });
+                                }
+                              },
+                              icon: const Icon(Icons.photo_outlined, size: 16),
+                              label: const Text('Galeri', style: TextStyle(fontSize: 11)),
+                              style: OutlinedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(vertical: 8),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 12),
-              const Text(
-                'Silakan scan QRIS di atas untuk melakukan transfer pembayaran cashless.',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 12, color: AppTheme.textGray),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'Setelah membayar, silakan kirim bukti transfer ke WhatsApp toko.',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 12, color: AppTheme.textGray, fontWeight: FontWeight.bold),
-              ),
-            ],
-          ),
-          actions: [
-            ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
-                foregroundColor: Colors.white,
-              ),
-              onPressed: () async {
-                // Fetch dynamic shop phone & name from Firestore
-                String shopPhone = "6281328580511";
-                String shopName = "KickDirty";
-                try {
-                  final configDoc = await FirebaseFirestore.instance.collection('app_config').doc('business_config').get();
-                  if (configDoc.exists) {
-                    shopPhone = configDoc.data()?['shopPhone'] ?? "6281328580511";
-                    shopName = configDoc.data()?['shopName'] ?? "KickDirty";
-                  }
-                } catch (_) {}
-
-                // Open WhatsApp with confirmation template
-                final message =
-                    "Halo $shopName, saya ingin mengirimkan bukti pembayaran untuk pesanan saya:\n\n"
-                    "- Invoice: $invoiceId\n"
-                    "- Layanan: ${order.items.map((item) => "${item.itemName} (${item.serviceName})").join(', ')}\n"
-                    "- Total: Rp ${order.totalAmount.toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")}\n\n"
-                    "Berikut saya lampirkan bukti transfer pembayarannya.";
-                
-                final uri = Uri.parse('https://wa.me/$shopPhone?text=${Uri.encodeComponent(message)}');
-                
-                try {
-                  await launchUrl(uri, mode: LaunchMode.externalApplication);
-                } catch (_) {
-                  try {
-                    await launchUrl(uri, mode: LaunchMode.platformDefault);
-                  } catch (e) {
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Tidak dapat membuka WhatsApp: $e')),
-                      );
-                    }
-                  }
-                }
-              },
-              icon: const Icon(Icons.phone),
-              label: const Text('Kirim Bukti Pembayaran'),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context); // Close dialog
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Pesanan $invoiceId berhasil dibuat! Silakan pantau status pengerjaan Anda.')),
-                );
-              },
-              child: const Text('Tutup', style: TextStyle(color: AppTheme.textGray)),
-            ),
-          ],
+              actions: [
+                if (isUploading)
+                  const Center(child: Padding(
+                    padding: EdgeInsets.all(8.0),
+                    child: CircularProgressIndicator(),
+                  ))
+                else ...[
+                  ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: selectedProof == null ? Colors.grey : Colors.green,
+                      foregroundColor: Colors.white,
+                    ),
+                    onPressed: selectedProof == null
+                        ? null
+                        : () async {
+                            setStateDialog(() {
+                              isUploading = true;
+                            });
+                            try {
+                              final dbService = Provider.of<DatabaseService>(context, listen: false);
+                              await dbService.updateOrderPaymentProof(order.id, selectedProof!);
+                              if (context.mounted) {
+                                Navigator.pop(context); // Close dialog
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Bukti pembayaran berhasil diunggah! Menunggu verifikasi dari toko.')),
+                                );
+                              }
+                            } catch (e) {
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('Gagal mengunggah bukti: $e')),
+                                );
+                              }
+                            } finally {
+                              setStateDialog(() {
+                                isUploading = false;
+                              });
+                            }
+                          },
+                    icon: const Icon(Icons.upload_file),
+                    label: const Text('Kirim Bukti Pembayaran'),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pop(context); // Close dialog
+                    },
+                    child: const Text('Tutup', style: TextStyle(color: AppTheme.textGray)),
+                  ),
+                ],
+              ],
+            );
+          },
         );
       },
     );
@@ -1764,7 +1856,7 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
                 ),
               ],
             ),
-            if (order.paymentStatus == 'belum_bayar') ...[
+            if (order.status == 'belum_bayar') ...[
               const SizedBox(height: 12),
               SizedBox(
                 width: double.infinity,
@@ -1777,6 +1869,32 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
                     side: const BorderSide(color: AppTheme.primaryBlue),
                     padding: const EdgeInsets.symmetric(vertical: 8),
                   ),
+                ),
+              ),
+            ] else if (order.status == 'dibayar') ...[
+              const SizedBox(height: 12),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.orange.withOpacity(0.3)),
+                ),
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.hourglass_empty, color: Colors.orange, size: 16),
+                    SizedBox(width: 8),
+                    Text(
+                      'Bukti Pembayaran Sedang Diverifikasi',
+                      style: TextStyle(
+                        color: Colors.orange,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -1898,17 +2016,23 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
 
   Widget _buildProgressStepper(String currentStatus) {
     int currentStep = 0;
-    if (currentStatus == 'diterima') currentStep = 0;
-    if (currentStatus == 'sedang_diproses') currentStep = 1;
-    if (currentStatus == 'selesai') currentStep = 2;
+    if (currentStatus == 'belum_bayar') currentStep = 0;
+    if (currentStatus == 'dibayar') currentStep = 1;
+    if (currentStatus == 'diterima') currentStep = 2;
+    if (currentStatus == 'sedang_diproses') currentStep = 3;
+    if (currentStatus == 'selesai') currentStep = 4;
 
     return Row(
       children: [
-        _buildStep(0, 'Diterima', currentStep >= 0),
+        _buildStep(0, 'Buat Pesanan', currentStep >= 0),
         _buildLine(currentStep >= 1),
-        _buildStep(1, 'Diproses', currentStep >= 1),
+        _buildStep(1, 'Bayar', currentStep >= 1),
         _buildLine(currentStep >= 2),
-        _buildStep(2, 'Selesai', currentStep >= 2),
+        _buildStep(2, 'Diterima', currentStep >= 2),
+        _buildLine(currentStep >= 3),
+        _buildStep(3, 'Diproses', currentStep >= 3),
+        _buildLine(currentStep >= 4),
+        _buildStep(4, 'Selesai', currentStep >= 4),
       ],
     );
   }

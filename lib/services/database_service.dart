@@ -177,6 +177,7 @@ class DatabaseService with ChangeNotifier {
       mapsLink: order.mapsLink,
       voucherCode: order.voucherCode,
       voucherDiscount: order.voucherDiscount,
+      paymentProof: order.paymentProof,
       statusTimeline: timeline,
       createdAt: order.createdAt,
       updatedAt: order.updatedAt,
@@ -303,6 +304,17 @@ class DatabaseService with ChangeNotifier {
     if (newPaymentStatus == 'sudah_bayar') {
       _triggerWA(orderId, 'dibayar');
     }
+  }
+
+  // Update order payment proof and change status to 'dibayar'
+  Future<void> updateOrderPaymentProof(String orderId, String paymentProofBase64) async {
+    await _db.collection('orders').doc(orderId).update({
+      'paymentProof': paymentProofBase64,
+      'status': 'dibayar',
+      'statusTimeline.dibayar': FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+    _triggerWA(orderId, 'dibayar');
   }
 
   // ==========================================

@@ -51,6 +51,7 @@ class OrderModel {
   final String status; // 'diterima' | 'sedang_diproses' | 'selesai' | 'diambil'
   final String paymentStatus; // 'belum_bayar' | 'sudah_bayar'
   final String qrisImage;
+  final String paymentProof;
   final String notes;
   final String deliveryType; // logistics method id
   final String deliveryAddress;
@@ -78,6 +79,7 @@ class OrderModel {
     required this.status,
     required this.paymentStatus,
     required this.qrisImage,
+    this.paymentProof = '',
     required this.notes,
     this.deliveryType = 'drop_off_only',
     this.deliveryAddress = '',
@@ -122,6 +124,7 @@ class OrderModel {
       status: map['status'] ?? 'diterima',
       paymentStatus: map['paymentStatus'] ?? 'belum_bayar',
       qrisImage: map['qrisImage'] ?? '',
+      paymentProof: map['paymentProof'] ?? '',
       notes: map['notes'] ?? '',
       deliveryType: map['deliveryType'] ?? 'drop_off_only',
       deliveryAddress: map['deliveryAddress'] ?? '',
@@ -156,6 +159,7 @@ class OrderModel {
       'status': status,
       'paymentStatus': paymentStatus,
       'qrisImage': qrisImage,
+      'paymentProof': paymentProof,
       'notes': notes,
       'deliveryType': deliveryType,
       'deliveryAddress': deliveryAddress,

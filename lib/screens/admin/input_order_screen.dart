@@ -481,6 +481,7 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
         status: 'diterima',
         paymentStatus: 'belum_bayar',
         qrisImage: 'assets/qris_pembayaran.jpeg',
+        paymentProof: '',
         notes: _notesController.text.trim(),
         deliveryType: _deliveryType,
         deliveryAddress: requiresAddress ? _deliveryAddressController.text.trim() : '',
