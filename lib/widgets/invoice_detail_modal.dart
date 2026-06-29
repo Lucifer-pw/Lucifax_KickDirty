@@ -285,6 +285,17 @@ class InvoiceDetailModal extends StatelessWidget {
                     ),
                   ],
 
+                  // Photo payment proof
+                  if (order.paymentProof.isNotEmpty) ...[
+                    const Divider(height: 24, color: AppTheme.lightGray),
+                    const Text('Bukti Pembayaran', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.darkBlueText)),
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      width: 140,
+                      child: _buildImageThumbnail(context, order.paymentProof, 'Bukti Pembayaran'),
+                    ),
+                  ],
+
                   // Photos before-after
                   if (order.photoBefore.isNotEmpty || order.photoAfter.isNotEmpty) ...[
                     const Divider(height: 24, color: AppTheme.lightGray),

@@ -72,6 +72,84 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
     );
   }
 
+  Future<String?> _showUploadPaymentProofDialog() async {
+    String? tempPhotoBase64;
+    return await showDialog<String?>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            return AlertDialog(
+              title: const Text('Konfirmasi Pembayaran (Wajib)'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    'Customer belum membayar pesanan ini. Harap konfirmasi pembayaran dan ambil foto bukti pembayaran (EDC/Uang Tunai/Kuitansi) sebelum memproses pesanan.',
+                    style: TextStyle(fontSize: 12),
+                  ),
+                  const SizedBox(height: 16),
+                  if (tempPhotoBase64 != null) ...[
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: _buildBase64Image(tempPhotoBase64!, 'Bukti Pembayaran', height: 120),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      ElevatedButton.icon(
+                        onPressed: () async {
+                          final img = await ImageService.pickImageFromCamera();
+                          if (img != null) {
+                            setStateDialog(() {
+                              tempPhotoBase64 = img;
+                            });
+                          }
+                        },
+                        icon: const Icon(Icons.camera_alt),
+                        label: const Text('Kamera'),
+                        style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryBlue),
+                      ),
+                      ElevatedButton.icon(
+                        onPressed: () async {
+                          final img = await ImageService.pickImageFromGallery();
+                          if (img != null) {
+                            setStateDialog(() {
+                              tempPhotoBase64 = img;
+                            });
+                          }
+                        },
+                        icon: const Icon(Icons.photo),
+                        label: const Text('Galeri'),
+                        style: ElevatedButton.styleFrom(backgroundColor: Colors.grey),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, null),
+                  child: const Text('Batal'),
+                ),
+                ElevatedButton(
+                  onPressed: tempPhotoBase64 == null
+                      ? null
+                      : () => Navigator.pop(context, tempPhotoBase64),
+                  style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryBlue),
+                  child: const Text('Konfirmasi & Bayar'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   Future<void> _updateStatus(OrderModel order) async {
     final dbService = Provider.of<DatabaseService>(context, listen: false);
     final orderId = order.id;
@@ -89,6 +167,16 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
       }
       return;
     } else if (currentStatus == 'diterima') {
+      // If order is not paid yet (offline walk-in cases), require payment proof first
+      if (order.paymentStatus != 'sudah_bayar' || order.paymentProof.isEmpty) {
+        final paymentProof = await _showUploadPaymentProofDialog();
+        if (paymentProof == null) {
+          return; // Batal
+        }
+        // Save the payment proof and mark as paid in database
+        await dbService.updateOfflineOrderPayment(orderId, paymentProof);
+      }
+
       final estimation = await _showEstimationDialog('');
       if (estimation == null || estimation.isEmpty) {
         return; // Batal

@@ -317,6 +317,30 @@ class DatabaseService with ChangeNotifier {
     _triggerWA(orderId, 'dibayar');
   }
 
+  // Update payment proof and mark as paid (sudah_bayar) for offline orders
+  Future<void> updateOfflineOrderPayment(String orderId, String paymentProofBase64) async {
+    try {
+      DocumentSnapshot orderDoc = await _db.collection('orders').doc(orderId).get();
+      if (orderDoc.exists) {
+        OrderModel order = OrderModel.fromMap(orderDoc.data() as Map<String, dynamic>, orderDoc.id);
+        if (order.paymentStatus != 'sudah_bayar') {
+          await _awardPoints(order);
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) print("Error awarding points: $e");
+    }
+
+    await _db.collection('orders').doc(orderId).update({
+      'paymentProof': paymentProofBase64,
+      'paymentStatus': 'sudah_bayar',
+      'statusTimeline.sudah_bayar': FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+
+    _triggerWA(orderId, 'dibayar');
+  }
+
   // ==========================================
   // EXPENSES CRUD
   // ==========================================
