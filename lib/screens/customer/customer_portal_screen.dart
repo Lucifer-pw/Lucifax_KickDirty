@@ -72,9 +72,9 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
       final catSnap = await FirebaseFirestore.instance
           .collection('categories')
           .where('isActive', isEqualTo: true)
-          .orderBy('createdAt', descending: false)
           .get();
       categories = catSnap.docs.map((doc) => CategoryModel.fromMap(doc.data(), doc.id)).toList();
+      categories.sort((a, b) => a.createdAt.compareTo(b.createdAt));
       services = await dbService.getServices().first;
       
       final userSnap = await FirebaseFirestore.instance.collection('users').doc(currentUser.uid).get();
