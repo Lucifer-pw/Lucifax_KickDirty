@@ -244,67 +244,101 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
                             ),
                             const SizedBox(height: 12),
                             
-                            // Category Dropdown
-                            DropdownButtonFormField<CategoryModel>(
-                              value: selectedCategory,
-                              decoration: const InputDecoration(
-                                labelText: 'Pilih Kategori Jasa',
-                                prefixIcon: Icon(Icons.category_outlined),
-                                fillColor: Colors.white,
-                                filled: true,
-                              ),
-                              items: categories.map((cat) {
-                                return DropdownMenuItem<CategoryModel>(
-                                  value: cat,
-                                  child: Text(cat.name),
-                                );
-                              }).toList(),
-                              onChanged: (val) {
-                                setStateSheet(() {
-                                  selectedCategory = val;
-                                  // Update services filter
-                                  filteredServices = services
-                                      .where((s) => s.isActive && s.categoryId == val?.id)
-                                      .toList();
-                                  selectedService = filteredServices.isNotEmpty ? filteredServices.first : null;
-                                });
-                              },
-                            ),
-                            const SizedBox(height: 12),
+                             // Category & Service Realtime StreamBuilders
+                             StreamBuilder<List<CategoryModel>>(
+                               stream: dbService.getActiveCategories(),
+                               builder: (context, catSnapshot) {
+                                 final activeCategories = catSnapshot.data ?? categories;
+                                 if (selectedCategory != null && !activeCategories.contains(selectedCategory)) {
+                                   selectedCategory = activeCategories.isNotEmpty ? activeCategories.first : null;
+                                 }
 
-                            // Service Dropdown
-                            DropdownButtonFormField<ServiceModel>(
-                              value: selectedService,
-                              decoration: const InputDecoration(
-                                labelText: 'Pilih Layanan Jasa',
-                                prefixIcon: Icon(Icons.dry_cleaning),
-                                fillColor: Colors.white,
-                                filled: true,
-                              ),
-                              items: filteredServices.map((service) {
-                                return DropdownMenuItem<ServiceModel>(
-                                  value: service,
-                                  child: Text(
-                                    '${service.name} - Rp ${service.price.toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")}',
-                                    style: const TextStyle(fontSize: 13),
-                                  ),
-                                );
-                              }).toList(),
-                              onChanged: selectedCategory == null ? null : (val) {
-                                setStateSheet(() {
-                                  selectedService = val;
-                                });
-                              },
-                            ),
-                            const SizedBox(height: 8),
-                            if (selectedService != null)
-                              Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 4),
-                                child: Text(
-                                  selectedService!.description,
-                                  style: const TextStyle(fontSize: 11, color: AppTheme.textGray, fontStyle: FontStyle.italic),
-                                ),
-                              ),
+                                 return StreamBuilder<List<ServiceModel>>(
+                                   stream: dbService.getServices(),
+                                   builder: (context, serviceSnapshot) {
+                                     final allServices = serviceSnapshot.data ?? services;
+                                     
+                                     // Filter active services for selectedCategory
+                                     final activeServices = allServices
+                                         .where((s) => s.isActive && s.categoryId == selectedCategory?.id)
+                                         .toList();
+
+                                     // Make sure selectedService is still in the active list
+                                     if (selectedService != null && !activeServices.contains(selectedService)) {
+                                       selectedService = activeServices.isNotEmpty ? activeServices.first : null;
+                                     } else if (selectedService == null && activeServices.isNotEmpty) {
+                                       selectedService = activeServices.first;
+                                     }
+
+                                     return Column(
+                                       crossAxisAlignment: CrossAxisAlignment.start,
+                                       children: [
+                                         // Category Dropdown
+                                         DropdownButtonFormField<CategoryModel>(
+                                           value: selectedCategory,
+                                           decoration: const InputDecoration(
+                                             labelText: 'Pilih Kategori Jasa',
+                                             prefixIcon: Icon(Icons.category_outlined),
+                                             fillColor: Colors.white,
+                                             filled: true,
+                                           ),
+                                           items: activeCategories.map((cat) {
+                                             return DropdownMenuItem<CategoryModel>(
+                                               value: cat,
+                                               child: Text(cat.name),
+                                             );
+                                           }).toList(),
+                                           onChanged: (val) {
+                                             setStateSheet(() {
+                                               selectedCategory = val;
+                                               final updatedServices = allServices
+                                                   .where((s) => s.isActive && s.categoryId == val?.id)
+                                                   .toList();
+                                               selectedService = updatedServices.isNotEmpty ? updatedServices.first : null;
+                                             });
+                                           },
+                                         ),
+                                         const SizedBox(height: 12),
+
+                                         // Service Dropdown
+                                         DropdownButtonFormField<ServiceModel>(
+                                           value: selectedService,
+                                           decoration: const InputDecoration(
+                                             labelText: 'Pilih Layanan Jasa',
+                                             prefixIcon: Icon(Icons.dry_cleaning),
+                                             fillColor: Colors.white,
+                                             filled: true,
+                                           ),
+                                           items: activeServices.map((service) {
+                                             return DropdownMenuItem<ServiceModel>(
+                                               value: service,
+                                               child: Text(
+                                                 '${service.name} - Rp ${service.price.toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")}',
+                                                 style: const TextStyle(fontSize: 13),
+                                               ),
+                                             );
+                                           }).toList(),
+                                           onChanged: selectedCategory == null ? null : (val) {
+                                             setStateSheet(() {
+                                               selectedService = val;
+                                             });
+                                           },
+                                         ),
+                                         const SizedBox(height: 8),
+                                         if (selectedService != null)
+                                           Padding(
+                                             padding: const EdgeInsets.symmetric(horizontal: 4),
+                                             child: Text(
+                                               selectedService!.description,
+                                               style: const TextStyle(fontSize: 11, color: AppTheme.textGray, fontStyle: FontStyle.italic),
+                                             ),
+                                           ),
+                                       ],
+                                     );
+                                   },
+                                 );
+                               },
+                             ),
                             const SizedBox(height: 12),
                             SizedBox(
                               width: double.infinity,
