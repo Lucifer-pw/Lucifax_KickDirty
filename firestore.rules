@@ -117,10 +117,30 @@ service cloud.firestore {
     }
 
     // ============================================
+    // DEVELOPER BILLING CONFIG COLLECTION
+    // ============================================
+    match /developer_billing/{docId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && isDeveloper();
+    }
+
+    // ============================================
+    // DEVELOPER BILLING INVOICES COLLECTION
+    // ============================================
+    match /developer_billing_invoices/{docId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
+    }
+
+    // ============================================
     // HELPER FUNCTIONS
     // ============================================
     function isOwnerOrStaff() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['owner', 'staff'];
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['owner', 'staff', 'developer'];
+    }
+
+    function isDeveloper() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'developer';
     }
   }
 }
