@@ -86,7 +86,7 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
   }
 
   bool _hasPerm(String key, String role) {
-    if (role == 'owner') return true;
+    if (role == 'owner' || role == 'developer') return true;
     return _staffPerms[key] == true;
   }
 
@@ -107,7 +107,7 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
         final showBusiness = _hasPerm('canAccessBusinessSettings', role);
         final showWA = _hasPerm('canAccessWhatsAppSettings', role);
         final showBot = _hasPerm('canAccessChatBotSettings', role);
-        final showStaffPerms = role == 'owner';
+        final showStaffPerms = role == 'owner' || role == 'developer';
 
         return Scaffold(
           appBar: AppBar(

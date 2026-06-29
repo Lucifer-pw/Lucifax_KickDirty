@@ -75,7 +75,7 @@ class AuthWrapper extends StatelessWidget {
       }
 
       final role = authService.currentUserModel!.role;
-      if (role == 'owner' || role == 'staff') {
+      if (role == 'owner' || role == 'staff' || role == 'developer') {
         return const AdminDashboard();
       } else {
         return const CustomerPortalScreen();

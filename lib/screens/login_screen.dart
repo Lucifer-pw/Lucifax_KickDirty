@@ -77,7 +77,7 @@ class _LoginScreenState extends State<LoginScreen> {
       // Check role and navigate
       if (mounted) {
         final role = authService.currentUserModel?.role;
-        if (role == 'owner' || role == 'staff') {
+        if (role == 'owner' || role == 'staff' || role == 'developer') {
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(builder: (_) => const AdminDashboard()),
           );
@@ -114,7 +114,7 @@ class _LoginScreenState extends State<LoginScreen> {
       final credential = await authService.signInWithGoogle();
       if (credential != null && mounted) {
         final role = authService.currentUserModel?.role;
-        if (role == 'owner' || role == 'staff') {
+        if (role == 'owner' || role == 'staff' || role == 'developer') {
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(builder: (_) => const AdminDashboard()),
           );

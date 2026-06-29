@@ -112,7 +112,7 @@ class InAppNotificationService {
     final db = FirebaseFirestore.instance;
 
     // 1. Order listener
-    if (role == 'owner' || role == 'staff') {
+    if (role == 'owner' || role == 'staff' || role == 'developer') {
       // Listen to all orders
       _orderSubscription = db
           .collection('orders')

@@ -18,6 +18,8 @@ import 'voucher_crud_screen.dart';
 import 'financial_report_screen.dart';
 import 'admin_chat_list_screen.dart';
 import 'sales_detail_screen.dart';
+import 'developer_billing_screen.dart';
+import 'billing_block_screen.dart';
 
 import 'settings_screen.dart';
 import '../../services/in_app_notification_service.dart';
@@ -35,7 +37,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
   Map<String, bool> _staffPerms = {};
 
   bool _hasPerm(String key, String? role) {
-    if (role == 'owner') return true;
+    if (role == 'owner' || role == 'developer') return true;
     return _staffPerms[key] == true;
   }
 
@@ -111,14 +113,51 @@ class _AdminDashboardState extends State<AdminDashboard> {
     
     final currentUser = authService.currentUserModel;
     final String role = currentUser?.role ?? 'staff';
-    final String roleLabel = role == 'owner' ? 'Owner' : 'Staff';
+    final String roleLabel = role == 'developer'
+        ? 'Developer'
+        : (role == 'owner' ? 'Owner' : 'Staff');
 
     return StreamBuilder<DocumentSnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('app_config')
-          .doc('staff_permissions')
-          .snapshots(),
-      builder: (context, permSnapshot) {
+      stream: FirebaseFirestore.instance.collection('developer_billing').doc('config').snapshots(),
+      builder: (context, billingSnapshot) {
+        bool isBlocked = false;
+        double billingAmount = 150000.0;
+        DateTime billingDueDate = DateTime(2026, 8, 1);
+        String billingQr = '';
+
+        if (billingSnapshot.hasData && billingSnapshot.data!.exists) {
+          final bData = billingSnapshot.data!.data() as Map<String, dynamic>?;
+          if (bData != null) {
+            final nextDueDate = (bData['nextDueDate'] as Timestamp?)?.toDate();
+            final isPaid = bData['isPaid'] as bool? ?? false;
+            billingAmount = (bData['amount'] as num?)?.toDouble() ?? 150000.0;
+            billingQr = bData['qrImage'] as String? ?? '';
+            if (nextDueDate != null) {
+              billingDueDate = nextDueDate;
+            }
+
+            if (nextDueDate != null && DateTime.now().isAfter(nextDueDate) && !isPaid) {
+              if (role == 'owner' || role == 'staff') {
+                isBlocked = true;
+              }
+            }
+          }
+        }
+
+        if (isBlocked) {
+          return BillingBlockScreen(
+            amount: billingAmount,
+            dueDate: billingDueDate,
+            qrImage: billingQr,
+          );
+        }
+
+        return StreamBuilder<DocumentSnapshot>(
+          stream: FirebaseFirestore.instance
+              .collection('app_config')
+              .doc('staff_permissions')
+              .snapshots(),
+          builder: (context, permSnapshot) {
         // Update permissions map in real-time
         if (permSnapshot.hasData && permSnapshot.data!.exists) {
           _staffPerms = Map<String, bool>.from(
@@ -209,6 +248,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
         );
       },
     );
+  },
+);
   }
 
   Widget _buildDashboardHome(BuildContext context, DatabaseService dbService, UserModel? currentUser, String roleLabel, String role, List<Map<String, dynamic>> navItems) {
@@ -230,6 +271,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   context,
                   MaterialPageRoute(builder: (_) => const AdminSettingsScreen()),
                 );
+              } else if (value == 'developer_billing') {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const DeveloperBillingScreen()),
+                );
               } else if (value == 'logout') {
                 InAppNotificationService.instance.stopListening();
                 await Provider.of<AuthService>(context, listen: false).signOut();
@@ -249,6 +295,17 @@ class _AdminDashboardState extends State<AdminDashboard> {
                       Icon(Icons.settings, color: AppTheme.darkBlueText, size: 20),
                       SizedBox(width: 10),
                       Text('Pengaturan'),
+                    ],
+                  ),
+                ),
+              if (role == 'developer')
+                const PopupMenuItem<String>(
+                  value: 'developer_billing',
+                  child: Row(
+                    children: [
+                      Icon(Icons.payment_outlined, color: AppTheme.darkBlueText, size: 20),
+                      SizedBox(width: 10),
+                      Text('Developer Billing'),
                     ],
                   ),
                 ),

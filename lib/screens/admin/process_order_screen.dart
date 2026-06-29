@@ -601,7 +601,7 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
                           stream: FirebaseFirestore.instance.collection('app_config').doc('staff_permissions').snapshots(),
                           builder: (context, permSnap) {
                             final role = Provider.of<AuthService>(context, listen: false).currentUserModel?.role ?? 'staff';
-                            if (role == 'owner') {
+                            if (role == 'owner' || role == 'developer') {
                               return IconButton(
                                 icon: const Icon(Icons.edit_outlined, size: 14, color: AppTheme.primaryBlue),
                                 padding: EdgeInsets.zero,
