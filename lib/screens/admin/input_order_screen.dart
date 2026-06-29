@@ -970,72 +970,91 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
                         children: [
                           Text('Voucher Diskon', style: Theme.of(context).textTheme.titleMedium),
                           const SizedBox(height: 12),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: TextFormField(
-                                  controller: _voucherController,
-                                  decoration: const InputDecoration(
-                                    hintText: 'Masukkan Kode Voucher',
-                                    prefixIcon: Icon(Icons.confirmation_number_outlined),
-                                  ),
-                                  textCapitalization: TextCapitalization.characters,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              ElevatedButton(
-                                onPressed: () async {
-                                  final dbService = Provider.of<DatabaseService>(context, listen: false);
-                                  final code = _voucherController.text.trim();
-                                  if (code.isEmpty) return;
+                          StreamBuilder<List<VoucherModel>>(
+                            stream: dbService.getActiveVouchers(),
+                            builder: (context, snapshot) {
+                              final activeVouchers = snapshot.data ?? [];
+                              final eligibleVouchers = activeVouchers.where((v) => _itemsPrice >= v.minOrder).toList();
 
-                                  final v = await dbService.validateVoucher(code, _itemsPrice);
+                              // Auto de-apply if cart total drops below minOrder
+                              if (_appliedVoucher != null && !eligibleVouchers.contains(_appliedVoucher)) {
+                                WidgetsBinding.instance.addPostFrameCallback((_) {
                                   setState(() {
-                                    if (v != null) {
-                                      _appliedVoucher = v;
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(content: Text('Voucher "${v.name}" berhasil diterapkan!')),
-                                      );
-                                    } else {
-                                      _appliedVoucher = null;
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        const SnackBar(content: Text('Kode voucher tidak valid atau minimal belanja tidak terpenuhi')),
-                                      );
-                                    }
+                                    _appliedVoucher = null;
                                   });
-                                },
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: AppTheme.primaryBlue,
-                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                                ),
-                                child: const Text('Gunakan'),
-                              ),
-                            ],
-                          ),
-                          if (_appliedVoucher != null) ...[
-                            const SizedBox(height: 8),
-                            Row(
-                              children: [
-                                const Icon(Icons.check_circle, color: Colors.green, size: 18),
-                                const SizedBox(width: 6),
-                                Expanded(
-                                  child: Text(
-                                    'Terpasang: ${_appliedVoucher!.name} (-Rp ${_voucherDiscount.toStringAsFixed(0)})',
-                                    style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
+                                });
+                              }
+
+                              if (activeVouchers.isEmpty) {
+                                return const Text(
+                                  'Tidak ada voucher aktif tersedia',
+                                  style: TextStyle(fontSize: 12, color: AppTheme.textGray, fontStyle: FontStyle.italic),
+                                );
+                              }
+
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  DropdownButtonFormField<VoucherModel>(
+                                    isExpanded: true,
+                                    value: _appliedVoucher,
+                                    hint: const Text('Pilih Voucher Diskon', style: TextStyle(fontSize: 12)),
+                                    decoration: const InputDecoration(
+                                      prefixIcon: Icon(Icons.confirmation_number_outlined),
+                                    ),
+                                    items: eligibleVouchers.map((v) {
+                                      final discStr = v.discountType == 'percentage'
+                                          ? 'Diskon ${v.discountValue.toStringAsFixed(0)}%'
+                                          : 'Diskon Rp ${v.discountValue.toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")}';
+                                      return DropdownMenuItem<VoucherModel>(
+                                        value: v,
+                                        child: Text(
+                                          '${v.name} ($discStr)',
+                                          style: const TextStyle(fontSize: 12),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      );
+                                    }).toList(),
+                                    onChanged: (val) {
+                                      setState(() {
+                                        _appliedVoucher = val;
+                                      });
+                                    },
                                   ),
-                                ),
-                                IconButton(
-                                  icon: const Icon(Icons.close, color: Colors.redAccent, size: 18),
-                                  onPressed: () {
-                                    setState(() {
-                                      _appliedVoucher = null;
-                                      _voucherController.clear();
-                                    });
-                                  },
-                                ),
-                              ],
-                            ),
-                          ],
+                                  if (eligibleVouchers.isEmpty && activeVouchers.isNotEmpty) ...[
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      'Belanja belum memenuhi syarat minimum voucher (Min. belanja Rp ${activeVouchers.map((v) => v.minOrder).reduce((a, b) => a < b ? a : b).toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")})',
+                                      style: const TextStyle(fontSize: 11, color: Colors.orange, fontStyle: FontStyle.italic),
+                                    ),
+                                  ],
+                                  if (_appliedVoucher != null) ...[
+                                    const SizedBox(height: 10),
+                                    Row(
+                                      children: [
+                                        const Icon(Icons.check_circle, color: Colors.green, size: 18),
+                                        const SizedBox(width: 6),
+                                        Expanded(
+                                          child: Text(
+                                            'Terpasang: ${_appliedVoucher!.name} (-Rp ${_voucherDiscount.toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")})',
+                                            style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 13),
+                                          ),
+                                        ),
+                                        IconButton(
+                                          icon: const Icon(Icons.close, color: Colors.redAccent, size: 18),
+                                          onPressed: () {
+                                            setState(() {
+                                              _appliedVoucher = null;
+                                            });
+                                          },
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ],
+                              );
+                            },
+                          ),
                         ],
                       ),
                     ),

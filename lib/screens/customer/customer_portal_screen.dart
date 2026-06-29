@@ -522,7 +522,7 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
                         const SizedBox(height: 16),
                       ],
 
-                      // Voucher input for Customer
+                      // Voucher selection for Customer
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
@@ -538,73 +538,93 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
                               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.darkBlueText),
                             ),
                             const SizedBox(height: 10),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: TextFormField(
-                                    controller: voucherController,
-                                    decoration: const InputDecoration(
-                                      hintText: 'Kode Voucher',
-                                      prefixIcon: Icon(Icons.confirmation_number_outlined),
-                                      fillColor: Colors.white,
-                                      filled: true,
-                                    ),
-                                    textCapitalization: TextCapitalization.characters,
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                ElevatedButton(
-                                  onPressed: () async {
-                                    final code = voucherController.text.trim();
-                                    if (code.isEmpty) return;
+                            StreamBuilder<List<VoucherModel>>(
+                              stream: dbService.getActiveVouchers(),
+                              builder: (context, snapshot) {
+                                final activeVouchers = snapshot.data ?? [];
+                                final eligibleVouchers = activeVouchers.where((v) => servicePrice >= v.minOrder).toList();
 
-                                    final v = await dbService.validateVoucher(code, servicePrice);
+                                // Auto de-apply if cart total drops below minOrder
+                                if (appliedVoucher != null && !eligibleVouchers.contains(appliedVoucher)) {
+                                  WidgetsBinding.instance.addPostFrameCallback((_) {
                                     setStateSheet(() {
-                                      if (v != null) {
-                                        appliedVoucher = v;
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          SnackBar(content: Text('Voucher "${v.name}" berhasil diterapkan!')),
-                                        );
-                                      } else {
-                                        appliedVoucher = null;
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          const SnackBar(content: Text('Kode voucher tidak valid atau minimal belanja tidak terpenuhi')),
-                                        );
-                                      }
+                                      appliedVoucher = null;
                                     });
-                                  },
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: AppTheme.primaryBlue,
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                                  ),
-                                  child: const Text('Terapkan'),
-                                ),
-                              ],
-                            ),
-                            if (appliedVoucher != null) ...[
-                              const SizedBox(height: 8),
-                              Row(
-                                children: [
-                                  const Icon(Icons.check_circle, color: Colors.green, size: 16),
-                                  const SizedBox(width: 6),
-                                  Expanded(
-                                    child: Text(
-                                      'Voucher Aktif: ${appliedVoucher!.name} (-Rp ${voucherDiscount.toStringAsFixed(0)})',
-                                      style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 12),
+                                  });
+                                }
+
+                                if (activeVouchers.isEmpty) {
+                                  return const Text(
+                                    'Tidak ada voucher tersedia saat ini',
+                                    style: TextStyle(fontSize: 12, color: AppTheme.textGray, fontStyle: FontStyle.italic),
+                                  );
+                                }
+
+                                return Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    DropdownButtonFormField<VoucherModel>(
+                                      isExpanded: true,
+                                      value: appliedVoucher,
+                                      hint: const Text('Pilih Voucher Diskon', style: TextStyle(fontSize: 12)),
+                                      decoration: const InputDecoration(
+                                        prefixIcon: Icon(Icons.confirmation_number_outlined),
+                                        fillColor: Colors.white,
+                                        filled: true,
+                                      ),
+                                      items: eligibleVouchers.map((v) {
+                                        final discStr = v.discountType == 'percentage'
+                                            ? 'Diskon ${v.discountValue.toStringAsFixed(0)}%'
+                                            : 'Diskon Rp ${v.discountValue.toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")}';
+                                        return DropdownMenuItem<VoucherModel>(
+                                          value: v,
+                                          child: Text(
+                                            '${v.name} ($discStr)',
+                                            style: const TextStyle(fontSize: 12),
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        );
+                                      }).toList(),
+                                      onChanged: (val) {
+                                        setStateSheet(() {
+                                          appliedVoucher = val;
+                                        });
+                                      },
                                     ),
-                                  ),
-                                  GestureDetector(
-                                    onTap: () {
-                                      setStateSheet(() {
-                                        appliedVoucher = null;
-                                        voucherController.clear();
-                                      });
-                                    },
-                                    child: const Icon(Icons.close, color: Colors.red, size: 16),
-                                  ),
-                                ],
-                              ),
-                            ],
+                                    if (eligibleVouchers.isEmpty && activeVouchers.isNotEmpty) ...[
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        'Tambahkan barang lagi untuk menggunakan voucher (Min. belanja Rp ${activeVouchers.map((v) => v.minOrder).reduce((a, b) => a < b ? a : b).toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")})',
+                                        style: const TextStyle(fontSize: 11, color: Colors.orange, fontStyle: FontStyle.italic),
+                                      ),
+                                    ],
+                                    if (appliedVoucher != null) ...[
+                                      const SizedBox(height: 10),
+                                      Row(
+                                        children: [
+                                          const Icon(Icons.check_circle, color: Colors.green, size: 16),
+                                          const SizedBox(width: 6),
+                                          Expanded(
+                                            child: Text(
+                                              'Voucher Aktif: ${appliedVoucher!.name} (-Rp ${voucherDiscount.toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")})',
+                                              style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 12),
+                                            ),
+                                          ),
+                                          GestureDetector(
+                                            onTap: () {
+                                              setStateSheet(() {
+                                                appliedVoucher = null;
+                                              });
+                                            },
+                                            child: const Icon(Icons.close, color: Colors.red, size: 16),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ],
+                                );
+                              },
+                            ),
                           ],
                         ),
                       ),
