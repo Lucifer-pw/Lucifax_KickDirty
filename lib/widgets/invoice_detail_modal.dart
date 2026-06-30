@@ -223,10 +223,10 @@ class InvoiceDetailModal extends StatelessWidget {
                   // Timeline Status Updates
                   const Text('Linimasa Pembaruan Status', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.darkBlueText)),
                   const SizedBox(height: 8),
+                  _buildTimelineItem('Dibayar / Lunas', order.statusTimeline['sudah_bayar'], dateFormat),
                   _buildTimelineItem('Diterima', order.statusTimeline['diterima'], dateFormat),
                   _buildTimelineItem('Sedang Diproses', order.statusTimeline['sedang_diproses'], dateFormat),
                   _buildTimelineItem('Selesai Di-servis', order.statusTimeline['selesai'], dateFormat),
-                  _buildTimelineItem('Dibayar / Lunas', order.statusTimeline['sudah_bayar'], dateFormat),
                   _buildTimelineItem('Diserahkan ke Pelanggan', order.statusTimeline['diambil'], dateFormat),
                   
                   const Divider(height: 20, color: AppTheme.lightGray),
