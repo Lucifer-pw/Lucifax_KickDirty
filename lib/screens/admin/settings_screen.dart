@@ -7,6 +7,7 @@ import '../../widgets/watermark.dart';
 import 'staff_permissions_screen.dart';
 import 'owner_billing_history_screen.dart';
 import 'owner_billing_package_screen.dart';
+import 'developer_billing_approval_screen.dart';
 import 'logistics_crud_screen.dart';
 import 'category_crud_screen.dart';
 import 'voucher_crud_screen.dart';
@@ -297,6 +298,21 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
                                   );
                                 },
                               ),
+                              if (role == 'developer') ...[
+                                const Divider(height: 1, indent: 56),
+                                _buildSettingTile(
+                                  title: 'Konfirmasi Billing Owner',
+                                  subtitle: 'Verifikasi & setujui bukti transfer bulanan owner',
+                                  icon: Icons.verified_user,
+                                  color: Colors.green,
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(builder: (_) => const DeveloperBillingApprovalScreen()),
+                                    );
+                                  },
+                                ),
+                              ],
                             ],
                           ],
                         ),

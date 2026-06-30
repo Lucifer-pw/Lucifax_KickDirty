@@ -433,33 +433,63 @@ class _OwnerBillingPackageScreenState extends State<OwnerBillingPackageScreen> {
                           ),
                           const Divider(height: 24),
                           Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Icon(Icons.dns_outlined, color: AppTheme.primaryBlue, size: 20),
+                              const Padding(
+                                padding: EdgeInsets.only(top: 2.0),
+                                child: Icon(Icons.dns_outlined, color: AppTheme.primaryBlue, size: 20),
+                              ),
                               const SizedBox(width: 10),
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    const Text('Paket Terbayar Saat Ini:', style: TextStyle(fontSize: 11, color: AppTheme.textGray)),
-                                    const SizedBox(height: 2),
-                                    Text(activePackageLabel, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.darkBlueText)),
+                                    const Text(
+                                      'Paket Terbayar Saat Ini:',
+                                      style: TextStyle(fontSize: 12, color: AppTheme.textGray, height: 1.2),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      activePackageLabel,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 14,
+                                        color: AppTheme.darkBlueText,
+                                        height: 1.2,
+                                      ),
+                                    ),
                                   ],
                                 ),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 12),
+                          const SizedBox(height: 16),
                           Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Icon(Icons.event_note, color: Colors.indigo, size: 20),
+                              const Padding(
+                                padding: EdgeInsets.only(top: 2.0),
+                                child: Icon(Icons.event_note, color: Colors.indigo, size: 20),
+                              ),
                               const SizedBox(width: 10),
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    const Text('Jatuh Tempo Berikutnya:', style: TextStyle(fontSize: 11, color: AppTheme.textGray)),
-                                    const SizedBox(height: 2),
-                                    Text(DateFormat('dd MMMM yyyy').format(billingDueDate), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.darkBlueText)),
+                                    const Text(
+                                      'Jatuh Tempo Berikutnya:',
+                                      style: TextStyle(fontSize: 12, color: AppTheme.textGray, height: 1.2),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      DateFormat('dd MMMM yyyy').format(billingDueDate),
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 14,
+                                        color: AppTheme.darkBlueText,
+                                        height: 1.2,
+                                      ),
+                                    ),
                                   ],
                                 ),
                               ),
