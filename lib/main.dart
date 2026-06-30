@@ -82,7 +82,7 @@ class AuthWrapper extends StatelessWidget {
       }
     }
 
-    // Otherwise, show Login screen.
-    return const LoginScreen();
+    // Otherwise, show customer portal screen in guest mode by default.
+    return const CustomerPortalScreen();
   }
 }

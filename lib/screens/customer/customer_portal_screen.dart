@@ -28,6 +28,7 @@ class CustomerPortalScreen extends StatefulWidget {
 
 class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
   int _currentIndex = 0;
+  String? _selectedCategoryId;
 
   late Stream<List<CategoryModel>> _categoriesStream;
   late Stream<List<ServiceModel>> _servicesStream;
@@ -1449,6 +1450,304 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
     );
   }
 
+  Widget _buildHomeTab(BuildContext context, UserModel currentUser, DatabaseService dbService, String phoneNumber) {
+    return StreamBuilder<List<OrderModel>>(
+      stream: dbService.getOrdersByPhone(phoneNumber),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (snapshot.hasError) {
+          return Center(child: Text('Terjadi kesalahan: ${snapshot.error}'));
+        }
+
+        final allOrders = snapshot.data ?? [];
+        final activeOrders = allOrders.where((o) => o.status != 'diambil').toList();
+        final historyOrders = allOrders.where((o) => o.status == 'diambil').toList();
+
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildProfileCard(currentUser),
+              const SizedBox(height: 24),
+              Text('Lacak Cucian Sepatu (Real-Time)', style: Theme.of(context).textTheme.titleLarge),
+              const SizedBox(height: 12),
+              if (activeOrders.isEmpty)
+                _buildEmptyState('Tidak ada sepatu yang sedang dicuci saat ini.')
+              else
+                ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: activeOrders.length,
+                  itemBuilder: (context, index) {
+                    return _buildActiveOrderCard(activeOrders[index]);
+                  },
+                ),
+              const SizedBox(height: 24),
+              Text('Riwayat Cucian Selesai', style: Theme.of(context).textTheme.titleLarge),
+              const SizedBox(height: 12),
+              if (historyOrders.isEmpty)
+                _buildEmptyState('Belum ada riwayat pesanan selesai.')
+              else
+                ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: historyOrders.length,
+                  itemBuilder: (context, index) {
+                    return _buildHistoryOrderCard(historyOrders[index]);
+                  },
+                ),
+              const SizedBox(height: 32),
+              const Center(child: Watermark()),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildGuestLoginTab(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.account_circle_outlined, size: 80, color: AppTheme.textGray),
+            const SizedBox(height: 16),
+            const Text(
+              'Belum Masuk Akun',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: AppTheme.darkBlueText),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Silakan masuk atau buat akun baru untuk melakukan pemesanan, melihat riwayat cucian, dan melakukan chat ke Owner.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 13, color: AppTheme.textGray, height: 1.5),
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: 200,
+              height: 45,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (_) => const LoginScreen()),
+                  );
+                },
+                icon: const Icon(Icons.login, color: Colors.white),
+                label: const Text('Masuk / Daftar', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryBlue),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showLoginRedirectDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Text('Silakan Masuk', style: TextStyle(fontWeight: FontWeight.bold)),
+          content: const Text('Anda harus masuk atau membuat akun terlebih dahulu untuk melakukan pemesanan layanan.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Batal', style: TextStyle(color: AppTheme.textGray)),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (_) => const LoginScreen()),
+                );
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryBlue),
+              child: const Text('Masuk / Daftar', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildServiceMenuTab(BuildContext context, bool isLoggedIn) {
+    return StreamBuilder<List<CategoryModel>>(
+      stream: _categoriesStream,
+      builder: (context, catSnapshot) {
+        if (!catSnapshot.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        final categories = catSnapshot.data ?? [];
+        if (categories.isEmpty) {
+          return const Center(child: Text('Belum ada kategori layanan.'));
+        }
+
+        // Initialize selected category if null
+        if (_selectedCategoryId == null && categories.isNotEmpty) {
+          _selectedCategoryId = categories.first.id;
+        }
+
+        return StreamBuilder<List<ServiceModel>>(
+          stream: _servicesStream,
+          builder: (context, servSnapshot) {
+            if (!servSnapshot.hasData) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            final allServices = servSnapshot.data ?? [];
+            final filteredServices = allServices
+                .where((s) => s.isActive && s.categoryId == _selectedCategoryId)
+                .toList();
+
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Banner Header
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(24),
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [AppTheme.primaryBlue, AppTheme.darkBlueText],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.only(
+                      bottomLeft: Radius.circular(24),
+                      bottomRight: Radius.circular(24),
+                    ),
+                  ),
+                  child: const Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'KickDirty Laundry & Care',
+                        style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+                      ),
+                      SizedBox(height: 6),
+                      Text(
+                        'Pilihan terbaik untuk kebersihan & perawatan sepatu kesayangan Anda.',
+                        style: TextStyle(color: Colors.white70, fontSize: 13),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Category Chips
+                SizedBox(
+                  height: 40,
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: categories.length,
+                    itemBuilder: (context, index) {
+                      final cat = categories[index];
+                      final isSelected = cat.id == _selectedCategoryId;
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: ChoiceChip(
+                          label: Text(cat.name),
+                          selected: isSelected,
+                          onSelected: (val) {
+                            if (val) {
+                              setState(() {
+                                _selectedCategoryId = cat.id;
+                              });
+                            }
+                          },
+                          selectedColor: AppTheme.primaryBlue,
+                          labelStyle: TextStyle(
+                            color: isSelected ? Colors.white : AppTheme.darkBlueText,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                // Services List
+                Expanded(
+                  child: filteredServices.isEmpty
+                      ? const Center(child: Text('Tidak ada layanan di kategori ini.'))
+                      : ListView.builder(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          itemCount: filteredServices.length,
+                          itemBuilder: (context, index) {
+                            final serv = filteredServices[index];
+                            final priceFormatted = serv.price.toStringAsFixed(0).replaceAllMapped(
+                                  RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+                                  (Match m) => '${m[1]}.',
+                                );
+                            return Card(
+                              margin: const EdgeInsets.only(bottom: 12),
+                              elevation: 2,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                              child: Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            serv.name,
+                                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppTheme.darkBlueText),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            serv.description,
+                                            style: const TextStyle(color: AppTheme.textGray, fontSize: 12),
+                                          ),
+                                          const SizedBox(height: 8),
+                                          Text(
+                                            'Rp $priceFormatted',
+                                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppTheme.primaryBlue),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    ElevatedButton(
+                                      onPressed: () {
+                                        if (isLoggedIn) {
+                                          _showOrderServiceDialog();
+                                        } else {
+                                          _showLoginRedirectDialog(context);
+                                        }
+                                      },
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: AppTheme.primaryBlue,
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                      ),
+                                      child: const Text('Pesan', style: TextStyle(color: Colors.white, fontSize: 12)),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final authService = Provider.of<AuthService>(context);
@@ -1456,69 +1755,16 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
 
     final currentUser = authService.currentUserModel;
     final String phoneNumber = currentUser?.phoneNumber ?? '';
-    final showAppBar = _currentIndex != 1;
+    final showAppBar = currentUser != null && _currentIndex != 2;
 
     final List<Widget> customerScreens = currentUser == null 
-        ? [const Center(child: CircularProgressIndicator())]
+        ? [
+            _buildServiceMenuTab(context, false),
+            _buildGuestLoginTab(context),
+          ]
         : [
-            // Tab 0: Home / Beranda
-            StreamBuilder<List<OrderModel>>(
-              stream: dbService.getOrdersByPhone(phoneNumber),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                if (snapshot.hasError) {
-                  return Center(child: Text('Terjadi kesalahan: ${snapshot.error}'));
-                }
-
-                final allOrders = snapshot.data ?? [];
-                final activeOrders = allOrders.where((o) => o.status != 'diambil').toList();
-                final historyOrders = allOrders.where((o) => o.status == 'diambil').toList();
-
-                return SingleChildScrollView(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildProfileCard(currentUser),
-                      const SizedBox(height: 24),
-                      Text('Lacak Cucian Sepatu (Real-Time)', style: Theme.of(context).textTheme.titleLarge),
-                      const SizedBox(height: 12),
-                      if (activeOrders.isEmpty)
-                        _buildEmptyState('Tidak ada sepatu yang sedang dicuci saat ini.')
-                      else
-                        ListView.builder(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          itemCount: activeOrders.length,
-                          itemBuilder: (context, index) {
-                            return _buildActiveOrderCard(activeOrders[index]);
-                          },
-                        ),
-                      const SizedBox(height: 24),
-                      Text('Riwayat Cucian Selesai', style: Theme.of(context).textTheme.titleLarge),
-                      const SizedBox(height: 12),
-                      if (historyOrders.isEmpty)
-                        _buildEmptyState('Belum ada riwayat pesanan selesai.')
-                      else
-                        ListView.builder(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          itemCount: historyOrders.length,
-                          itemBuilder: (context, index) {
-                            return _buildHistoryOrderCard(historyOrders[index]);
-                          },
-                        ),
-                      const SizedBox(height: 32),
-                      const Center(child: Watermark()),
-                    ],
-                  ),
-                );
-              },
-            ),
-            
-            // Tab 1: Chat Screen
+            _buildServiceMenuTab(context, true),
+            _buildHomeTab(context, currentUser, dbService, phoneNumber),
             ChatScreen(
               customerId: currentUser.uid,
               customerName: currentUser.name,
@@ -1527,20 +1773,22 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
               senderName: currentUser.name,
               isAdmin: false,
             ),
-            
-            // Tab 2: Profile Screen
             _buildCustomerProfileTab(context, currentUser, dbService),
           ];
 
     return Scaffold(
       appBar: showAppBar
           ? AppBar(
-              title: Text(_currentIndex == 0 ? 'KickDirty Pelanggan' : 'Profil Saya'),
+              title: Text(_currentIndex == 0 
+                  ? 'Menu Layanan' 
+                  : _currentIndex == 1 
+                      ? 'Beranda / Lacak' 
+                      : 'Profil Saya'),
               automaticallyImplyLeading: false,
-              actions: _currentIndex == 2 ? null : [
+              actions: [
                 IconButton(
                   icon: const Icon(Icons.logout_outlined, color: Colors.redAccent),
-                   onPressed: () async {
+                  onPressed: () async {
                     InAppNotificationService.instance.stopListening();
                     await authService.signOut();
                     if (mounted) {
@@ -1552,39 +1800,46 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
                 ),
               ],
             )
-          : null,
-      body: currentUser == null
-          ? const Center(child: CircularProgressIndicator())
-          : IndexedStack(
-              index: _currentIndex,
-              children: customerScreens,
+          : (currentUser == null && _currentIndex == 0
+              ? AppBar(
+                  title: const Text('KickDirty Menu Layanan'),
+                  automaticallyImplyLeading: false,
+                )
+              : null),
+      body: IndexedStack(
+        index: _currentIndex,
+        children: customerScreens,
+      ),
+      bottomNavigationBar: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: AppTheme.white,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.06),
+              blurRadius: 10,
+              offset: const Offset(0, -4),
             ),
-      bottomNavigationBar: currentUser == null
-          ? null
-          : Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: AppTheme.white,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.06),
-                    blurRadius: 10,
-                    offset: const Offset(0, -4),
-                  ),
-                ],
-              ),
-              child: SafeArea(
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    _buildCustomerNavItem(0, Icons.home_outlined, 'Beranda'),
-                    _buildCustomerNavItem(1, Icons.chat_bubble_outline, 'Chat Owner'),
-                    _buildCustomerNavItem(2, Icons.person_outline, 'Profil'),
+          ],
+        ),
+        child: SafeArea(
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: currentUser == null
+                ? [
+                    _buildCustomerNavItem(0, Icons.list_alt, 'Layanan'),
+                    _buildCustomerNavItem(1, Icons.login, 'Masuk / Daftar'),
+                  ]
+                : [
+                    _buildCustomerNavItem(0, Icons.list_alt, 'Layanan'),
+                    _buildCustomerNavItem(1, Icons.home_outlined, 'Beranda'),
+                    _buildCustomerNavItem(2, Icons.chat_bubble_outline, 'Chat Owner'),
+                    _buildCustomerNavItem(3, Icons.person_outline, 'Profil'),
                   ],
-                ),
-              ),
-            ),
-      floatingActionButton: (currentUser == null || _currentIndex != 0)
+          ),
+        ),
+      ),
+      floatingActionButton: (currentUser == null || (_currentIndex != 0 && _currentIndex != 1))
           ? null
           : FloatingActionButton.extended(
               onPressed: _showOrderServiceDialog,

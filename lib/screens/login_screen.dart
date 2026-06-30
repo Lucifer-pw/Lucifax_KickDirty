@@ -479,6 +479,26 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                     ),
+                    const SizedBox(height: 8),
+
+                    // Guest Option Link
+                    TextButton(
+                      onPressed: () {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(builder: (_) => const CustomerPortalScreen()),
+                        );
+                      },
+                      child: const Text(
+                        'Lihat Layanan Jasa (Kembali)',
+                        style: TextStyle(
+                          color: AppTheme.textGray,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 12,
+                          decoration: TextDecoration.underline,
+                        ),
+                      ),
+                    ),
 
                     const Divider(height: 32, color: AppTheme.lightGray),
 
