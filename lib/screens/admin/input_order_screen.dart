@@ -305,38 +305,6 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
       if (kDebugMode) print("Error fetching customers: $e");
     }
 
-    // 3. Fetch from 'orders'
-    try {
-      final ordersSnap = await FirebaseFirestore.instance
-          .collection('orders')
-          .orderBy('createdAt', descending: true)
-          .limit(200)
-          .get();
-      for (var doc in ordersSnap.docs) {
-        final data = doc.data();
-        final phone = data['customerPhone']?.toString().trim() ?? '';
-        final name = data['customerName']?.toString().trim() ?? '';
-        final custId = data['customerId']?.toString() ?? '';
-        if (phone.isNotEmpty && name.isNotEmpty) {
-          if (merged.containsKey(phone)) {
-            final existing = merged[phone]!;
-            if ((existing['customerId'] == null || existing['customerId']!.isEmpty) && custId.isNotEmpty) {
-              existing['customerId'] = custId;
-            }
-          } else {
-            merged[phone] = {
-              'name': name,
-              'phone': phone,
-              'customerId': custId,
-              'loyaltyPoints': '0',
-            };
-          }
-        }
-      }
-    } catch (e) {
-      if (kDebugMode) print("Error fetching orders: $e");
-    }
-
     return merged.values.toList();
   }
 
@@ -427,7 +395,7 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
     );
   }
 
-  Future<void> _showDeleteCustomerDialog(BuildContext context, String name, String phone, VoidCallback onDeleted) async {
+  Future<void> _showDeleteCustomerDialog(BuildContext context, String name, String phone, String customerId, VoidCallback onDeleted) async {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) {
@@ -451,15 +419,26 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
 
     if (confirm == true) {
       try {
+        // 1. Delete from customers collection
         await FirebaseFirestore.instance.collection('customers').doc(phone).delete();
+        
+        // 2. Delete from users collection if registered customer
+        if (customerId.isNotEmpty) {
+          await FirebaseFirestore.instance.collection('users').doc(customerId).delete();
+        }
+
         onDeleted();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Pelanggan berhasil dihapus')),
-        );
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Pelanggan berhasil dihapus')),
+          );
+        }
       } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Gagal menghapus: $e')),
-        );
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Gagal menghapus: $e')),
+          );
+        }
       }
     }
   }
@@ -543,11 +522,17 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
                                     IconButton(
                                       icon: const Icon(Icons.delete, color: Colors.red, size: 20),
                                       onPressed: () async {
-                                        await _showDeleteCustomerDialog(context, name, phone, () {
-                                          setStateDialog(() {
-                                            customersFuture = _fetchAllCustomers();
-                                          });
-                                        });
+                                        await _showDeleteCustomerDialog(
+                                          context, 
+                                          name, 
+                                          phone, 
+                                          item['customerId'] ?? '', 
+                                          () {
+                                            setStateDialog(() {
+                                              customersFuture = _fetchAllCustomers();
+                                            });
+                                          },
+                                        );
                                       },
                                     ),
                                   ],
