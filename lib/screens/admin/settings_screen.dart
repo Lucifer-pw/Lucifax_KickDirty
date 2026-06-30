@@ -6,6 +6,7 @@ import '../../theme.dart';
 import '../../widgets/watermark.dart';
 import 'staff_permissions_screen.dart';
 import 'owner_billing_history_screen.dart';
+import 'owner_billing_package_screen.dart';
 import 'logistics_crud_screen.dart';
 import 'category_crud_screen.dart';
 import 'voucher_crud_screen.dart';
@@ -267,6 +268,19 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(builder: (_) => const StaffPermissionsScreen()),
+                                  );
+                                },
+                              ),
+                              const Divider(height: 1, indent: 56),
+                              _buildSettingTile(
+                                title: 'Status & Paket Layanan',
+                                subtitle: 'Pilih paket bulanan & cek sisa billing',
+                                icon: Icons.dns_outlined,
+                                color: Colors.indigo,
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(builder: (_) => const OwnerBillingPackageScreen()),
                                   );
                                 },
                               ),

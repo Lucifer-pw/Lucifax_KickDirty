@@ -23,6 +23,7 @@ import 'billing_block_screen.dart';
 import 'package:intl/intl.dart';
 
 import 'settings_screen.dart';
+import 'owner_billing_package_screen.dart';
 import '../../services/in_app_notification_service.dart';
 
 class AdminDashboard extends StatefulWidget {
@@ -177,7 +178,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
         final List<Map<String, dynamic>> navItems = [];
 
         // 1. Beranda
-        screens.add(_buildDashboardHome(context, dbService, currentUser, roleLabel, role, navItems));
+        screens.add(_buildDashboardHome(context, dbService, currentUser, roleLabel, role, navItems, bData));
         navItems.add({'index': 0, 'icon': Icons.grid_view, 'label': 'Beranda'});
 
         // 2. Input
@@ -257,7 +258,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
 );
   }
 
-  Widget _buildDashboardHome(BuildContext context, DatabaseService dbService, UserModel? currentUser, String roleLabel, String role, List<Map<String, dynamic>> navItems) {
+  Widget _buildDashboardHome(BuildContext context, DatabaseService dbService, UserModel? currentUser, String roleLabel, String role, List<Map<String, dynamic>> navItems, Map<String, dynamic>? billingConfig) {
     // Check if user has permission to see settings
     final bool canAccessSettings = role == 'owner' ||
         _hasPerm('canAccessBusinessSettings', role) ||
@@ -364,6 +365,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   children: [
                     _buildProfileBanner(currentUser?.name ?? 'Admin', roleLabel),
                     const SizedBox(height: 16),
+                    
+                    if ((role == 'owner' || role == 'developer') && billingConfig != null) ...[
+                      _buildBillingDashboardBanner(context, billingConfig),
+                      const SizedBox(height: 16),
+                    ],
                     
                     // Notification banner for new & running orders
                     if (newOrdersCount > 0 || activeOrdersCount > 0) ...[
@@ -823,6 +829,72 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 
+  Widget _buildBillingDashboardBanner(BuildContext context, Map<String, dynamic> billingConfig) {
+    final nextDueDate = (billingConfig['nextDueDate'] as Timestamp?)?.toDate();
+    if (nextDueDate == null) return const SizedBox();
+
+    final now = DateTime.now();
+    final startOfToday = DateTime(now.year, now.month, now.day);
+    final startOfDue = DateTime(nextDueDate.year, nextDueDate.month, nextDueDate.day);
+    final int sisaHari = startOfDue.difference(startOfToday).inDays;
+
+    Color bannerColor = Colors.green;
+    Color textColor = Colors.white;
+    String message = '';
+    IconData icon = Icons.info_outline;
+
+    if (sisaHari <= 0) {
+      bannerColor = Colors.redAccent;
+      message = '⚠️ Masa aktif billing Anda sudah habis! Segera bayar agar aplikasi tetap aktif.';
+      icon = Icons.error_outline;
+    } else if (sisaHari <= 7) {
+      bannerColor = Colors.orange;
+      message = '⚠️ Billing aplikasi akan habis dalam $sisaHari hari lagi (Jatuh tempo: ${DateFormat('dd/MM/yyyy').format(nextDueDate)}).';
+      icon = Icons.warning_amber_outlined;
+    } else {
+      bannerColor = AppTheme.primaryBlue;
+      message = 'ℹ️ Billing aplikasi aktif. Sisa $sisaHari hari lagi sebelum jatuh tempo berikutnya.';
+      icon = Icons.dns_outlined;
+    }
+
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const OwnerBillingPackageScreen()),
+        );
+      },
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: bannerColor,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: bannerColor.withOpacity(0.3),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            )
+          ],
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: textColor, size: 24),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                message,
+                style: TextStyle(color: textColor, fontSize: 12, fontWeight: FontWeight.bold, height: 1.4),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Icon(Icons.arrow_forward_ios, color: textColor, size: 14),
+          ],
+        ),
+      ),
+    );
+  }
 
 }
 
