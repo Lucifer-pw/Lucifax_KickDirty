@@ -126,9 +126,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
         double billingAmount = 150000.0;
         DateTime billingDueDate = DateTime(2026, 8, 1);
         String billingQr = '';
+        Map<String, dynamic>? bData;
 
         if (billingSnapshot.hasData && billingSnapshot.data!.exists) {
-          final bData = billingSnapshot.data!.data() as Map<String, dynamic>?;
+          bData = billingSnapshot.data!.data() as Map<String, dynamic>?;
           if (bData != null) {
             final nextDueDate = (bData['nextDueDate'] as Timestamp?)?.toDate();
             final lastPaidMonth = bData['lastPaidMonth'] as String? ?? '';
