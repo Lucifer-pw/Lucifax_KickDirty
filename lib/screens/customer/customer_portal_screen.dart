@@ -1583,6 +1583,25 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
     return StreamBuilder<List<CategoryModel>>(
       stream: _categoriesStream,
       builder: (context, catSnapshot) {
+        if (catSnapshot.hasError) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, size: 60, color: Colors.redAccent),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Gagal memuat kategori: ${catSnapshot.error}',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: AppTheme.textGray),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
         if (!catSnapshot.hasData) {
           return const Center(child: CircularProgressIndicator());
         }
@@ -1599,6 +1618,25 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
         return StreamBuilder<List<ServiceModel>>(
           stream: _servicesStream,
           builder: (context, servSnapshot) {
+            if (servSnapshot.hasError) {
+              return Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(24.0),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.error_outline, size: 60, color: Colors.redAccent),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Gagal memuat layanan: ${servSnapshot.error}',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(color: AppTheme.textGray),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }
             if (!servSnapshot.hasData) {
               return const Center(child: CircularProgressIndicator());
             }
