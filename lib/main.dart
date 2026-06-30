@@ -5,6 +5,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'services/auth_service.dart';
 import 'services/database_service.dart';
 import 'theme.dart';
+import 'firebase_options.dart';
 import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/admin/admin_dashboard.dart';
@@ -19,13 +20,13 @@ void main() async {
     statusBarIconBrightness: Brightness.light,
   ));
   
-  // Initialize Firebase.
-  // Note: For a production release, you should run flutterfire configure to generate firebase_options.dart.
-  // We wrap in a try-catch to allow the app to compile and run gracefully if Firebase is not configured yet.
+  // Initialize Firebase using platform-specific options
   try {
-    await Firebase.initializeApp();
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
   } catch (e) {
-    debugPrint("Firebase initialization failed. Please set up Firebase in your console: $e");
+    debugPrint("Firebase initialization failed: $e");
   }
 
   runApp(const MyApp());
