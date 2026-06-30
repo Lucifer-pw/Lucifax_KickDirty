@@ -97,7 +97,30 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
     setState(() => _isSaving = true);
     try {
       final now = DateTime.now();
-      // Update invoice document status to lunas
+      
+      // 1. Get current billing config to calculate next due date
+      final configDoc = await FirebaseFirestore.instance
+          .collection('developer_billing')
+          .doc('config')
+          .get();
+
+      DateTime currentDueDate = DateTime.now();
+      if (configDoc.exists) {
+        final nextDueDateStamp = configDoc.get('nextDueDate') as Timestamp?;
+        if (nextDueDateStamp != null) {
+          currentDueDate = nextDueDateStamp.toDate();
+        }
+      }
+
+      // 2. Advance the next due date by 1 month
+      DateTime newDueDate;
+      if (currentDueDate.month == 12) {
+        newDueDate = DateTime(currentDueDate.year + 1, 1, currentDueDate.day);
+      } else {
+        newDueDate = DateTime(currentDueDate.year, currentDueDate.month + 1, currentDueDate.day);
+      }
+
+      // 3. Update invoice document status to lunas
       await FirebaseFirestore.instance
           .collection('developer_billing_invoices')
           .doc(monthCode)
@@ -106,21 +129,23 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
         'paidAt': Timestamp.fromDate(now),
       });
 
-      // Update main billing config lastPaidMonth
+      // 4. Update main billing config lastPaidMonth and nextDueDate
       await FirebaseFirestore.instance
           .collection('developer_billing')
           .doc('config')
           .update({
         'lastPaidMonth': monthCode,
+        'nextDueDate': Timestamp.fromDate(newDueDate),
       });
 
       setState(() {
         _lastPaidMonth = monthCode;
+        _nextDueDate = newDueDate;
       });
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Pembayaran bulan $monthCode berhasil dikonfirmasi lunas!')),
+          SnackBar(content: Text('Pembayaran bulan $monthCode berhasil dikonfirmasi lunas dan jatuh tempo diperbarui ke ${DateFormat('dd/MM/yyyy').format(newDueDate)}.')),
         );
       }
     } catch (e) {
@@ -137,13 +162,11 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
   Future<void> _rejectInvoicePayment(String monthCode) async {
     setState(() => _isSaving = true);
     try {
-      // Revert invoice document status to belum_bayar and remove paymentProof
       await FirebaseFirestore.instance
           .collection('developer_billing_invoices')
           .doc(monthCode)
           .update({
-        'status': 'belum_bayar',
-        'paymentProof': '',
+        'status': 'ditolak',
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
@@ -162,13 +185,13 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Konfirmasi pembayaran untuk bulan $monthCode dibatalkan.')),
+          SnackBar(content: Text('Konfirmasi pembayaran untuk bulan $monthCode ditolak.')),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Gagal membatalkan konfirmasi: $e')),
+          SnackBar(content: Text('Gagal menolak konfirmasi: $e')),
         );
       }
     } finally {
@@ -532,6 +555,9 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
                           } else if (status == 'menunggu_konfirmasi') {
                             statusColor = Colors.orange;
                             statusLabel = 'Menunggu Konfirmasi';
+                          } else if (status == 'ditolak') {
+                            statusColor = Colors.grey;
+                            statusLabel = 'Ditolak';
                           }
 
                           return Card(
