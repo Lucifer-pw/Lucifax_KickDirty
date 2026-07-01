@@ -20,6 +20,8 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
   bool _isLoading = true;
   bool _isSaving = false;
   double _selectedPresetAmount = -1.0;
+  String _ownerSelectedPackageName = 'Belum memilih paket';
+  double _ownerSelectedPackagePrice = 0.0;
 
   @override
   void initState() {
@@ -72,6 +74,16 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
           _nextDueDate = DateTime(2026, 8, 1);
           _lastPaidMonth = '';
           _qrImageBase64 = '';
+        });
+      }
+
+      // Fetch owner's selected package from business_config
+      final bizDoc = await FirebaseFirestore.instance.collection('app_config').doc('business_config').get();
+      if (bizDoc.exists) {
+        final bizData = bizDoc.data();
+        setState(() {
+          _ownerSelectedPackageName = bizData?['selectedPackageName'] as String? ?? 'Belum memilih paket';
+          _ownerSelectedPackagePrice = (bizData?['selectedPackagePrice'] as num?)?.toDouble() ?? 0.0;
         });
       }
     } catch (e) {
@@ -356,6 +368,37 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
                   const Text(
                     'Atur biaya maintenance bulanan untuk klien/owner. Jika belum ditandai Lunas setelah tanggal jatuh tempo, aplikasi Owner & Staff akan otomatis terkunci.',
                     style: TextStyle(fontSize: 12, color: AppTheme.textGray, height: 1.4),
+                  ),
+                  // Info Paket Pilihan Owner saat ini
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: AppTheme.primaryBlue.withOpacity(0.05),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: AppTheme.primaryBlue.withOpacity(0.2)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Paket Pilihan Owner Saat Ini:',
+                          style: TextStyle(fontSize: 12, color: AppTheme.textGray, fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          _ownerSelectedPackageName,
+                          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppTheme.darkBlueText),
+                        ),
+                        if (_ownerSelectedPackagePrice > 0) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            'Tarif Dasar: Rp ${_ownerSelectedPackagePrice.toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")} / Bulan',
+                            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.primaryBlue),
+                          ),
+                        ],
+                      ],
+                    ),
                   ),
                   const SizedBox(height: 20),
 
