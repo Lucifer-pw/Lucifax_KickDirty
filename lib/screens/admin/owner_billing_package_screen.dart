@@ -579,7 +579,7 @@ class _OwnerBillingPackageScreenState extends State<OwnerBillingPackageScreen> {
                       features: [
                         'Semua Layanan Pemeliharaan Paket 1 & 2',
                         'Domain Kustom Pribadi Toko (Contoh: kickdirty.com / kickdirty.id)',
-                        'Gratis Biaya Domain Tahunan Selama Berlangganan',
+                        'Gratis Biaya Domain dan Maintenance',
                         'Instalasi SSL (Keamanan HTTPS Gembok Hijau Resmi)',
                         'Prioritas Utama Respon Bantuan Teknis Developer 24/7',
                       ],
