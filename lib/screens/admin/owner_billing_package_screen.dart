@@ -468,8 +468,6 @@ class _OwnerBillingPackageScreenState extends State<OwnerBillingPackageScreen> {
           double billingAmount = 150000.0;
           DateTime billingDueDate = DateTime(2026, 8, 1);
           String billingQr = '';
-          String activePackageLabel = 'Paket 2: Pemeliharaan & Support';
-
           if (billingSnapshot.hasData && billingSnapshot.data!.exists) {
             final bData = billingSnapshot.data!.data() as Map<String, dynamic>?;
             if (bData != null) {
@@ -478,16 +476,6 @@ class _OwnerBillingPackageScreenState extends State<OwnerBillingPackageScreen> {
               billingQr = bData['qrImage'] as String? ?? '';
               if (nextDueDate != null) {
                 billingDueDate = nextDueDate;
-              }
-
-              if (billingAmount == 100000.0) {
-                activePackageLabel = 'Paket 1: Paket Cloud Server';
-              } else if (billingAmount == 150000.0) {
-                activePackageLabel = 'Paket 2: Paket Pemeliharaan & Support';
-              } else if (billingAmount == 250000.0) {
-                activePackageLabel = 'Paket 3: Paket Premium (Domain Kustom)';
-              } else {
-                activePackageLabel = 'Paket Kustom (Developer)';
               }
             }
           }
@@ -512,9 +500,25 @@ class _OwnerBillingPackageScreenState extends State<OwnerBillingPackageScreen> {
             stream: FirebaseFirestore.instance.collection('app_config').doc('business_config').snapshots(),
             builder: (context, configSnapshot) {
               String selectedPackage = '';
+              double activePrice = billingAmount;
               if (configSnapshot.hasData && configSnapshot.data!.exists) {
                 final cData = configSnapshot.data!.data() as Map<String, dynamic>?;
                 selectedPackage = cData?['selectedPackage'] as String? ?? '';
+                final double? presetPrice = (cData?['selectedPackagePrice'] as num?)?.toDouble();
+                if (presetPrice != null) {
+                  activePrice = presetPrice;
+                }
+              }
+
+              String activePackageLabel = 'Paket 2: Paket Pemeliharaan & Support';
+              if (activePrice == 100000.0) {
+                activePackageLabel = 'Paket 1: Paket Cloud Server';
+              } else if (activePrice == 150000.0) {
+                activePackageLabel = 'Paket 2: Paket Pemeliharaan & Support';
+              } else if (activePrice == 250000.0) {
+                activePackageLabel = 'Paket 3: Paket Premium (Domain Kustom)';
+              } else {
+                activePackageLabel = 'Paket Kustom (Developer)';
               }
 
               return SingleChildScrollView(
@@ -630,7 +634,7 @@ class _OwnerBillingPackageScreenState extends State<OwnerBillingPackageScreen> {
                             width: double.infinity,
                             height: 50,
                             child: ElevatedButton.icon(
-                              onPressed: () => _showPaymentBottomSheet(context, billingAmount, billingDueDate, billingQr),
+                              onPressed: () => _showPaymentBottomSheet(context, activePrice, billingDueDate, billingQr),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: AppTheme.primaryBlue,
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -659,7 +663,7 @@ class _OwnerBillingPackageScreenState extends State<OwnerBillingPackageScreen> {
                       packageKey: 'paket1',
                       name: 'Paket 1: Cloud Server & Backup Data',
                       price: 100000.0,
-                      isActive: billingAmount == 100000.0,
+                      isActive: activePrice == 100000.0,
                       isSelected: selectedPackage == 'paket1',
                       features: [
                         'Sewa Cloud Server Database Online 24/7',
@@ -675,8 +679,8 @@ class _OwnerBillingPackageScreenState extends State<OwnerBillingPackageScreen> {
                       packageKey: 'paket2',
                       name: 'Paket 2: Pemeliharaan & Bantuan Teknis',
                       price: 150000.0,
-                      isActive: billingAmount == 150000.0,
-                      isSelected: selectedPackage == 'paket2' || (selectedPackage.isEmpty && billingAmount == 150000.0),
+                      isActive: activePrice == 150000.0,
+                      isSelected: selectedPackage == 'paket2' || (selectedPackage.isEmpty && activePrice == 150000.0),
                       features: [
                         'Semua Layanan Dasar Paket 1',
                         'Garansi Kompatibilitas Pembaruan Sistem OS Android',
@@ -691,7 +695,7 @@ class _OwnerBillingPackageScreenState extends State<OwnerBillingPackageScreen> {
                       packageKey: 'paket3',
                       name: 'Paket 3: Premium + Domain Kustom (.COM / .ID)',
                       price: 250000.0,
-                      isActive: billingAmount == 250000.0,
+                      isActive: activePrice == 250000.0,
                       isSelected: selectedPackage == 'paket3',
                       isHot: true,
                       features: [
