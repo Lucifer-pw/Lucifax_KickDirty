@@ -1935,12 +1935,21 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
         StreamBuilder<List<OrderModel>>(
           stream: FirebaseFirestore.instance
               .collection('orders')
-              .where('rating', isNull: false)
               .where('showOnWeb', isEqualTo: true)
-              .orderBy('reviewedAt', descending: true)
-              .limit(10)
               .snapshots()
-              .map((snap) => snap.docs.map((doc) => OrderModel.fromMap(doc.data(), doc.id)).toList()),
+              .map((snap) {
+            final list = snap.docs
+                .map((doc) => OrderModel.fromMap(doc.data(), doc.id))
+                .where((order) => order.rating != null)
+                .toList();
+            // Sort in-memory by reviewedAt (or createdAt fallback) descending
+            list.sort((a, b) {
+              final dateA = a.reviewedAt ?? a.createdAt;
+              final dateB = b.reviewedAt ?? b.createdAt;
+              return dateB.compareTo(dateA);
+            });
+            return list.take(10).toList();
+          }),
           builder: (context, snapshot) {
             final reviews = snapshot.data ?? [];
             if (reviews.isEmpty) {
