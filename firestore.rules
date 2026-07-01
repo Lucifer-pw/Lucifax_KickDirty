@@ -31,7 +31,7 @@ service cloud.firestore {
     // ORDERS COLLECTION
     // ============================================
     match /orders/{orderId} {
-      allow read: if request.auth != null || (resource != null && resource.data.showOnWeb == true);
+      allow read: if request.auth != null;
       allow create: if request.auth != null;
       allow update, delete: if request.auth != null;
     }

@@ -1811,25 +1811,72 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
   // ==========================================
 
   Widget _buildStatsSection() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppTheme.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: AppTheme.cardShadow,
-        border: Border.all(color: AppTheme.lightGray),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          _buildStatCard('1.250+', 'Sepatu Dicuci', Icons.check_circle_outline, Colors.blue),
-          _buildStatDivider(),
-          _buildStatCard('4.9 / 5.0', 'Rating Pelanggan', Icons.star_border, Colors.amber),
-          _buildStatDivider(),
-          _buildStatCard('99.2%', 'Tingkat Kepuasan', Icons.favorite_border, Colors.red),
-        ],
-      ),
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('orders')
+          .where('status', whereIn: ['Selesai', 'Diambil', 'Selesai Dibayar'])
+          .snapshots(),
+      builder: (context, snapshot) {
+        int totalOrders = 0;
+        double avgRating = 0;
+        double satisfactionPct = 0;
+        String avgRatingStr = '-';
+        String satisfactionStr = '-';
+        String totalStr = '0';
+
+        if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
+          final docs = snapshot.data!.docs;
+          totalOrders = docs.length;
+          totalStr = totalOrders.toString();
+
+          // Calculate average rating from orders that have ratings
+          final ratedDocs = docs.where((d) {
+            final data = d.data() as Map<String, dynamic>;
+            return data['rating'] != null;
+          }).toList();
+
+          if (ratedDocs.isNotEmpty) {
+            double sumRating = 0;
+            int satisfiedCount = 0;
+            for (final d in ratedDocs) {
+              final data = d.data() as Map<String, dynamic>;
+              final r = (data['rating'] as num).toDouble();
+              sumRating += r;
+              if (r >= 4.0) satisfiedCount++;
+            }
+            avgRating = sumRating / ratedDocs.length;
+            avgRatingStr = '${avgRating.toStringAsFixed(1)} / 5.0';
+            satisfactionPct = (satisfiedCount / ratedDocs.length) * 100;
+            satisfactionStr = '${satisfactionPct.toStringAsFixed(1)}%';
+          }
+        }
+
+        // Don't show the section if there are no completed orders at all
+        if (totalOrders == 0) {
+          return const SizedBox.shrink();
+        }
+
+        return Container(
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AppTheme.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: AppTheme.cardShadow,
+            border: Border.all(color: AppTheme.lightGray),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _buildStatCard(totalStr, 'Sepatu Dicuci', Icons.check_circle_outline, Colors.blue),
+              _buildStatDivider(),
+              _buildStatCard(avgRatingStr, 'Rating Pelanggan', Icons.star_border, Colors.amber),
+              _buildStatDivider(),
+              _buildStatCard(satisfactionStr, 'Tingkat Kepuasan', Icons.favorite_border, Colors.red),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -1888,6 +1935,7 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
         StreamBuilder<List<OrderModel>>(
           stream: FirebaseFirestore.instance
               .collection('orders')
+              .where('rating', isNull: false)
               .where('showOnWeb', isEqualTo: true)
               .orderBy('reviewedAt', descending: true)
               .limit(10)
@@ -1896,7 +1944,31 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
           builder: (context, snapshot) {
             final reviews = snapshot.data ?? [];
             if (reviews.isEmpty) {
-              return _buildMockReviews();
+              return Container(
+                margin: const EdgeInsets.symmetric(horizontal: 16),
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: AppTheme.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppTheme.lightGray),
+                ),
+                child: const Column(
+                  children: [
+                    Icon(Icons.rate_review_outlined, size: 40, color: AppTheme.textGray),
+                    SizedBox(height: 12),
+                    Text(
+                      'Belum ada ulasan pelanggan.',
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppTheme.darkBlueText),
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      'Ulasan dari pelanggan yang telah menggunakan layanan kami akan muncul di sini secara otomatis.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 11, color: AppTheme.textGray),
+                    ),
+                  ],
+                ),
+              );
             }
             return SizedBox(
               height: 250,
@@ -2011,96 +2083,7 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
     );
   }
 
-  Widget _buildMockReviews() {
-    final List<Map<String, dynamic>> mocks = [
-      {
-        'name': 'A*** D***',
-        'rating': 5.0,
-        'category': 'Deep Clean Sepatu Canvas',
-        'reviewText': 'Sepatu kotor bekas lumpur hujan langsung bersih total kayak baru lagi! Penjual ramah banget dan kerjanya cepat. Recomended.',
-        'date': '29-06-2026',
-      },
-      {
-        'name': 'R*** M***',
-        'rating': 5.0,
-        'category': 'Unyellowing & Suede Care',
-        'reviewText': 'Sol sepatu boost yang asalnya kuning parah jadi putih bersinar lagi. Bahan suede-nya juga halus banget ga kaku sama sekali. Puas!',
-        'date': '27-06-2026',
-      },
-      {
-        'name': 'M*** F***',
-        'rating': 4.0,
-        'category': 'Leather Paint & Wash',
-        'reviewText': 'Hasil repaint rapi banget dan warnanya presisi sama aslinya. Bakal langganan cuci disini terus, top markotop!',
-        'date': '25-06-2026',
-      },
-    ];
 
-    return SizedBox(
-      height: 180,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: mocks.length,
-        itemBuilder: (context, index) {
-          final m = mocks[index];
-          return Container(
-            width: 260,
-            margin: const EdgeInsets.only(right: 16, bottom: 8),
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppTheme.white,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: AppTheme.cardShadow,
-              border: Border.all(color: AppTheme.lightGray),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      m['name'],
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.darkBlueText),
-                    ),
-                    Row(
-                      children: List.generate(5, (i) {
-                        return Icon(
-                          i < m['rating'] ? Icons.star : Icons.star_border,
-                          color: Colors.amber,
-                          size: 14,
-                        );
-                      }),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  m['category'],
-                  style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: AppTheme.primaryBlue),
-                ),
-                const SizedBox(height: 8),
-                Expanded(
-                  child: Text(
-                    m['reviewText'],
-                    style: const TextStyle(fontSize: 12, color: AppTheme.darkBlueText, fontStyle: FontStyle.italic),
-                    maxLines: 4,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  m['date'],
-                  style: const TextStyle(fontSize: 9, color: AppTheme.textGray),
-                ),
-              ],
-            ),
-          );
-        },
-      ),
-    );
-  }
 
   Widget _buildStepByStepSection() {
     return Column(
