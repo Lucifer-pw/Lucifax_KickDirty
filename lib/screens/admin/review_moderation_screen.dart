@@ -185,7 +185,17 @@ class _ReviewModerationScreenState extends State<ReviewModerationScreen> {
 
                       // Layanan Info
                       Text(
-                        'Layanan: ${review.items.map((e) => e.itemName).join(', ')}',
+                        review.items.map((e) {
+                          final parts = <String>[];
+                          parts.add('Nama barang= ${e.itemName}');
+                          if (e.categoryName.isNotEmpty) {
+                            parts.add('kategori = (${e.categoryName})');
+                          }
+                          if (e.serviceName.isNotEmpty) {
+                            parts.add('layanan (${e.serviceName})');
+                          }
+                          return parts.join(', ');
+                        }).join('; '),
                         style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.darkBlueText),
                       ),
                       const SizedBox(height: 8),

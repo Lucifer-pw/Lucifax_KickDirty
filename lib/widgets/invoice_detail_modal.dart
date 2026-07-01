@@ -165,7 +165,12 @@ class InvoiceDetailModal extends StatelessWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(item.itemName, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12)),
+                              Text(
+                                item.categoryName.isNotEmpty
+                                    ? '${item.itemName} (${item.categoryName})'
+                                    : item.itemName,
+                                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
+                              ),
                               Text(item.serviceName, style: const TextStyle(color: AppTheme.textGray, fontSize: 10)),
                             ],
                           ),

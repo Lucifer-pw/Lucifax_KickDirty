@@ -1980,7 +1980,7 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
               );
             }
             return SizedBox(
-              height: 250,
+              height: 285,
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -2001,7 +2001,17 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
     final maskedName = _maskName(order.customerName);
     final date = order.reviewedAt ?? order.createdAt;
     final formattedDate = "${date.day.toString().padLeft(2, '0')}-${date.month.toString().padLeft(2, '0')}-${date.year}";
-    final categoriesStr = order.items.map((e) => e.itemName).join(', ');
+    final itemDetailsStr = order.items.map((e) {
+      final parts = <String>[];
+      parts.add('Nama barang= ${e.itemName}');
+      if (e.categoryName.isNotEmpty) {
+        parts.add('kategori = (${e.categoryName})');
+      }
+      if (e.serviceName.isNotEmpty) {
+        parts.add('layanan (${e.serviceName})');
+      }
+      return parts.join(', ');
+    }).join('; ');
 
     return Container(
       width: 280,
@@ -2040,9 +2050,9 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
           ),
           const SizedBox(height: 2),
           Text(
-            categoriesStr,
+            itemDetailsStr,
             style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: AppTheme.primaryBlue),
-            maxLines: 1,
+            maxLines: 3,
             overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: 8),
