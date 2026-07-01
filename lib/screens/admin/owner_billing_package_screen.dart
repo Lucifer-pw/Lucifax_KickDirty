@@ -528,7 +528,7 @@ class _OwnerBillingPackageScreenState extends State<OwnerBillingPackageScreen> {
                       isActive: billingAmount == 100000.0,
                       isSelected: selectedPackage == 'paket1',
                       features: [
-                        'Sewa Cloud Database Firebase Online 24/7',
+                        'Sewa Cloud Server Database Online 24/7',
                         'Akses Website Portal Pelanggan Terintegrasi',
                         'Penyimpanan Struk Digital & Foto Bukti Sepatu',
                         'Backup Database Transaksi Harian (Aman & Terjamin)',
