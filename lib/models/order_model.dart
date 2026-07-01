@@ -67,6 +67,10 @@ class OrderModel {
   final Map<String, DateTime> statusTimeline;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final double? rating;
+  final String? reviewText;
+  final DateTime? reviewedAt;
+  final bool showOnWeb;
 
   OrderModel({
     required this.id,
@@ -95,6 +99,10 @@ class OrderModel {
     this.statusTimeline = const {},
     required this.createdAt,
     required this.updatedAt,
+    this.rating,
+    this.reviewText,
+    this.reviewedAt,
+    this.showOnWeb = false,
   });
 
   factory OrderModel.fromMap(Map<String, dynamic> map, String documentId) {
@@ -140,6 +148,10 @@ class OrderModel {
       statusTimeline: timeline,
       createdAt: (map['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       updatedAt: (map['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      rating: (map['rating'] as num?)?.toDouble(),
+      reviewText: map['reviewText'] as String?,
+      reviewedAt: (map['reviewedAt'] as Timestamp?)?.toDate(),
+      showOnWeb: map['showOnWeb'] ?? false,
     );
   }
 
@@ -175,6 +187,10 @@ class OrderModel {
       'statusTimeline': timelineDb,
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': Timestamp.fromDate(updatedAt),
+      'rating': rating,
+      'reviewText': reviewText,
+      'reviewedAt': reviewedAt != null ? Timestamp.fromDate(reviewedAt!) : null,
+      'showOnWeb': showOnWeb,
     };
   }
 }

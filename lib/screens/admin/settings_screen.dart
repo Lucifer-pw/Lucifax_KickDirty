@@ -11,6 +11,7 @@ import 'developer_billing_approval_screen.dart';
 import 'logistics_crud_screen.dart';
 import 'category_crud_screen.dart';
 import 'voucher_crud_screen.dart';
+import 'review_moderation_screen.dart';
 
 class AdminSettingsScreen extends StatefulWidget {
   const AdminSettingsScreen({Key? key}) : super(key: key);
@@ -22,6 +23,7 @@ class AdminSettingsScreen extends StatefulWidget {
 class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
   final _shopNameController = TextEditingController();
   final _shopPhoneController = TextEditingController();
+  final _shopMapsController = TextEditingController();
   
   bool _isLoading = false;
   Map<String, bool> _staffPerms = {};
@@ -36,6 +38,7 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
   void dispose() {
     _shopNameController.dispose();
     _shopPhoneController.dispose();
+    _shopMapsController.dispose();
     super.dispose();
   }
 
@@ -47,9 +50,11 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
         final data = doc.data()!;
         _shopNameController.text = data['shopName'] ?? 'KickDirty';
         _shopPhoneController.text = data['shopPhone'] ?? '6281328580511';
+        _shopMapsController.text = data['shopMapsUrl'] ?? '';
       } else {
         _shopNameController.text = 'KickDirty';
         _shopPhoneController.text = '6281328580511';
+        _shopMapsController.text = '';
       }
     } catch (_) {}
     if (mounted) setState(() => _isLoading = false);
@@ -58,6 +63,7 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
   Future<void> _saveShopConfig() async {
     final name = _shopNameController.text.trim();
     final phone = _shopPhoneController.text.trim();
+    final mapsUrl = _shopMapsController.text.trim();
 
     if (name.isEmpty || phone.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -71,6 +77,7 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
       await FirebaseFirestore.instance.collection('app_config').doc('business_config').set({
         'shopName': name,
         'shopPhone': phone,
+        'shopMapsUrl': mapsUrl,
       }, SetOptions(merge: true));
       
       if (mounted) {
@@ -157,6 +164,16 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
                                 hintText: 'Contoh: 6281328580511',
                                 helperText: 'Gunakan kode negara (62...) tanpa tanda + atau spasi',
                                 prefixIcon: Icon(Icons.phone, color: AppTheme.primaryBlue),
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            TextField(
+                              controller: _shopMapsController,
+                              decoration: const InputDecoration(
+                                labelText: 'Link Google Maps Toko',
+                                hintText: 'Contoh: https://maps.google.com/?q=...',
+                                helperText: 'Masukkan link share lokasi Google Maps resmi toko Anda',
+                                prefixIcon: Icon(Icons.map, color: AppTheme.primaryBlue),
                               ),
                             ),
                             const SizedBox(height: 16),
@@ -295,6 +312,19 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(builder: (_) => const OwnerBillingHistoryScreen()),
+                                  );
+                                },
+                              ),
+                              const Divider(height: 1, indent: 56),
+                              _buildSettingTile(
+                                title: 'Moderasi Ulasan Pelanggan',
+                                subtitle: 'Saring testimoni terverifikasi untuk website',
+                                icon: Icons.rate_review,
+                                color: Colors.orange,
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(builder: (_) => const ReviewModerationScreen()),
                                   );
                                 },
                               ),

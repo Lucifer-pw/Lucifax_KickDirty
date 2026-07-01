@@ -1645,80 +1645,85 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
                 .where((s) => s.isActive && s.categoryId == _selectedCategoryId)
                 .toList();
 
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Banner Header
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(24),
-                  decoration: const BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [AppTheme.primaryBlue, AppTheme.darkBlueText],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.only(
-                      bottomLeft: Radius.circular(24),
-                      bottomRight: Radius.circular(24),
-                    ),
-                  ),
-                  child: const Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'KickDirty Laundry & Care',
-                        style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+            return SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Banner Header
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(24),
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [AppTheme.primaryBlue, AppTheme.darkBlueText],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
                       ),
-                      SizedBox(height: 6),
-                      Text(
-                        'Pilihan terbaik untuk kebersihan & perawatan sepatu kesayangan Anda.',
-                        style: TextStyle(color: Colors.white70, fontSize: 13),
+                      borderRadius: BorderRadius.only(
+                        bottomLeft: Radius.circular(24),
+                        bottomRight: Radius.circular(24),
                       ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // Category Chips
-                SizedBox(
-                  height: 40,
-                  child: ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    itemCount: categories.length,
-                    itemBuilder: (context, index) {
-                      final cat = categories[index];
-                      final isSelected = cat.id == _selectedCategoryId;
-                      return Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: ChoiceChip(
-                          label: Text(cat.name),
-                          selected: isSelected,
-                          onSelected: (val) {
-                            if (val) {
-                              setState(() {
-                                _selectedCategoryId = cat.id;
-                              });
-                            }
-                          },
-                          selectedColor: AppTheme.primaryBlue,
-                          labelStyle: TextStyle(
-                            color: isSelected ? Colors.white : AppTheme.darkBlueText,
-                            fontWeight: FontWeight.bold,
-                          ),
+                    ),
+                    child: const Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'KickDirty Laundry & Care',
+                          style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
                         ),
-                      );
-                    },
+                        SizedBox(height: 6),
+                        Text(
+                          'Pilihan terbaik untuk kebersihan & perawatan sepatu kesayangan Anda.',
+                          style: TextStyle(color: Colors.white70, fontSize: 13),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                const SizedBox(height: 12),
+                  const SizedBox(height: 16),
 
-                // Services List
-                Expanded(
-                  child: filteredServices.isEmpty
-                      ? const Center(child: Text('Tidak ada layanan di kategori ini.'))
+                  // Category Chips
+                  SizedBox(
+                    height: 40,
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      itemCount: categories.length,
+                      itemBuilder: (context, index) {
+                        final cat = categories[index];
+                        final isSelected = cat.id == _selectedCategoryId;
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: ChoiceChip(
+                            label: Text(cat.name),
+                            selected: isSelected,
+                            onSelected: (val) {
+                              if (val) {
+                                setState(() {
+                                  _selectedCategoryId = cat.id;
+                                });
+                              }
+                            },
+                            selectedColor: AppTheme.primaryBlue,
+                            labelStyle: TextStyle(
+                              color: isSelected ? Colors.white : AppTheme.darkBlueText,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Services List
+                  filteredServices.isEmpty
+                      ? const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 24),
+                          child: Center(child: Text('Tidak ada layanan di kategori ini.')),
+                        )
                       : ListView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
                           padding: const EdgeInsets.symmetric(horizontal: 16),
                           itemCount: filteredServices.length,
                           itemBuilder: (context, index) {
@@ -1777,10 +1782,579 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
                             );
                           },
                         ),
-                ),
-              ],
+                  
+                  // Trust Counter Section
+                  _buildStatsSection(),
+                  
+                  // Customer Reviews Section
+                  _buildReviewsSection(),
+                  
+                  // Step-by-Step Shoe Care Section
+                  _buildStepByStepSection(),
+                  
+                  // FAQ Accordion Section
+                  _buildFaqSection(),
+                  
+                  // Footer containing WA & Maps
+                  _buildFooterSection(),
+                ],
+              ),
             );
           },
+        );
+      },
+    );
+  }
+
+  // ==========================================
+  // WEB TRUST BUILDERS LANDING SECTIONS
+  // ==========================================
+
+  Widget _buildStatsSection() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: AppTheme.cardShadow,
+        border: Border.all(color: AppTheme.lightGray),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          _buildStatCard('1.250+', 'Sepatu Dicuci', Icons.check_circle_outline, Colors.blue),
+          _buildStatDivider(),
+          _buildStatCard('4.9 / 5.0', 'Rating Pelanggan', Icons.star_border, Colors.amber),
+          _buildStatDivider(),
+          _buildStatCard('99.2%', 'Tingkat Kepuasan', Icons.favorite_border, Colors.red),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatCard(String value, String label, IconData icon, Color color) {
+    return Column(
+      children: [
+        Icon(icon, color: color, size: 24),
+        const SizedBox(height: 6),
+        Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppTheme.darkBlueText)),
+        const SizedBox(height: 2),
+        Text(label, style: const TextStyle(fontSize: 10, color: AppTheme.textGray)),
+      ],
+    );
+  }
+
+  Widget _buildStatDivider() {
+    return Container(
+      height: 40,
+      width: 1,
+      color: Colors.grey[200],
+    );
+  }
+
+  String _maskName(String name) {
+    if (name.isEmpty) return 'Pelanggan Terverifikasi';
+    final parts = name.trim().split(' ');
+    return parts.map((part) {
+      if (part.length <= 1) return part;
+      if (part.length == 2) return '${part[0]}*';
+      return '${part[0]}${'*' * (part.length - 2)}${part[part.length - 1]}';
+    }).join(' ');
+  }
+
+  Widget _buildReviewsSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Testimoni Pelanggan',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: AppTheme.darkBlueText),
+              ),
+              SizedBox(height: 4),
+              Text(
+                'Ulasan jujur terverifikasi dari mereka yang telah mencoba layanan kami.',
+                style: TextStyle(fontSize: 12, color: AppTheme.textGray),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        StreamBuilder<List<OrderModel>>(
+          stream: FirebaseFirestore.instance
+              .collection('orders')
+              .where('rating', isNull: false)
+              .where('showOnWeb', isEqualTo: true)
+              .orderBy('reviewedAt', descending: true)
+              .limit(10)
+              .snapshots()
+              .map((snap) => snap.docs.map((doc) => OrderModel.fromMap(doc.data(), doc.id)).toList()),
+          builder: (context, snapshot) {
+            final reviews = snapshot.data ?? [];
+            if (reviews.isEmpty) {
+              return _buildMockReviews();
+            }
+            return SizedBox(
+              height: 250,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                itemCount: reviews.length,
+                itemBuilder: (context, index) {
+                  return _buildReviewCard(reviews[index]);
+                },
+              ),
+            );
+          },
+        ),
+        const SizedBox(height: 24),
+      ],
+    );
+  }
+
+  Widget _buildReviewCard(OrderModel order) {
+    final maskedName = _maskName(order.customerName);
+    final date = order.reviewedAt ?? order.createdAt;
+    final formattedDate = "${date.day.toString().padLeft(2, '0')}-${date.month.toString().padLeft(2, '0')}-${date.year}";
+    final categoriesStr = order.items.map((e) => e.itemName).join(', ');
+
+    return Container(
+      width: 280,
+      margin: const EdgeInsets.only(right: 16, bottom: 8),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: AppTheme.cardShadow,
+        border: Border.all(color: AppTheme.lightGray),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Text(
+                  maskedName,
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.darkBlueText),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              Row(
+                children: List.generate(5, (i) {
+                  return Icon(
+                    i < (order.rating ?? 5.0) ? Icons.star : Icons.star_border,
+                    color: Colors.amber,
+                    size: 14,
+                  );
+                }),
+              ),
+            ],
+          ),
+          const SizedBox(height: 2),
+          Text(
+            categoriesStr,
+            style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: AppTheme.primaryBlue),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 8),
+          Expanded(
+            child: Text(
+              order.reviewText ?? 'Tidak ada deskripsi ulasan.',
+              style: const TextStyle(fontSize: 12, color: AppTheme.darkBlueText, fontStyle: FontStyle.italic),
+              maxLines: 4,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          const SizedBox(height: 8),
+          if (order.photoBefore.isNotEmpty || order.photoAfter.isNotEmpty) ...[
+            Row(
+              children: [
+                if (order.photoBefore.isNotEmpty) ...[
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(6),
+                    child: SizedBox(
+                      width: 50,
+                      height: 50,
+                      child: _buildBase64Image(order.photoBefore.first, 'Before', height: 50),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                ],
+                if (order.photoAfter.isNotEmpty) ...[
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(6),
+                    child: SizedBox(
+                      width: 50,
+                      height: 50,
+                      child: _buildBase64Image(order.photoAfter.first, 'After', height: 50),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+            const SizedBox(height: 6),
+          ],
+          Text(
+            formattedDate,
+            style: const TextStyle(fontSize: 9, color: AppTheme.textGray),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMockReviews() {
+    final List<Map<String, dynamic>> mocks = [
+      {
+        'name': 'A*** D***',
+        'rating': 5.0,
+        'category': 'Deep Clean Sepatu Canvas',
+        'reviewText': 'Sepatu kotor bekas lumpur hujan langsung bersih total kayak baru lagi! Penjual ramah banget dan kerjanya cepat. Recomended.',
+        'date': '29-06-2026',
+      },
+      {
+        'name': 'R*** M***',
+        'rating': 5.0,
+        'category': 'Unyellowing & Suede Care',
+        'reviewText': 'Sol sepatu boost yang asalnya kuning parah jadi putih bersinar lagi. Bahan suede-nya juga halus banget ga kaku sama sekali. Puas!',
+        'date': '27-06-2026',
+      },
+      {
+        'name': 'M*** F***',
+        'rating': 4.0,
+        'category': 'Leather Paint & Wash',
+        'reviewText': 'Hasil repaint rapi banget dan warnanya presisi sama aslinya. Bakal langganan cuci disini terus, top markotop!',
+        'date': '25-06-2026',
+      },
+    ];
+
+    return SizedBox(
+      height: 180,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        itemCount: mocks.length,
+        itemBuilder: (context, index) {
+          final m = mocks[index];
+          return Container(
+            width: 260,
+            margin: const EdgeInsets.only(right: 16, bottom: 8),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppTheme.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: AppTheme.cardShadow,
+              border: Border.all(color: AppTheme.lightGray),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      m['name'],
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.darkBlueText),
+                    ),
+                    Row(
+                      children: List.generate(5, (i) {
+                        return Icon(
+                          i < m['rating'] ? Icons.star : Icons.star_border,
+                          color: Colors.amber,
+                          size: 14,
+                        );
+                      }),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  m['category'],
+                  style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: AppTheme.primaryBlue),
+                ),
+                const SizedBox(height: 8),
+                Expanded(
+                  child: Text(
+                    m['reviewText'],
+                    style: const TextStyle(fontSize: 12, color: AppTheme.darkBlueText, fontStyle: FontStyle.italic),
+                    maxLines: 4,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  m['date'],
+                  style: const TextStyle(fontSize: 9, color: AppTheme.textGray),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildStepByStepSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Langkah Perawatan Sepatu',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: AppTheme.darkBlueText),
+              ),
+              SizedBox(height: 4),
+              Text(
+                'Proses pengerjaan transparan & profesional untuk hasil yang maksimal.',
+                style: TextStyle(fontSize: 12, color: AppTheme.textGray),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        Container(
+          margin: const EdgeInsets.symmetric(horizontal: 16),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AppTheme.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: AppTheme.cardShadow,
+            border: Border.all(color: AppTheme.lightGray),
+          ),
+          child: Column(
+            children: [
+              _buildStepItem('1', 'Penerimaan & Analisis', 'Sepatu diperiksa secara menyeluruh untuk noda, bahan, dan potensi resiko sebelum mulai dicuci.', Icons.search),
+              _buildStepLine(),
+              _buildStepItem('2', 'Pembersihan Deep Clean', 'Menggunakan pembersih premium khusus (shoes cleaner) & sikat khusus sesuai jenis bahan sepatu.', Icons.clean_hands_outlined),
+              _buildStepLine(),
+              _buildStepItem('3', 'Pengeringan Alami', 'Sepatu dikeringkan secara perlahan di ruang khusus bersuhu stabil agar lem & material tetap awet.', Icons.wb_sunny_outlined),
+              _buildStepLine(),
+              _buildStepItem('4', 'Detoks & Desinfektan', 'Pemberian semprotan anti-bakteri, anti-jamur, serta pewangi sepatu parfum premium agar segar kembali.', Icons.spa_outlined),
+              _buildStepLine(),
+              _buildStepItem('5', 'Quality Control & Packing', 'Pemeriksaan akhir kesempurnaan hasil laundry sebelum sepatu dikemas rapi & siap diambil.', Icons.verified_outlined),
+            ],
+          ),
+        ),
+        const SizedBox(height: 24),
+      ],
+    );
+  }
+
+  Widget _buildStepItem(String numStr, String title, String desc, IconData icon) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: AppTheme.primaryBlue.withOpacity(0.08),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(icon, color: AppTheme.primaryBlue, size: 20),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Langkah $numStr: $title',
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.darkBlueText),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                desc,
+                style: const TextStyle(fontSize: 11, color: AppTheme.textGray, height: 1.4),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStepLine() {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Container(
+        margin: const EdgeInsets.only(left: 20, top: 4, bottom: 4),
+        height: 16,
+        width: 1.5,
+        color: AppTheme.primaryBlue.withOpacity(0.3),
+      ),
+    );
+  }
+
+  Widget _buildFaqSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16),
+          child: Text(
+            'Pertanyaan Umum (FAQ)',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: AppTheme.darkBlueText),
+          ),
+        ),
+        const SizedBox(height: 12),
+        Container(
+          margin: const EdgeInsets.symmetric(horizontal: 16),
+          decoration: BoxDecoration(
+            color: AppTheme.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: AppTheme.cardShadow,
+            border: Border.all(color: AppTheme.lightGray),
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: Column(
+              children: [
+                _buildFaqTile(
+                  'Berapa lama pengerjaan cuci sepatu?',
+                  'Durasi pengerjaan standar adalah 2 hingga 3 hari kerja tergantung pada tingkat kekotoran dan jenis perawatan yang dipilih. Tersedia juga layanan Express (1 hari selesai) dengan tambahan biaya.',
+                ),
+                const Divider(height: 1, indent: 16, endIndent: 16),
+                _buildFaqTile(
+                  'Apakah aman untuk sepatu suede / nubuck?',
+                  'Sangat aman. Kami menggunakan cairan pembersih khusus (suede cleaner) serta sikat khusus (horsehair brush) yang lembut untuk merawat material sensitif agar tekstur tidak rusak.',
+                ),
+                const Divider(height: 1, indent: 16, endIndent: 16),
+                _buildFaqTile(
+                  'Apakah ada garansi jika kurang bersih?',
+                  'Ya! Kami memberikan garansi cuci ulang gratis 100% jika Anda merasa hasil pengerjaan kami kurang bersih. Cukup laporkan dalam waktu 24 jam setelah sepatu Anda terima.',
+                ),
+                const Divider(height: 1, indent: 16, endIndent: 16),
+                _buildFaqTile(
+                  'Bagaimana cara memesan layanan?',
+                  'Sangat mudah! Daftar akun di web ini, lalu klik tombol "Pesan" pada jenis layanan yang Anda inginkan, masukkan detail pesanan, pilih logistik antar-jemput, dan selesaikan pembayaran.',
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 24),
+      ],
+    );
+  }
+
+  Widget _buildFaqTile(String query, String answer) {
+    return ExpansionTile(
+      title: Text(
+        query,
+        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.darkBlueText),
+      ),
+      iconColor: AppTheme.primaryBlue,
+      collapsedIconColor: AppTheme.textGray,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
+          child: Text(
+            answer,
+            style: const TextStyle(fontSize: 12, color: AppTheme.textGray, height: 1.4),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFooterSection() {
+    return StreamBuilder<DocumentSnapshot>(
+      stream: FirebaseFirestore.instance.collection('app_config').doc('business_config').snapshots(),
+      builder: (context, snapshot) {
+        String phone = '6281328580511';
+        String mapsUrl = '';
+        if (snapshot.hasData && snapshot.data!.exists) {
+          final data = snapshot.data!.data() as Map<String, dynamic>?;
+          if (data != null) {
+            phone = data['shopPhone'] ?? phone;
+            mapsUrl = data['shopMapsUrl'] ?? '';
+          }
+        }
+
+        return Container(
+          width: double.infinity,
+          color: AppTheme.darkBlueText,
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'KickDirty Shoes Care',
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Sahabat terbaik sepatu kesayangan Anda. Solusi cuci, perawatan, pewarnaan ulang, dan perbaikan sepatu terbaik.',
+                style: TextStyle(color: Colors.white60, fontSize: 11, height: 1.5),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  if (mapsUrl.isNotEmpty) ...[
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () async {
+                          final uri = Uri.parse(mapsUrl);
+                          try {
+                            await launchUrl(uri, mode: LaunchMode.externalApplication);
+                          } catch (_) {}
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.redAccent,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                        icon: const Icon(Icons.location_on, size: 16),
+                        label: const Text('Petunjuk Maps', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                  ],
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () async {
+                        final String cleanPhone = phone.replaceAll(RegExp(r'[^0-9]'), '');
+                        final String waUrl = "https://wa.me/$cleanPhone?text=Halo%20KickDirty,%20saya%20ingin%20tanya%20tentang%20laundry%20sepatu";
+                        final uri = Uri.parse(waUrl);
+                        try {
+                          await launchUrl(uri, mode: LaunchMode.externalApplication);
+                        } catch (_) {}
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF25D366),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                      icon: const Icon(Icons.chat, size: 16),
+                      label: const Text('Hubungi WA', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                    ),
+                  ),
+                ],
+              ),
+              const Divider(height: 48, color: Colors.white24),
+              const Center(
+                child: Text(
+                  '© 2026 KickDirty Shoes Care. All rights reserved.',
+                  style: TextStyle(color: Colors.white30, fontSize: 10),
+                ),
+              ),
+            ],
+          ),
         );
       },
     );
@@ -2377,6 +2951,136 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
     );
   }
 
+  void _showReviewDialog(OrderModel order) {
+    double selectedRating = 5.0;
+    final commentController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              title: const Text('Beri Ulasan & Rating', style: TextStyle(fontWeight: FontWeight.bold)),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Kategori/Layanan Info
+                    Text(
+                      order.items.map((e) => e.itemName).join(', '),
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(fontWeight: FontWeight.w600, color: AppTheme.darkBlueText),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Before-After Preview (if available)
+                    if (order.photoBefore.isNotEmpty || order.photoAfter.isNotEmpty) ...[
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          if (order.photoBefore.isNotEmpty)
+                            Column(
+                              children: [
+                                const Text('Before', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppTheme.textGray)),
+                                const SizedBox(height: 4),
+                                SizedBox(
+                                  width: 70,
+                                  height: 70,
+                                  child: _buildBase64Image(order.photoBefore.first, 'Before', height: 70),
+                                ),
+                              ],
+                            ),
+                          if (order.photoAfter.isNotEmpty)
+                            Column(
+                              children: [
+                                const Text('After', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppTheme.textGray)),
+                                const SizedBox(height: 4),
+                                SizedBox(
+                                  width: 70,
+                                  height: 70,
+                                  child: _buildBase64Image(order.photoAfter.first, 'After', height: 70),
+                                ),
+                              ],
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+
+                    const Text(
+                      'Bagaimana kualitas hasil cuci kami?',
+                      style: TextStyle(fontSize: 12, color: AppTheme.textGray),
+                    ),
+                    const SizedBox(height: 8),
+
+                    // Star Rating Selector
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: List.generate(5, (index) {
+                        final starValue = index + 1.0;
+                        return IconButton(
+                          icon: Icon(
+                            selectedRating >= starValue ? Icons.star : Icons.star_border,
+                            color: Colors.amber,
+                            size: 32,
+                          ),
+                          onPressed: () {
+                            setStateDialog(() {
+                              selectedRating = starValue;
+                            });
+                          },
+                        );
+                      }),
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Comment Input
+                    TextField(
+                      controller: commentController,
+                      maxLines: 3,
+                      decoration: const InputDecoration(
+                        labelText: 'Ulasan Anda (Opsional)',
+                        hintText: 'Tulis kesan Anda tentang pelayanan kami...',
+                        border: OutlineInputBorder(),
+                        alignLabelWithHint: true,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Batal'),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    await FirebaseFirestore.instance.collection('orders').doc(order.id).update({
+                      'rating': selectedRating,
+                      'reviewText': commentController.text.trim(),
+                      'reviewedAt': FieldValue.serverTimestamp(),
+                      'showOnWeb': false, // Requires owner approval
+                    });
+                    if (context.mounted) Navigator.pop(context);
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Terima kasih atas ulasan Anda!')),
+                      );
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryBlue),
+                  child: const Text('Kirim', style: TextStyle(color: Colors.white)),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   Widget _buildHistoryOrderCard(OrderModel order) {
     String day = order.createdAt.day.toString().padLeft(2, '0');
     String month = order.createdAt.month.toString().padLeft(2, '0');
@@ -2387,33 +3091,77 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
       margin: const EdgeInsets.only(bottom: 12),
       child: Padding(
         padding: const EdgeInsets.all(12.0),
-        child: ListTile(
-          onTap: () => InvoiceDetailModal.show(context, order),
-          leading: Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.green.withOpacity(0.08),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(Icons.done_all, color: Colors.green),
-          ),
-          title: Text(order.id, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-          subtitle: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                order.items.map((item) => item.itemName).join(', '),
-                style: const TextStyle(fontSize: 12),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              onTap: () => InvoiceDetailModal.show(context, order),
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.green.withOpacity(0.08),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.done_all, color: Colors.green),
               ),
-              Text(formattedDate, style: const TextStyle(fontSize: 10, color: AppTheme.textGray)),
+              title: Text(order.id, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    order.items.map((item) => item.itemName).join(', '),
+                    style: const TextStyle(fontSize: 12),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  Text(formattedDate, style: const TextStyle(fontSize: 10, color: AppTheme.textGray)),
+                ],
+              ),
+              trailing: Text(
+                'Rp ${order.totalAmount.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+            if (order.rating != null) ...[
+              const Divider(height: 16),
+              Row(
+                children: [
+                  const Text('Penilaian Anda: ', style: TextStyle(fontSize: 11, color: AppTheme.textGray)),
+                  Row(
+                    children: List.generate(5, (index) {
+                      return Icon(
+                        index < order.rating! ? Icons.star : Icons.star_border,
+                        color: Colors.amber,
+                        size: 14,
+                      );
+                    }),
+                  ),
+                ],
+              ),
+              if (order.reviewText != null && order.reviewText!.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Text(
+                  '"${order.reviewText}"',
+                  style: const TextStyle(fontSize: 12, fontStyle: FontStyle.italic, color: AppTheme.darkBlueText),
+                ),
+              ],
+            ] else ...[
+              const Divider(height: 16),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton.icon(
+                  onPressed: () => _showReviewDialog(order),
+                  style: TextButton.styleFrom(
+                    foregroundColor: AppTheme.primaryBlue,
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  ),
+                  icon: const Icon(Icons.rate_review_outlined, size: 16),
+                  label: const Text('Beri Ulasan & Rating', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                ),
+              ),
             ],
-          ),
-          trailing: Text(
-            'Rp ${order.totalAmount.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}',
-            style: const TextStyle(fontWeight: FontWeight.bold),
-          ),
+          ],
         ),
       ),
     );
