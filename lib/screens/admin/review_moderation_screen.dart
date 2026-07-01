@@ -184,20 +184,25 @@ class _ReviewModerationScreenState extends State<ReviewModerationScreen> {
                       const Divider(height: 24),
 
                       // Layanan Info
-                      Text(
-                        review.items.map((e) {
-                          final parts = <String>[];
-                          parts.add('Nama barang= ${e.itemName}');
-                          if (e.categoryName.isNotEmpty) {
-                            parts.add('kategori = (${e.categoryName})');
-                          }
-                          if (e.serviceName.isNotEmpty) {
-                            parts.add('layanan (${e.serviceName})');
-                          }
-                          return parts.join(', ');
-                        }).join('; '),
-                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.darkBlueText),
-                      ),
+                      ...review.items.map((item) => Padding(
+                        padding: const EdgeInsets.only(bottom: 4),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              item.categoryName.isNotEmpty
+                                  ? '${item.itemName} (${item.categoryName})'
+                                  : item.itemName,
+                              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.darkBlueText),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              item.serviceName,
+                              style: const TextStyle(fontSize: 10, color: AppTheme.textGray, fontWeight: FontWeight.w500),
+                            ),
+                          ],
+                        ),
+                      )),
                       const SizedBox(height: 8),
 
                       // Review Text

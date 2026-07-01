@@ -1980,7 +1980,7 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
               );
             }
             return SizedBox(
-              height: 285,
+              height: 270,
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -2001,18 +2001,6 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
     final maskedName = _maskName(order.customerName);
     final date = order.reviewedAt ?? order.createdAt;
     final formattedDate = "${date.day.toString().padLeft(2, '0')}-${date.month.toString().padLeft(2, '0')}-${date.year}";
-    final itemDetailsStr = order.items.map((e) {
-      final parts = <String>[];
-      parts.add('Nama barang= ${e.itemName}');
-      if (e.categoryName.isNotEmpty) {
-        parts.add('kategori = (${e.categoryName})');
-      }
-      if (e.serviceName.isNotEmpty) {
-        parts.add('layanan (${e.serviceName})');
-      }
-      return parts.join(', ');
-    }).join('; ');
-
     return Container(
       width: 280,
       margin: const EdgeInsets.only(right: 16, bottom: 8),
@@ -2048,13 +2036,29 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 2),
-          Text(
-            itemDetailsStr,
-            style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: AppTheme.primaryBlue),
-            maxLines: 3,
-            overflow: TextOverflow.ellipsis,
-          ),
+          const SizedBox(height: 4),
+          ...order.items.map((item) => Padding(
+            padding: const EdgeInsets.only(bottom: 2),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  item.categoryName.isNotEmpty
+                      ? '${item.itemName} (${item.categoryName})'
+                      : item.itemName,
+                  style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppTheme.primaryBlue),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                Text(
+                  item.serviceName,
+                  style: const TextStyle(fontSize: 9, color: AppTheme.textGray, fontWeight: FontWeight.w500),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          )),
           const SizedBox(height: 8),
           Expanded(
             child: Text(
