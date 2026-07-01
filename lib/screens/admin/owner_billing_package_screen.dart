@@ -66,7 +66,7 @@ class _OwnerBillingPackageScreenState extends State<OwnerBillingPackageScreen> {
     }
   }
 
-  Future<void> _uploadPaymentProof(BuildContext context, double amount, DateTime dueDate, String qrImage) async {
+  Future<void> _uploadPaymentProof(BuildContext context, double amount, DateTime dueDate, String qrImage, int durationMonths) async {
     final authService = Provider.of<AuthService>(context, listen: false);
     final ownerName = authService.currentUserModel?.name ?? 'Unknown Owner';
     final ownerPhone = authService.currentUserModel?.phoneNumber ?? '';
@@ -117,6 +117,7 @@ class _OwnerBillingPackageScreenState extends State<OwnerBillingPackageScreen> {
         'ownerName': ownerName,
         'ownerPhone': ownerPhone,
         'ownerUid': ownerUid,
+        'durationMonths': durationMonths,
         'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
 
@@ -132,17 +133,13 @@ class _OwnerBillingPackageScreenState extends State<OwnerBillingPackageScreen> {
     }
   }
 
-  void _showPaymentBottomSheet(BuildContext context, double amount, DateTime dueDate, String qrImage) {
+  void _showPaymentBottomSheet(BuildContext context, double baseAmount, DateTime dueDate, String qrImage) {
+    int selectedMonths = 1;
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) {
-        final formattedAmount = amount.toStringAsFixed(0).replaceAllMapped(
-              RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-              (Match m) => '${m[1]}.',
-            );
-        final formattedDate = DateFormat('dd MMMM yyyy').format(dueDate);
         final String currentMonthCode = DateFormat('yyyy-MM').format(DateTime.now());
 
         return StreamBuilder<DocumentSnapshot>(
@@ -157,106 +154,209 @@ class _OwnerBillingPackageScreenState extends State<OwnerBillingPackageScreen> {
               invoiceStatus = iData?['status'] as String? ?? 'belum_bayar';
             }
 
-            return Container(
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-              ),
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: Colors.grey[300],
-                      borderRadius: BorderRadius.circular(2),
-                    ),
+            return StatefulBuilder(
+              builder: (BuildContext context, StateSetter setModalState) {
+                double calculatedAmount = baseAmount * selectedMonths;
+                if (selectedMonths == 12) {
+                  if (baseAmount == 100000.0) {
+                    calculatedAmount = 1000000.0;
+                  } else if (baseAmount == 150000.0) {
+                    calculatedAmount = 1500000.0;
+                  } else if (baseAmount == 250000.0) {
+                    calculatedAmount = 2500000.0;
+                  }
+                }
+
+                final formattedCalculatedAmount = calculatedAmount.toStringAsFixed(0).replaceAllMapped(
+                      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+                      (Match m) => '${m[1]}.',
+                    );
+
+                DateTime newDueDate = DateTime(dueDate.year, dueDate.month + selectedMonths, 1);
+                final formattedNewDueDate = DateFormat('dd MMMM yyyy').format(newDueDate);
+
+                return Container(
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
                   ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'Pembayaran Maintenance Bulanan',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.darkBlueText),
-                  ),
-                  const SizedBox(height: 16),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: AppTheme.lightGray,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Column(
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text('Tagihan Bulan Ini:', style: TextStyle(fontSize: 12)),
-                            Text('Rp $formattedAmount', style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primaryBlue)),
-                          ],
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Center(
+                        child: Container(
+                          width: 40,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: Colors.grey[300],
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      const Center(
+                        child: Text(
+                          'Pembayaran Maintenance Bulanan',
+                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.darkBlueText),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+
+                      if (invoiceStatus != 'menunggu_konfirmasi') ...[
+                        const Text(
+                          'Pilih Durasi Berlangganan:',
+                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppTheme.darkBlueText),
                         ),
                         const SizedBox(height: 8),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text('Batas Jatuh Tempo:', style: TextStyle(fontSize: 12)),
-                            Text(formattedDate, style: const TextStyle(fontWeight: FontWeight.bold)),
-                          ],
+                          children: [1, 3, 6, 12].map((months) {
+                            final isSel = selectedMonths == months;
+                            final String label = months == 12 ? '1 Tahun' : '$months Bulan';
+                            return Expanded(
+                              child: GestureDetector(
+                                onTap: () {
+                                  setModalState(() {
+                                    selectedMonths = months;
+                                  });
+                                },
+                                child: Container(
+                                  margin: const EdgeInsets.symmetric(horizontal: 4),
+                                  padding: const EdgeInsets.symmetric(vertical: 10),
+                                  decoration: BoxDecoration(
+                                    color: isSel ? AppTheme.primaryBlue : Colors.grey[100],
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(
+                                      color: isSel ? AppTheme.primaryBlue : Colors.grey[300]!,
+                                      width: 1.5,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    label,
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold,
+                                      color: isSel ? Colors.white : AppTheme.darkBlueText,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          }).toList(),
                         ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  const Text('Scan kode QRIS di bawah ini untuk transfer:', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-                  const SizedBox(height: 12),
-                  _buildBase64Image(qrImage, height: 200),
-                  const SizedBox(height: 20),
-                  if (invoiceStatus == 'menunggu_konfirmasi') ...[
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                      decoration: BoxDecoration(
-                        color: Colors.orange.shade50,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.orange.shade100),
-                      ),
-                      child: const Row(
-                        children: [
-                          Icon(Icons.hourglass_empty, color: Colors.orange),
-                          SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              'Bukti pembayaran sudah terkirim. Menunggu verifikasi Developer.',
-                              style: TextStyle(fontSize: 12, color: Colors.orange, fontWeight: FontWeight.bold),
+                        const SizedBox(height: 16),
+                        if (selectedMonths == 12) ...[
+                          Container(
+                            margin: const EdgeInsets.only(bottom: 12),
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: Colors.green[50],
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Colors.green[200]!),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.star, color: Colors.green, size: 16),
+                                const SizedBox(width: 6),
+                                Expanded(
+                                  child: Text(
+                                    'Promo Tahunan Aktif! Hemat Rp ${(baseAmount * 12 - calculatedAmount).toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")} (Gratis 2 Bulan)',
+                                    style: const TextStyle(color: Colors.green, fontSize: 11, fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ],
+                      ],
+
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: AppTheme.lightGray,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Column(
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Text('Total Tagihan:', style: TextStyle(fontSize: 12)),
+                                Text('Rp $formattedCalculatedAmount', style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primaryBlue)),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Text('Jatuh Tempo Baru:', style: TextStyle(fontSize: 12)),
+                                Text(formattedNewDueDate, style: const TextStyle(fontWeight: FontWeight.bold)),
+                              ],
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 12),
-                  ],
-                  SizedBox(
-                    width: double.infinity,
-                    height: 50,
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        Navigator.pop(context);
-                        _uploadPaymentProof(context, amount, dueDate, qrImage);
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: invoiceStatus == 'menunggu_konfirmasi' ? Colors.orange : Colors.green,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                      const SizedBox(height: 20),
+                      const Center(
+                        child: Text(
+                          'Scan kode QRIS di bawah ini untuk transfer:',
+                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.darkBlueText),
+                        ),
                       ),
-                      icon: const Icon(Icons.upload_file, color: Colors.white, size: 18),
-                      label: Text(
-                        invoiceStatus == 'menunggu_konfirmasi' ? 'Unggah Ulang Bukti Bayar' : 'Unggah Bukti Pembayaran',
-                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                      const SizedBox(height: 12),
+                      Center(child: _buildBase64Image(qrImage, height: 200)),
+                      const SizedBox(height: 20),
+                      if (invoiceStatus == 'menunggu_konfirmasi') ...[
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: Colors.orange.shade50,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.orange.shade100),
+                          ),
+                          child: const Row(
+                            children: [
+                              Icon(Icons.hourglass_empty, color: Colors.orange),
+                              SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  'Bukti pembayaran sudah terkirim. Menunggu verifikasi Developer.',
+                                  style: TextStyle(fontSize: 12, color: Colors.orange, fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+                      SizedBox(
+                        width: double.infinity,
+                        height: 50,
+                        child: ElevatedButton.icon(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            _uploadPaymentProof(context, calculatedAmount, dueDate, qrImage, selectedMonths);
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: invoiceStatus == 'menunggu_konfirmasi' ? Colors.orange : Colors.green,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                          ),
+                          icon: const Icon(Icons.upload_file, color: Colors.white, size: 18),
+                          label: Text(
+                            invoiceStatus == 'menunggu_konfirmasi' ? 'Unggah Ulang Bukti Bayar' : 'Unggah Bukti Pembayaran',
+                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                          ),
+                        ),
                       ),
-                    ),
+                      const SizedBox(height: 10),
+                    ],
                   ),
-                  const SizedBox(height: 10),
-                ],
-              ),
+                );
+              },
             );
           },
         );

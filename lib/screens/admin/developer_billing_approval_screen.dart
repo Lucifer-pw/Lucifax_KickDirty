@@ -72,7 +72,17 @@ class _DeveloperBillingApprovalScreenState extends State<DeveloperBillingApprova
   Future<void> _approvePayment(String monthCode, double amount) async {
     setState(() => _isProcessing = true);
     try {
-      // 1. Get current billing config to calculate next due date
+      // 1. Get the invoice doc to check durationMonths
+      final invoiceDoc = await FirebaseFirestore.instance
+          .collection('developer_billing_invoices')
+          .doc(monthCode)
+          .get();
+      int durationMonths = 1;
+      if (invoiceDoc.exists) {
+        durationMonths = invoiceDoc.data()?['durationMonths'] as int? ?? 1;
+      }
+
+      // 2. Get current billing config to calculate next due date
       final configDoc = await FirebaseFirestore.instance
           .collection('developer_billing')
           .doc('config')
@@ -86,15 +96,15 @@ class _DeveloperBillingApprovalScreenState extends State<DeveloperBillingApprova
         }
       }
 
-      // 2. Advance the next due date by 1 month
-      DateTime newDueDate;
-      if (currentDueDate.month == 12) {
-        newDueDate = DateTime(currentDueDate.year + 1, 1, currentDueDate.day);
-      } else {
-        newDueDate = DateTime(currentDueDate.year, currentDueDate.month + 1, currentDueDate.day);
+      // 3. Calculate next due date (forcing day 1)
+      DateTime baseDate = currentDueDate;
+      final today = DateTime.now();
+      if (baseDate.isBefore(today)) {
+        baseDate = today;
       }
+      final newDueDate = DateTime(baseDate.year, baseDate.month + durationMonths, 1);
 
-      // 3. Batch updates to ensure atomicity
+      // 4. Batch updates to ensure atomicity
       final batch = FirebaseFirestore.instance.batch();
       
       // Update invoice status to lunas
@@ -208,6 +218,7 @@ class _DeveloperBillingApprovalScreenState extends State<DeveloperBillingApprova
                   final paidAt = (data['paidAt'] as Timestamp?)?.toDate();
                   final ownerName = data['ownerName'] as String? ?? '';
                   final ownerPhone = data['ownerPhone'] as String? ?? '';
+                  final durationMonths = data['durationMonths'] as int? ?? 1;
 
                   DateTime parsedMonth = DateTime.now();
                   try {
@@ -219,7 +230,7 @@ class _DeveloperBillingApprovalScreenState extends State<DeveloperBillingApprova
                   final amountFormatted = amount.toStringAsFixed(0).replaceAllMapped(
                         RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
                         (Match m) => '${m[1]}.',
-                  );
+                      );
 
                   Color statusColor = Colors.red;
                   String statusLabel = 'Belum Bayar';
@@ -271,6 +282,17 @@ class _DeveloperBillingApprovalScreenState extends State<DeveloperBillingApprova
                               Text(
                                 'Rp $amountFormatted',
                                 style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppTheme.darkBlueText),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text('Durasi Langganan:', style: TextStyle(fontSize: 12, color: AppTheme.textGray)),
+                              Text(
+                                durationMonths == 12 ? '1 Tahun' : '$durationMonths Bulan',
+                                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.primaryBlue),
                               ),
                             ],
                           ),

@@ -98,7 +98,17 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
     try {
       final now = DateTime.now();
       
-      // 1. Get current billing config to calculate next due date
+      // 1. Get the invoice doc to check durationMonths
+      final invoiceDoc = await FirebaseFirestore.instance
+          .collection('developer_billing_invoices')
+          .doc(monthCode)
+          .get();
+      int durationMonths = 1;
+      if (invoiceDoc.exists) {
+        durationMonths = invoiceDoc.data()?['durationMonths'] as int? ?? 1;
+      }
+
+      // 2. Get current billing config to calculate next due date
       final configDoc = await FirebaseFirestore.instance
           .collection('developer_billing')
           .doc('config')
@@ -112,15 +122,14 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
         }
       }
 
-      // 2. Advance the next due date by 1 month
-      DateTime newDueDate;
-      if (currentDueDate.month == 12) {
-        newDueDate = DateTime(currentDueDate.year + 1, 1, currentDueDate.day);
-      } else {
-        newDueDate = DateTime(currentDueDate.year, currentDueDate.month + 1, currentDueDate.day);
+      // 3. Calculate next due date (forcing day 1)
+      DateTime baseDate = currentDueDate;
+      if (baseDate.isBefore(now)) {
+        baseDate = now;
       }
+      final newDueDate = DateTime(baseDate.year, baseDate.month + durationMonths, 1);
 
-      // 3. Update invoice document status to lunas
+      // 4. Update invoice document status to lunas
       await FirebaseFirestore.instance
           .collection('developer_billing_invoices')
           .doc(monthCode)
@@ -129,7 +138,7 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
         'paidAt': Timestamp.fromDate(now),
       });
 
-      // 4. Update main billing config lastPaidMonth and nextDueDate
+      // 5. Update main billing config lastPaidMonth and nextDueDate
       await FirebaseFirestore.instance
           .collection('developer_billing')
           .doc('config')
@@ -536,6 +545,7 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
                           final paidAt = (data['paidAt'] as Timestamp?)?.toDate();
                           final ownerName = data['ownerName'] as String? ?? '';
                           final ownerPhone = data['ownerPhone'] as String? ?? '';
+                          final durationMonths = data['durationMonths'] as int? ?? 1;
 
                           DateTime parsedMonth = DateTime.now();
                           try {
@@ -577,7 +587,7 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
                                     ],
                                   ),
                                   const SizedBox(height: 6),
-                                  Text('Nominal: Rp $amountFormatted', style: const TextStyle(fontSize: 12)),
+                                  Text('Nominal: Rp $amountFormatted | Durasi: ${durationMonths == 12 ? "1 Tahun" : "$durationMonths Bulan"}', style: const TextStyle(fontSize: 12)),
                                   if (paidAt != null)
                                     Text('Lunas Pada: ${DateFormat('dd/MM/yyyy HH:mm').format(paidAt)}', style: const TextStyle(fontSize: 11, color: AppTheme.textGray)),
                                   if (ownerName.isNotEmpty)

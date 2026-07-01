@@ -27,6 +27,7 @@ class BillingBlockScreen extends StatefulWidget {
 
 class _BillingBlockScreenState extends State<BillingBlockScreen> {
   bool _isUploading = false;
+  int _durationMonths = 1;
 
   Widget _buildBase64Image(String base64Str, {double height = 240}) {
     if (base64Str.isEmpty) {
@@ -42,29 +43,30 @@ class _BillingBlockScreenState extends State<BillingBlockScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.qr_code_2, size: 64, color: Colors.grey),
+              Icon(Icons.image_not_supported_outlined, size: 48, color: Colors.grey),
               SizedBox(height: 8),
-              Text(
-                'QR Code Belum Tersedia',
-                style: TextStyle(fontSize: 12, color: Colors.grey, fontStyle: FontStyle.italic),
-              ),
+              Text('Belum ada gambar', style: TextStyle(color: Colors.grey, fontSize: 12)),
             ],
           ),
         ),
       );
     }
-    String cleanBase64 = base64Str;
-    if (base64Str.contains(',')) {
-      cleanBase64 = base64Str.split(',')[1];
-    }
     try {
-      final bytes = base64Decode(cleanBase64);
       return ClipRRect(
         borderRadius: BorderRadius.circular(16),
         child: Image.memory(
-          bytes,
+          base64Decode(base64Str),
           height: height,
-          fit: BoxFit.contain,
+          width: double.infinity,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            return Container(
+              height: height,
+              width: double.infinity,
+              color: Colors.grey[200],
+              child: const Icon(Icons.broken_image, size: 64, color: Colors.red),
+            );
+          },
         ),
       );
     } catch (_) {
@@ -77,7 +79,7 @@ class _BillingBlockScreenState extends State<BillingBlockScreen> {
     }
   }
 
-  Future<void> _uploadPaymentProof(String monthCode) async {
+  Future<void> _uploadPaymentProof(String monthCode, double uploadAmount, int durationMonths) async {
     final String? image = await showModalBottomSheet<String?>(
       context: context,
       builder: (BuildContext context) {
@@ -122,13 +124,14 @@ class _BillingBlockScreenState extends State<BillingBlockScreen> {
           .doc(monthCode)
           .set({
         'monthCode': monthCode,
-        'amount': widget.amount,
+        'amount': uploadAmount,
         'dueDate': Timestamp.fromDate(widget.dueDate),
         'status': 'menunggu_konfirmasi',
         'paymentProof': image,
         'ownerName': ownerName,
         'ownerPhone': ownerPhone,
         'ownerUid': ownerUid,
+        'durationMonths': durationMonths,
         'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
 
@@ -144,7 +147,9 @@ class _BillingBlockScreenState extends State<BillingBlockScreen> {
         );
       }
     } finally {
-      if (mounted) setState(() => _isUploading = false);
+      if (mounted) {
+        setState(() => _isUploading = false);
+      }
     }
   }
 
@@ -342,7 +347,7 @@ class _BillingBlockScreenState extends State<BillingBlockScreen> {
                             width: double.infinity,
                             height: 50,
                             child: ElevatedButton.icon(
-                              onPressed: _isUploading ? null : () => _uploadPaymentProof(currentMonthCode),
+                              onPressed: _isUploading ? null : () => _uploadPaymentProof(currentMonthCode, widget.amount, 1),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: AppTheme.primaryBlue,
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -356,37 +361,143 @@ class _BillingBlockScreenState extends State<BillingBlockScreen> {
                             ),
                           ),
                         ] else ...[
-                          // Show QRIS and upload button
+                          // Show Duration selector
                           const Text(
-                            'Scan QRIS di bawah ini untuk membayar:',
-                            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.darkBlueText),
+                            'Pilih Durasi Berlangganan:',
+                            style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppTheme.darkBlueText),
                           ),
-                          const SizedBox(height: 12),
-                          _buildBase64Image(widget.qrImage, height: 240),
-                          const SizedBox(height: 20),
-                          SizedBox(
-                            width: double.infinity,
-                            height: 50,
-                            child: ElevatedButton.icon(
-                              onPressed: _isUploading ? null : () => _uploadPaymentProof(currentMonthCode),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.green,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                              ),
-                              icon: _isUploading
-                                  ? const SizedBox(
-                                      height: 18,
-                                      width: 18,
-                                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                                    )
-                                  : const Icon(Icons.upload_file_outlined, color: Colors.white),
-                              label: Text(
-                                _isUploading ? 'Mengunggah...' : 'Unggah Bukti Pembayaran',
-                                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
-                              ),
-                            ),
+                          const SizedBox(height: 8),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [1, 3, 6, 12].map((months) {
+                              final isSel = _durationMonths == months;
+                              final String label = months == 12 ? '1 Tahun' : '$months Bulan';
+                              return Expanded(
+                                child: GestureDetector(
+                                  onTap: () {
+                                    setState(() {
+                                      _durationMonths = months;
+                                    });
+                                  },
+                                  child: Container(
+                                    margin: const EdgeInsets.symmetric(horizontal: 4),
+                                    padding: const EdgeInsets.symmetric(vertical: 10),
+                                    decoration: BoxDecoration(
+                                      color: isSel ? AppTheme.primaryBlue : Colors.grey[100],
+                                      borderRadius: BorderRadius.circular(10),
+                                      border: Border.all(
+                                        color: isSel ? AppTheme.primaryBlue : Colors.grey[300]!,
+                                        width: 1.5,
+                                      ),
+                                    ),
+                                    child: Text(
+                                      label,
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.bold,
+                                        color: isSel ? Colors.white : AppTheme.darkBlueText,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }).toList(),
                           ),
+                          const SizedBox(height: 16),
+                          
+                          // Calculate total amount based on duration and base price
+                          () {
+                            double baseAmount = widget.amount;
+                            double calculatedAmount = baseAmount * _durationMonths;
+                            if (_durationMonths == 12) {
+                              if (baseAmount == 100000.0) {
+                                calculatedAmount = 1000000.0;
+                              } else if (baseAmount == 150000.0) {
+                                calculatedAmount = 1500000.0;
+                              } else if (baseAmount == 250000.0) {
+                                calculatedAmount = 2500000.0;
+                              }
+                            }
+                            final formattedCalculatedAmount = calculatedAmount.toStringAsFixed(0).replaceAllMapped(
+                                  RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+                                  (Match m) => '${m[1]}.',
+                                );
+
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                if (_durationMonths == 12) ...[
+                                  Container(
+                                    margin: const EdgeInsets.only(bottom: 12),
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                    decoration: BoxDecoration(
+                                      color: Colors.green[50],
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(color: Colors.green[200]!),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        const Icon(Icons.star, color: Colors.green, size: 16),
+                                        const SizedBox(width: 6),
+                                        Expanded(
+                                          child: Text(
+                                            'Promo Tahunan Aktif! Hemat Rp ${(baseAmount * 12 - calculatedAmount).toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")} (Gratis 2 Bulan)',
+                                            style: const TextStyle(color: Colors.green, fontSize: 11, fontWeight: FontWeight.bold),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                                Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.lightGray,
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      const Text('Total Tagihan Baru:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                                      Text('Rp $formattedCalculatedAmount', style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primaryBlue, fontSize: 14)),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(height: 20),
+                                const Text(
+                                  'Scan QRIS di bawah ini untuk membayar:',
+                                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.darkBlueText),
+                                ),
+                                const SizedBox(height: 12),
+                                _buildBase64Image(widget.qrImage, height: 240),
+                                const SizedBox(height: 20),
+                                SizedBox(
+                                  width: double.infinity,
+                                  height: 50,
+                                  child: ElevatedButton.icon(
+                                    onPressed: _isUploading ? null : () => _uploadPaymentProof(currentMonthCode, calculatedAmount, _durationMonths),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.green,
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                                    ),
+                                    icon: _isUploading
+                                        ? const SizedBox(
+                                            height: 18,
+                                            width: 18,
+                                            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                                          )
+                                        : const Icon(Icons.upload_file_outlined, color: Colors.white),
+                                    label: Text(
+                                      _isUploading ? 'Mengunggah...' : 'Unggah Bukti Pembayaran',
+                                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            );
+                          }(),
                         ],
                       ],
                       const SizedBox(height: 24),
