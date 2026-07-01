@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+import '../../services/auth_service.dart';
 import '../../services/image_service.dart';
 import '../../theme.dart';
 import 'owner_billing_history_screen.dart';
@@ -97,6 +99,10 @@ class _OwnerBillingPackageScreenState extends State<OwnerBillingPackageScreen> {
 
     try {
       final String currentMonthCode = DateFormat('yyyy-MM').format(DateTime.now());
+      final authService = Provider.of<AuthService>(context, listen: false);
+      final ownerName = authService.currentUserModel?.name ?? 'Unknown Owner';
+      final ownerPhone = authService.currentUserModel?.phoneNumber ?? '';
+      final ownerUid = authService.currentUserModel?.uid ?? '';
       
       await FirebaseFirestore.instance
           .collection('developer_billing_invoices')
@@ -107,6 +113,9 @@ class _OwnerBillingPackageScreenState extends State<OwnerBillingPackageScreen> {
         'dueDate': Timestamp.fromDate(dueDate),
         'status': 'menunggu_konfirmasi',
         'paymentProof': image,
+        'ownerName': ownerName,
+        'ownerPhone': ownerPhone,
+        'ownerUid': ownerUid,
         'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
 
@@ -226,7 +235,7 @@ class _OwnerBillingPackageScreenState extends State<OwnerBillingPackageScreen> {
                   ],
                   SizedBox(
                     width: double.infinity,
-                    height: 48,
+                    height: 50,
                     child: ElevatedButton.icon(
                       onPressed: () {
                         Navigator.pop(context);
@@ -234,11 +243,13 @@ class _OwnerBillingPackageScreenState extends State<OwnerBillingPackageScreen> {
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: invoiceStatus == 'menunggu_konfirmasi' ? Colors.orange : Colors.green,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                       ),
-                      icon: const Icon(Icons.upload_file, color: Colors.white),
+                      icon: const Icon(Icons.upload_file, color: Colors.white, size: 18),
                       label: Text(
                         invoiceStatus == 'menunggu_konfirmasi' ? 'Unggah Ulang Bukti Bayar' : 'Unggah Bukti Pembayaran',
-                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
                       ),
                     ),
                   ),
@@ -498,15 +509,19 @@ class _OwnerBillingPackageScreenState extends State<OwnerBillingPackageScreen> {
                           const SizedBox(height: 20),
                           SizedBox(
                             width: double.infinity,
-                            height: 45,
+                            height: 50,
                             child: ElevatedButton.icon(
                               onPressed: () => _showPaymentBottomSheet(context, billingAmount, billingDueDate, billingQr),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: AppTheme.primaryBlue,
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                               ),
                               icon: const Icon(Icons.payment, color: Colors.white, size: 18),
-                              label: const Text('Bayar Tagihan Sekarang', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                              label: const Text(
+                                'Bayar Tagihan Sekarang',
+                                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                              ),
                             ),
                           ),
                         ],

@@ -112,6 +112,11 @@ class _BillingBlockScreenState extends State<BillingBlockScreen> {
 
     try {
       // Save/update the invoice in developer_billing_invoices
+      final authService = Provider.of<AuthService>(context, listen: false);
+      final ownerName = authService.currentUserModel?.name ?? 'Unknown Owner';
+      final ownerPhone = authService.currentUserModel?.phoneNumber ?? '';
+      final ownerUid = authService.currentUserModel?.uid ?? '';
+
       await FirebaseFirestore.instance
           .collection('developer_billing_invoices')
           .doc(monthCode)
@@ -121,6 +126,9 @@ class _BillingBlockScreenState extends State<BillingBlockScreen> {
         'dueDate': Timestamp.fromDate(widget.dueDate),
         'status': 'menunggu_konfirmasi',
         'paymentProof': image,
+        'ownerName': ownerName,
+        'ownerPhone': ownerPhone,
+        'ownerUid': ownerUid,
         'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
 
@@ -332,12 +340,19 @@ class _BillingBlockScreenState extends State<BillingBlockScreen> {
                           const SizedBox(height: 20),
                           SizedBox(
                             width: double.infinity,
-                            height: 45,
+                            height: 50,
                             child: ElevatedButton.icon(
                               onPressed: _isUploading ? null : () => _uploadPaymentProof(currentMonthCode),
-                              style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryBlue),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppTheme.primaryBlue,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                              ),
                               icon: const Icon(Icons.change_circle_outlined, color: Colors.white),
-                              label: const Text('Ubah/Unggah Ulang Bukti', style: TextStyle(color: Colors.white)),
+                              label: const Text(
+                                'Ubah/Unggah Ulang Bukti',
+                                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                              ),
                             ),
                           ),
                         ] else ...[
@@ -351,20 +366,24 @@ class _BillingBlockScreenState extends State<BillingBlockScreen> {
                           const SizedBox(height: 20),
                           SizedBox(
                             width: double.infinity,
-                            height: 45,
+                            height: 50,
                             child: ElevatedButton.icon(
                               onPressed: _isUploading ? null : () => _uploadPaymentProof(currentMonthCode),
-                              style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.green,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                              ),
                               icon: _isUploading
                                   ? const SizedBox(
-                                      height: 16,
-                                      width: 16,
+                                      height: 18,
+                                      width: 18,
                                       child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                                     )
                                   : const Icon(Icons.upload_file_outlined, color: Colors.white),
                               label: Text(
                                 _isUploading ? 'Mengunggah...' : 'Unggah Bukti Pembayaran',
-                                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
                               ),
                             ),
                           ),

@@ -534,6 +534,8 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
                           final status = data['status'] as String? ?? 'belum_bayar';
                           final paymentProof = data['paymentProof'] as String? ?? '';
                           final paidAt = (data['paidAt'] as Timestamp?)?.toDate();
+                          final ownerName = data['ownerName'] as String? ?? '';
+                          final ownerPhone = data['ownerPhone'] as String? ?? '';
 
                           DateTime parsedMonth = DateTime.now();
                           try {
@@ -578,6 +580,14 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
                                   Text('Nominal: Rp $amountFormatted', style: const TextStyle(fontSize: 12)),
                                   if (paidAt != null)
                                     Text('Lunas Pada: ${DateFormat('dd/MM/yyyy HH:mm').format(paidAt)}', style: const TextStyle(fontSize: 11, color: AppTheme.textGray)),
+                                  if (ownerName.isNotEmpty)
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 2.0),
+                                      child: Text(
+                                        'Dibayar Oleh: $ownerName${ownerPhone.isNotEmpty ? " ($ownerPhone)" : ""}',
+                                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppTheme.darkBlueText),
+                                      ),
+                                    ),
                                   if (paymentProof.isNotEmpty) ...[
                                     const SizedBox(height: 8),
                                     Row(

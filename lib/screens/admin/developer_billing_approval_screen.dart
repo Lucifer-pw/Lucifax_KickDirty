@@ -206,6 +206,8 @@ class _DeveloperBillingApprovalScreenState extends State<DeveloperBillingApprova
                   final paymentProof = data['paymentProof'] as String? ?? '';
                   final dueDate = (data['dueDate'] as Timestamp?)?.toDate();
                   final paidAt = (data['paidAt'] as Timestamp?)?.toDate();
+                  final ownerName = data['ownerName'] as String? ?? '';
+                  final ownerPhone = data['ownerPhone'] as String? ?? '';
 
                   DateTime parsedMonth = DateTime.now();
                   try {
@@ -273,18 +275,31 @@ class _DeveloperBillingApprovalScreenState extends State<DeveloperBillingApprova
                             ],
                           ),
                           if (dueDate != null) ...[
-                            const SizedBox(height: 6),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                const Text('Jatuh Tempo:', style: TextStyle(fontSize: 12, color: AppTheme.textGray)),
-                                Text(
-                                  DateFormat('dd/MM/yyyy').format(dueDate),
-                                  style: const TextStyle(fontSize: 12, color: AppTheme.darkBlueText),
-                                ),
-                              ],
-                            ),
-                          ],
+                             const SizedBox(height: 6),
+                             Row(
+                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                               children: [
+                                 const Text('Jatuh Tempo:', style: TextStyle(fontSize: 12, color: AppTheme.textGray)),
+                                 Text(
+                                   DateFormat('dd/MM/yyyy').format(dueDate),
+                                   style: const TextStyle(fontSize: 12, color: AppTheme.darkBlueText),
+                                 ),
+                               ],
+                             ),
+                           ],
+                           if (ownerName.isNotEmpty) ...[
+                             const SizedBox(height: 6),
+                             Row(
+                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                               children: [
+                                 const Text('Dibayar Oleh:', style: TextStyle(fontSize: 12, color: AppTheme.textGray)),
+                                 Text(
+                                   '$ownerName${ownerPhone.isNotEmpty ? " ($ownerPhone)" : ""}',
+                                   style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.darkBlueText),
+                                 ),
+                               ],
+                             ),
+                           ],
                           if (status == 'lunas' && paidAt != null) ...[
                             const SizedBox(height: 6),
                             Row(
