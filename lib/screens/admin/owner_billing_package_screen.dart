@@ -104,10 +104,25 @@ class _OwnerBillingPackageScreenState extends State<OwnerBillingPackageScreen> {
 
     try {
       final String currentMonthCode = DateFormat('yyyy-MM').format(DateTime.now());
+
+      // Query for an existing pending invoice to overwrite
+      final pendingQuery = await FirebaseFirestore.instance
+          .collection('developer_billing_invoices')
+          .where('ownerUid', isEqualTo: ownerUid)
+          .where('status', isEqualTo: 'menunggu_konfirmasi')
+          .limit(1)
+          .get();
+
+      String docId;
+      if (pendingQuery.docs.isNotEmpty) {
+        docId = pendingQuery.docs.first.id;
+      } else {
+        docId = FirebaseFirestore.instance.collection('developer_billing_invoices').doc().id;
+      }
       
       await FirebaseFirestore.instance
           .collection('developer_billing_invoices')
-          .doc(currentMonthCode)
+          .doc(docId)
           .set({
         'monthCode': currentMonthCode,
         'amount': amount,
@@ -140,17 +155,20 @@ class _OwnerBillingPackageScreenState extends State<OwnerBillingPackageScreen> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) {
-        final String currentMonthCode = DateFormat('yyyy-MM').format(DateTime.now());
+        final authService = Provider.of<AuthService>(context, listen: false);
+        final ownerUid = authService.currentUserModel?.uid ?? '';
 
-        return StreamBuilder<DocumentSnapshot>(
+        return StreamBuilder<QuerySnapshot>(
           stream: FirebaseFirestore.instance
               .collection('developer_billing_invoices')
-              .doc(currentMonthCode)
+              .where('ownerUid', isEqualTo: ownerUid)
+              .where('status', isEqualTo: 'menunggu_konfirmasi')
+              .limit(1)
               .snapshots(),
           builder: (context, snapshot) {
             String invoiceStatus = 'belum_bayar';
-            if (snapshot.hasData && snapshot.data!.exists) {
-              final iData = snapshot.data!.data() as Map<String, dynamic>?;
+            if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
+              final iData = snapshot.data!.docs.first.data() as Map<String, dynamic>?;
               invoiceStatus = iData?['status'] as String? ?? 'belum_bayar';
             }
 

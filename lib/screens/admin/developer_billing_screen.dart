@@ -93,7 +93,7 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
     }
   }
 
-  Future<void> _confirmInvoicePaid(String monthCode) async {
+  Future<void> _confirmInvoicePaid(String docId, String monthCode) async {
     setState(() => _isSaving = true);
     try {
       final now = DateTime.now();
@@ -101,7 +101,7 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
       // 1. Get the invoice doc to check durationMonths
       final invoiceDoc = await FirebaseFirestore.instance
           .collection('developer_billing_invoices')
-          .doc(monthCode)
+          .doc(docId)
           .get();
       int durationMonths = 1;
       if (invoiceDoc.exists) {
@@ -132,7 +132,7 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
       // 4. Update invoice document status to lunas
       await FirebaseFirestore.instance
           .collection('developer_billing_invoices')
-          .doc(monthCode)
+          .doc(docId)
           .update({
         'status': 'lunas',
         'paidAt': Timestamp.fromDate(now),
@@ -168,12 +168,12 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
     }
   }
 
-  Future<void> _rejectInvoicePayment(String monthCode) async {
+  Future<void> _rejectInvoicePayment(String docId, String monthCode) async {
     setState(() => _isSaving = true);
     try {
       await FirebaseFirestore.instance
           .collection('developer_billing_invoices')
-          .doc(monthCode)
+          .doc(docId)
           .update({
         'status': 'ditolak',
         'updatedAt': FieldValue.serverTimestamp(),
@@ -538,6 +538,7 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
                         itemCount: docs.length,
                         itemBuilder: (context, index) {
                           final data = docs[index].data() as Map<String, dynamic>;
+                          final docId = docs[index].id;
                           final monthCode = data['monthCode'] as String? ?? '';
                           final amount = (data['amount'] as num?)?.toDouble() ?? 0.0;
                           final status = data['status'] as String? ?? 'belum_bayar';
@@ -612,12 +613,12 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
                                           Row(
                                             children: [
                                               TextButton(
-                                                onPressed: () => _rejectInvoicePayment(monthCode),
+                                                onPressed: () => _rejectInvoicePayment(docId, monthCode),
                                                 style: TextButton.styleFrom(foregroundColor: Colors.red),
                                                 child: const Text('Tolak', style: TextStyle(fontSize: 11)),
                                               ),
                                               ElevatedButton(
-                                                onPressed: () => _confirmInvoicePaid(monthCode),
+                                                onPressed: () => _confirmInvoicePaid(docId, monthCode),
                                                 style: ElevatedButton.styleFrom(
                                                   backgroundColor: Colors.green,
                                                   padding: const EdgeInsets.symmetric(horizontal: 12),

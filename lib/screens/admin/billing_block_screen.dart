@@ -79,7 +79,7 @@ class _BillingBlockScreenState extends State<BillingBlockScreen> {
     }
   }
 
-  Future<void> _uploadPaymentProof(String monthCode, double uploadAmount, int durationMonths) async {
+  Future<void> _uploadPaymentProof(double uploadAmount, int durationMonths) async {
     final String? image = await showModalBottomSheet<String?>(
       context: context,
       builder: (BuildContext context) {
@@ -118,12 +118,28 @@ class _BillingBlockScreenState extends State<BillingBlockScreen> {
       final ownerName = authService.currentUserModel?.name ?? 'Unknown Owner';
       final ownerPhone = authService.currentUserModel?.phoneNumber ?? '';
       final ownerUid = authService.currentUserModel?.uid ?? '';
+      final String currentMonthCode = DateFormat('yyyy-MM').format(DateTime.now());
+
+      // Query for an existing pending invoice to overwrite
+      final pendingQuery = await FirebaseFirestore.instance
+          .collection('developer_billing_invoices')
+          .where('ownerUid', isEqualTo: ownerUid)
+          .where('status', isEqualTo: 'menunggu_konfirmasi')
+          .limit(1)
+          .get();
+
+      String docId;
+      if (pendingQuery.docs.isNotEmpty) {
+        docId = pendingQuery.docs.first.id;
+      } else {
+        docId = FirebaseFirestore.instance.collection('developer_billing_invoices').doc().id;
+      }
 
       await FirebaseFirestore.instance
           .collection('developer_billing_invoices')
-          .doc(monthCode)
+          .doc(docId)
           .set({
-        'monthCode': monthCode,
+        'monthCode': currentMonthCode,
         'amount': uploadAmount,
         'dueDate': Timestamp.fromDate(widget.dueDate),
         'status': 'menunggu_konfirmasi',
@@ -169,19 +185,23 @@ class _BillingBlockScreenState extends State<BillingBlockScreen> {
 
     final String formattedDate = DateFormat('dd MMMM yyyy').format(widget.dueDate);
 
+    final String ownerUid = authService.currentUserModel?.uid ?? '';
+
     return Scaffold(
       backgroundColor: Colors.white,
-      body: StreamBuilder<DocumentSnapshot>(
+      body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
             .collection('developer_billing_invoices')
-            .doc(currentMonthCode)
+            .where('ownerUid', isEqualTo: ownerUid)
+            .where('status', isEqualTo: 'menunggu_konfirmasi')
+            .limit(1)
             .snapshots(),
         builder: (context, snapshot) {
           String status = 'belum_bayar';
           String paymentProof = '';
 
-          if (snapshot.hasData && snapshot.data!.exists) {
-            final data = snapshot.data!.data() as Map<String, dynamic>?;
+          if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
+            final data = snapshot.data!.docs.first.data() as Map<String, dynamic>?;
             if (data != null) {
               status = data['status'] as String? ?? 'belum_bayar';
               paymentProof = data['paymentProof'] as String? ?? '';
@@ -347,7 +367,7 @@ class _BillingBlockScreenState extends State<BillingBlockScreen> {
                             width: double.infinity,
                             height: 50,
                             child: ElevatedButton.icon(
-                              onPressed: _isUploading ? null : () => _uploadPaymentProof(currentMonthCode, widget.amount, 1),
+                              onPressed: _isUploading ? null : () => _uploadPaymentProof(widget.amount, 1),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: AppTheme.primaryBlue,
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -476,7 +496,7 @@ class _BillingBlockScreenState extends State<BillingBlockScreen> {
                                   width: double.infinity,
                                   height: 50,
                                   child: ElevatedButton.icon(
-                                    onPressed: _isUploading ? null : () => _uploadPaymentProof(currentMonthCode, calculatedAmount, _durationMonths),
+                                    onPressed: _isUploading ? null : () => _uploadPaymentProof(calculatedAmount, _durationMonths),
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: Colors.green,
                                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),

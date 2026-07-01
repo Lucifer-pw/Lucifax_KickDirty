@@ -69,20 +69,10 @@ class _DeveloperBillingApprovalScreenState extends State<DeveloperBillingApprova
     );
   }
 
-  Future<void> _approvePayment(String monthCode, double amount) async {
+  Future<void> _approvePayment(String docId, String monthCode, double amount) async {
     setState(() => _isProcessing = true);
     try {
-      // 1. Get the invoice doc to check durationMonths
-      final invoiceDoc = await FirebaseFirestore.instance
-          .collection('developer_billing_invoices')
-          .doc(monthCode)
-          .get();
-      int durationMonths = 1;
-      if (invoiceDoc.exists) {
-        durationMonths = invoiceDoc.data()?['durationMonths'] as int? ?? 1;
-      }
-
-      // 2. Get current billing config to calculate next due date
+      // 1. Get current billing config to calculate next due date
       final configDoc = await FirebaseFirestore.instance
           .collection('developer_billing')
           .doc('config')
@@ -94,6 +84,16 @@ class _DeveloperBillingApprovalScreenState extends State<DeveloperBillingApprova
         if (nextDueDateStamp != null) {
           currentDueDate = nextDueDateStamp.toDate();
         }
+      }
+
+      // 2. Read the invoice doc to check durationMonths
+      final invoiceDoc = await FirebaseFirestore.instance
+          .collection('developer_billing_invoices')
+          .doc(docId)
+          .get();
+      int durationMonths = 1;
+      if (invoiceDoc.exists) {
+        durationMonths = invoiceDoc.data()?['durationMonths'] as int? ?? 1;
       }
 
       // 3. Calculate next due date (forcing day 1)
@@ -110,7 +110,7 @@ class _DeveloperBillingApprovalScreenState extends State<DeveloperBillingApprova
       // Update invoice status to lunas
       final invoiceRef = FirebaseFirestore.instance
           .collection('developer_billing_invoices')
-          .doc(monthCode);
+          .doc(docId);
       batch.update(invoiceRef, {
         'status': 'lunas',
         'paidAt': FieldValue.serverTimestamp(),
@@ -141,12 +141,12 @@ class _DeveloperBillingApprovalScreenState extends State<DeveloperBillingApprova
     }
   }
 
-  Future<void> _rejectPayment(String monthCode) async {
+  Future<void> _rejectPayment(String docId, String monthCode) async {
     setState(() => _isProcessing = true);
     try {
       await FirebaseFirestore.instance
           .collection('developer_billing_invoices')
-          .doc(monthCode)
+          .doc(docId)
           .update({
         'status': 'ditolak',
         'updatedAt': FieldValue.serverTimestamp(),
@@ -210,6 +210,7 @@ class _DeveloperBillingApprovalScreenState extends State<DeveloperBillingApprova
                 itemCount: docs.length,
                 itemBuilder: (context, index) {
                   final data = docs[index].data() as Map<String, dynamic>;
+                  final docId = docs[index].id;
                   final monthCode = data['monthCode'] as String? ?? '';
                   final amount = (data['amount'] as num?)?.toDouble() ?? 0.0;
                   final status = data['status'] as String? ?? 'belum_bayar';
@@ -359,23 +360,23 @@ class _DeveloperBillingApprovalScreenState extends State<DeveloperBillingApprova
                             Row(
                               mainAxisAlignment: MainAxisAlignment.end,
                               children: [
-                                OutlinedButton(
-                                  onPressed: _isProcessing
-                                      ? null
-                                      : () => _showRejectConfirmation(monthCode),
-                                  style: OutlinedButton.styleFrom(
-                                    foregroundColor: Colors.red,
-                                    side: const BorderSide(color: Colors.red),
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                  OutlinedButton(
+                                    onPressed: _isProcessing
+                                        ? null
+                                        : () => _showRejectConfirmation(docId, monthCode),
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor: Colors.red,
+                                      side: const BorderSide(color: Colors.red),
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                    ),
+                                    child: const Text('Tolak', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                                   ),
-                                  child: const Text('Tolak', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                                ),
-                                const SizedBox(width: 12),
-                                ElevatedButton(
-                                  onPressed: _isProcessing
-                                      ? null
-                                      : () => _showApproveConfirmation(monthCode, amount),
+                                  const SizedBox(width: 12),
+                                  ElevatedButton(
+                                    onPressed: _isProcessing
+                                        ? null
+                                        : () => _showApproveConfirmation(docId, monthCode, amount),
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: Colors.green,
                                     foregroundColor: Colors.white,
@@ -405,7 +406,7 @@ class _DeveloperBillingApprovalScreenState extends State<DeveloperBillingApprova
     );
   }
 
-  void _showApproveConfirmation(String monthCode, double amount) {
+  void _showApproveConfirmation(String docId, String monthCode, double amount) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -419,7 +420,7 @@ class _DeveloperBillingApprovalScreenState extends State<DeveloperBillingApprova
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
-              _approvePayment(monthCode, amount);
+              _approvePayment(docId, monthCode, amount);
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
             child: const Text('Setujui'),
@@ -429,7 +430,7 @@ class _DeveloperBillingApprovalScreenState extends State<DeveloperBillingApprova
     );
   }
 
-  void _showRejectConfirmation(String monthCode) {
+  void _showRejectConfirmation(String docId, String monthCode) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -443,7 +444,7 @@ class _DeveloperBillingApprovalScreenState extends State<DeveloperBillingApprova
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
-              _rejectPayment(monthCode);
+              _rejectPayment(docId, monthCode);
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             child: const Text('Tolak'),
