@@ -51,14 +51,20 @@ class _BillingBlockScreenState extends State<BillingBlockScreen> {
         ),
       );
     }
+    String cleanBase64 = base64Str.trim();
+    if (cleanBase64.contains(',')) {
+      cleanBase64 = cleanBase64.split(',')[1];
+    }
+    // Remove any potential whitespaces or newlines
+    cleanBase64 = cleanBase64.replaceAll(RegExp(r'\s+'), '');
     try {
       return ClipRRect(
         borderRadius: BorderRadius.circular(16),
         child: Image.memory(
-          base64Decode(base64Str),
+          base64Decode(cleanBase64),
           height: height,
           width: double.infinity,
-          fit: BoxFit.cover,
+          fit: BoxFit.contain, // Fit contain is better for QRIS than cover to prevent cropping!
           errorBuilder: (context, error, stackTrace) {
             return Container(
               height: height,

@@ -19,11 +19,37 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
   String _qrImageBase64 = '';
   bool _isLoading = true;
   bool _isSaving = false;
+  double _selectedPresetAmount = -1.0;
 
   @override
   void initState() {
     super.initState();
     _loadBillingConfig();
+    _amountController.addListener(_onAmountChanged);
+  }
+
+  @override
+  void dispose() {
+    _amountController.removeListener(_onAmountChanged);
+    _amountController.dispose();
+    super.dispose();
+  }
+
+  void _onAmountChanged() {
+    final double? val = double.tryParse(_amountController.text.trim());
+    if (val == 100000.0 || val == 150000.0 || val == 250000.0) {
+      if (_selectedPresetAmount != val) {
+        setState(() {
+          _selectedPresetAmount = val!;
+        });
+      }
+    } else {
+      if (_selectedPresetAmount != -1.0) {
+        setState(() {
+          _selectedPresetAmount = -1.0;
+        });
+      }
+    }
   }
 
   Future<void> _loadBillingConfig() async {
@@ -333,16 +359,54 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
                   ),
                   const SizedBox(height: 20),
 
-                  // Input nominal biaya
-                  TextField(
-                    controller: _amountController,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: 'Biaya Maintenance Bulanan (Rp)',
-                      prefixText: 'Rp ',
-                    ),
-                  ),
-                  const SizedBox(height: 16),
+                   // Dropdown Pilihan Paket
+                   DropdownButtonFormField<double>(
+                     value: _selectedPresetAmount,
+                     decoration: const InputDecoration(
+                       labelText: 'Paket Maintenance',
+                       border: OutlineInputBorder(),
+                     ),
+                     items: const [
+                       DropdownMenuItem(
+                         value: 100000.0,
+                         child: Text('Paket 1 (Rp 100.000 / Bulan)'),
+                       ),
+                       DropdownMenuItem(
+                         value: 150000.0,
+                         child: Text('Paket 2 (Rp 150.000 / Bulan)'),
+                       ),
+                       DropdownMenuItem(
+                         value: 250000.0,
+                         child: Text('Paket 3 (Rp 250.000 / Bulan)'),
+                       ),
+                       DropdownMenuItem(
+                         value: -1.0,
+                         child: Text('Kustom (Bebas Edit)'),
+                       ),
+                     ],
+                     onChanged: (val) {
+                       if (val != null) {
+                         setState(() {
+                           _selectedPresetAmount = val;
+                           if (val != -1.0) {
+                             _amountController.text = val.toStringAsFixed(0);
+                           }
+                         });
+                       }
+                     },
+                   ),
+                   const SizedBox(height: 16),
+
+                   // Input nominal biaya
+                   TextField(
+                     controller: _amountController,
+                     keyboardType: TextInputType.number,
+                     decoration: const InputDecoration(
+                       labelText: 'Biaya Maintenance Bulanan (Rp)',
+                       prefixText: 'Rp ',
+                     ),
+                   ),
+                   const SizedBox(height: 16),
 
                   // Due Date Selection (Start date of billing)
                   ListTile(

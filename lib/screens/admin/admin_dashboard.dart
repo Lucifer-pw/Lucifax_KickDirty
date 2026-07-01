@@ -152,10 +152,23 @@ class _AdminDashboardState extends State<AdminDashboard> {
         }
 
         if (isBlocked) {
-          return BillingBlockScreen(
-            amount: billingAmount,
-            dueDate: billingDueDate,
-            qrImage: billingQr,
+          return StreamBuilder<DocumentSnapshot>(
+            stream: FirebaseFirestore.instance.collection('app_config').doc('business_config').snapshots(),
+            builder: (context, bizSnapshot) {
+              double activeAmount = billingAmount;
+              if (bizSnapshot.hasData && bizSnapshot.data!.exists) {
+                final bizData = bizSnapshot.data!.data() as Map<String, dynamic>?;
+                final selectedPrice = (bizData?['selectedPackagePrice'] as num?)?.toDouble();
+                if (selectedPrice != null) {
+                  activeAmount = selectedPrice;
+                }
+              }
+              return BillingBlockScreen(
+                amount: activeAmount,
+                dueDate: billingDueDate,
+                qrImage: billingQr,
+              );
+            },
           );
         }
 
