@@ -20,12 +20,18 @@ class _ReviewModerationScreenState extends State<ReviewModerationScreen> {
     _reviewsStream = FirebaseFirestore.instance
         .collection('orders')
         .where('rating', isNull: false)
-        .orderBy('reviewedAt', descending: true)
         .snapshots()
         .map((snapshot) {
-      return snapshot.docs
+      final list = snapshot.docs
           .map((doc) => OrderModel.fromMap(doc.data(), doc.id))
           .toList();
+      // Sort in-memory by reviewedAt descending to avoid requiring composite indexes
+      list.sort((a, b) {
+        final dateA = a.reviewedAt ?? a.createdAt;
+        final dateB = b.reviewedAt ?? b.createdAt;
+        return dateB.compareTo(dateA);
+      });
+      return list;
     });
   }
 
