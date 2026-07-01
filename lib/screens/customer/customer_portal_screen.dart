@@ -1888,7 +1888,6 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
         StreamBuilder<List<OrderModel>>(
           stream: FirebaseFirestore.instance
               .collection('orders')
-              .where('rating', isNull: false)
               .where('showOnWeb', isEqualTo: true)
               .orderBy('reviewedAt', descending: true)
               .limit(10)
