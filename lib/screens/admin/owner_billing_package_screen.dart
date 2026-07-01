@@ -67,6 +67,11 @@ class _OwnerBillingPackageScreenState extends State<OwnerBillingPackageScreen> {
   }
 
   Future<void> _uploadPaymentProof(BuildContext context, double amount, DateTime dueDate, String qrImage) async {
+    final authService = Provider.of<AuthService>(context, listen: false);
+    final ownerName = authService.currentUserModel?.name ?? 'Unknown Owner';
+    final ownerPhone = authService.currentUserModel?.phoneNumber ?? '';
+    final ownerUid = authService.currentUserModel?.uid ?? '';
+
     final String? image = await showModalBottomSheet<String?>(
       context: context,
       builder: (BuildContext context) {
@@ -99,10 +104,6 @@ class _OwnerBillingPackageScreenState extends State<OwnerBillingPackageScreen> {
 
     try {
       final String currentMonthCode = DateFormat('yyyy-MM').format(DateTime.now());
-      final authService = Provider.of<AuthService>(context, listen: false);
-      final ownerName = authService.currentUserModel?.name ?? 'Unknown Owner';
-      final ownerPhone = authService.currentUserModel?.phoneNumber ?? '';
-      final ownerUid = authService.currentUserModel?.uid ?? '';
       
       await FirebaseFirestore.instance
           .collection('developer_billing_invoices')
