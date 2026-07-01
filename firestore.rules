@@ -29,11 +29,23 @@ service cloud.firestore {
 
     // ============================================
     // ORDERS COLLECTION
+    // Fitur: Pesanan, Ulasan Pelanggan, Moderasi Review, Trust Counter Stats
+    // - get: Authenticated users bisa baca semua order.
+    //        Unauthenticated web visitors bisa baca order yang showOnWeb == true (ulasan publik).
+    // - list: Authenticated users bisa query semua order (stats, riwayat, moderasi).
+    //         Unauthenticated web visitors bisa query order yang showOnWeb == true (carousel ulasan).
+    // - create: Hanya user yang login bisa buat pesanan baru.
+    // - update: User login bisa update (submit ulasan, update status, toggle showOnWeb moderasi).
+    // - delete: Hanya Owner/Staff/Developer yang boleh hapus pesanan.
     // ============================================
     match /orders/{orderId} {
-      allow read: if request.auth != null;
+      allow get: if request.auth != null
+                 || (resource != null && resource.data.showOnWeb == true);
+      allow list: if request.auth != null
+                  || (resource != null && resource.data.showOnWeb == true);
       allow create: if request.auth != null;
-      allow update, delete: if request.auth != null;
+      allow update: if request.auth != null;
+      allow delete: if request.auth != null && isOwnerOrStaff();
     }
 
     // ============================================
