@@ -1,8 +1,11 @@
+import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:http/http.dart' as http;
 import '../models/user_model.dart';
+import '../utils/platform_helper.dart';
 
 class AuthService with ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -61,8 +64,50 @@ class AuthService with ChangeNotifier {
           await _db.collection('users').doc(uid).set(_currentUserModel!.toMap());
         }
       }
+      
+      // Log the login details to Firestore
+      if (_currentUserModel != null) {
+        _logLogin(uid).catchError((_) {});
+      }
     } catch (e) {
       if (kDebugMode) print("Error fetching user model: $e");
+    }
+  }
+
+  // Record login device and location log
+  Future<void> _logLogin(String uid) async {
+    try {
+      final device = getDevice();
+      String location = 'Unknown';
+      String ip = '';
+      try {
+        final response = await http.get(Uri.parse('https://ipapi.co/json/')).timeout(const Duration(seconds: 5));
+        if (response.statusCode == 200) {
+          final data = jsonDecode(response.body);
+          ip = data['ip'] ?? '';
+          final city = data['city'] ?? '';
+          final region = data['region'] ?? '';
+          final country = data['country_name'] ?? '';
+          if (city.isNotEmpty || region.isNotEmpty || country.isNotEmpty) {
+            location = '$city, $region, $country';
+          }
+        }
+      } catch (e) {
+        if (kDebugMode) print("Error fetching IP location: $e");
+      }
+
+      await _db.collection('login_logs').add({
+        'userId': uid,
+        'userName': _currentUserModel?.name ?? 'Anonim',
+        'userEmail': _currentUserModel?.email ?? '',
+        'userRole': _currentUserModel?.role ?? '',
+        'loginAt': FieldValue.serverTimestamp(),
+        'device': device,
+        'location': location,
+        'ipAddress': ip,
+      });
+    } catch (e) {
+      if (kDebugMode) print("Error logging login details: $e");
     }
   }
 

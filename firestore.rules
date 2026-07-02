@@ -137,6 +137,14 @@ service cloud.firestore {
     }
 
     // ============================================
+    // LOGIN LOGS COLLECTION
+    // ============================================
+    match /login_logs/{logId} {
+      allow create: if request.auth != null;
+      allow read: if request.auth != null && isOwnerOrStaff();
+    }
+
+    // ============================================
     // HELPER FUNCTIONS
     // ============================================
     function isOwnerOrStaff() {
