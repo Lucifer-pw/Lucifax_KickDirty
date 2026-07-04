@@ -141,7 +141,7 @@ class AuthService with ChangeNotifier {
           return '${androidInfo.brand} ${androidInfo.model}';
         } else if (defaultTargetPlatform == TargetPlatform.iOS) {
           final iosInfo = await deviceInfo.iosInfo;
-          return 'Apple ${iosInfo.utsname.machine ?? iosInfo.model}';
+          return 'Apple ${iosInfo.utsname.machine}';
         } else if (defaultTargetPlatform == TargetPlatform.windows) {
           return 'Windows PC';
         } else if (defaultTargetPlatform == TargetPlatform.macOS) {
