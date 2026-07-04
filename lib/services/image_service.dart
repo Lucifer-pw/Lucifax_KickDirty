@@ -10,9 +10,9 @@ class ImageService {
     try {
       final XFile? photo = await _picker.pickImage(
         source: ImageSource.camera,
-        maxWidth: 600, // Keep image size reasonable
-        maxHeight: 600,
-        imageQuality: 70, // Compress to keep under Firestore 1MB limits
+        maxWidth: 1200, // Increased for better readability of text/details
+        maxHeight: 1200,
+        imageQuality: 80, // High quality but keeps file size small (~100-150KB)
       );
 
       if (photo != null) {
@@ -33,9 +33,9 @@ class ImageService {
     try {
       final XFile? image = await _picker.pickImage(
         source: ImageSource.gallery,
-        maxWidth: 600,
-        maxHeight: 600,
-        imageQuality: 70,
+        maxWidth: 1200,
+        maxHeight: 1200,
+        imageQuality: 80,
       );
 
       if (image != null) {
