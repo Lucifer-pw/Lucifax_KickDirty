@@ -156,6 +156,14 @@ class AuthService with ChangeNotifier {
     return 'Unknown Device';
   }
 
+  // Refresh current user model data
+  Future<void> refreshUser() async {
+    if (_auth.currentUser != null) {
+      await _fetchUserModel(_auth.currentUser!.uid);
+      notifyListeners();
+    }
+  }
+
   // Sign In
   Future<UserCredential?> signIn(String email, String password) async {
     try {

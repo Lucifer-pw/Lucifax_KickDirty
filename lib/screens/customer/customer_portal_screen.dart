@@ -18,6 +18,7 @@ import '../../widgets/update_dialog.dart';
 import '../login_screen.dart';
 import '../chat_screen.dart';
 import '../../services/in_app_notification_service.dart';
+import '../../utils/platform_helper.dart';
 
 class CustomerPortalScreen extends StatefulWidget {
   const CustomerPortalScreen({Key? key}) : super(key: key);
@@ -149,6 +150,8 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
     bool isSubmitting = false;
     List<String> photoBeforeList = [];
     List<OrderItem> orderItems = [];
+    String orderMapsLink = currentUser.mapsLink;
+    bool isGpsLoading = false;
 
     // Business settings config
     int rupiahPerPoint = businessConfig['rupiahPerPoint'] as int? ?? 10000;
@@ -494,6 +497,146 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
                             }
                             return null;
                           },
+                        ),
+                        const SizedBox(height: 8),
+
+                        // GPS maps link display
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: orderMapsLink.isEmpty
+                                ? Colors.amber.withOpacity(0.05)
+                                : AppTheme.lightBlueBackground,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: orderMapsLink.isEmpty
+                                  ? Colors.amber.withOpacity(0.2)
+                                  : AppTheme.primaryBlue.withOpacity(0.2),
+                            ),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(
+                                    orderMapsLink.isEmpty
+                                        ? Icons.info_outline
+                                        : Icons.check_circle_outline,
+                                    color: orderMapsLink.isEmpty
+                                        ? Colors.amber[700]
+                                        : AppTheme.primaryBlue,
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      orderMapsLink.isEmpty
+                                          ? 'Lokasi GPS belum dikunci (disarankan agar kurir tidak tersesat)'
+                                          : 'Lokasi GPS Terkunci',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                        color: orderMapsLink.isEmpty
+                                            ? Colors.amber[800]
+                                            : AppTheme.darkBlueText,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              if (orderMapsLink.isNotEmpty) ...[
+                                const SizedBox(height: 6),
+                                Text(
+                                  orderMapsLink,
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    color: AppTheme.textGray,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  maxLines: 1,
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+
+                        // Button to lock GPS Location
+                        SizedBox(
+                          width: double.infinity,
+                          child: TextButton.icon(
+                            onPressed: isGpsLoading
+                                ? null
+                                : () async {
+                                    setStateSheet(() {
+                                      isGpsLoading = true;
+                                    });
+                                    try {
+                                      final link = await getGpsLocation();
+                                      if (link != null) {
+                                        setStateSheet(() {
+                                          orderMapsLink = link;
+                                        });
+                                        // Save to database user profile
+                                        await FirebaseFirestore.instance
+                                            .collection('users')
+                                            .doc(currentUser.uid)
+                                            .update({'mapsLink': link});
+                                        await authService.refreshUser();
+                                        if (context.mounted) {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            const SnackBar(
+                                              content: Text('Lokasi GPS berhasil dikunci & disimpan ke profil!'),
+                                            ),
+                                          );
+                                        }
+                                      } else {
+                                        if (context.mounted) {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            const SnackBar(
+                                              content: Text('Gagal mendapatkan lokasi. Pastikan GPS aktif.'),
+                                            ),
+                                          );
+                                        }
+                                      }
+                                    } catch (e) {
+                                      if (context.mounted) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(content: Text('Gagal mengunci lokasi: $e')),
+                                        );
+                                      }
+                                    } finally {
+                                      setStateSheet(() {
+                                        isGpsLoading = false;
+                                      });
+                                    }
+                                  },
+                            icon: isGpsLoading
+                                ? const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: AppTheme.primaryBlue,
+                                    ),
+                                  )
+                                : const Icon(Icons.gps_fixed, color: AppTheme.primaryBlue),
+                            label: Text(
+                              isGpsLoading ? 'Mengunci Lokasi...' : 'Kunci Lokasi Otomatis via GPS',
+                              style: const TextStyle(
+                                color: AppTheme.primaryBlue,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            style: TextButton.styleFrom(
+                              backgroundColor: AppTheme.lightBlueBackground,
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                            ),
+                          ),
                         ),
                         const SizedBox(height: 8),
                       ],
@@ -895,7 +1038,7 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
                                       photoAfter: const [],
                                       pointsEarned: (finalServicePrice / rupiahPerPoint).floor(),
                                       pointsRedeemed: usePointsRedemption ? pointsNeeded : 0,
-                                      mapsLink: currentUser.mapsLink,
+                                      mapsLink: orderMapsLink,
                                       voucherCode: appliedVoucher?.code ?? '',
                                       voucherDiscount: finalVoucherDiscount,
                                       createdAt: DateTime.now(),
@@ -1192,68 +1335,145 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
     final nameController = TextEditingController(text: user.name);
     final addressController = TextEditingController(text: user.addressDetail);
     final mapsController = TextEditingController(text: user.mapsLink);
+    bool isGpsLoading = false;
     
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Edit Profil'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Nama Lengkap',
-                  hintText: 'Masukkan nama baru',
+      builder: (context) => StatefulBuilder(
+        builder: (context, setStateDialog) => AlertDialog(
+          title: const Text('Edit Profil'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nameController,
+                  decoration: const InputDecoration(
+                    labelText: 'Nama Lengkap',
+                    hintText: 'Masukkan nama baru',
+                  ),
+                  textCapitalization: TextCapitalization.words,
                 ),
-                textCapitalization: TextCapitalization.words,
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: addressController,
-                decoration: const InputDecoration(
-                  labelText: 'Detail Alamat',
-                  hintText: 'Nama Jalan, No. Rumah, RT/RW, Kec/Kel',
+                const SizedBox(height: 12),
+                TextField(
+                  controller: addressController,
+                  decoration: const InputDecoration(
+                    labelText: 'Detail Alamat',
+                    hintText: 'Nama Jalan, No. Rumah, RT/RW, Kec/Kel',
+                  ),
+                  maxLines: 2,
                 ),
-                maxLines: 2,
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: mapsController,
-                decoration: const InputDecoration(
-                  labelText: 'Link / Titik Google Maps',
-                  hintText: 'https://maps.app.goo.gl/...',
-                  helperText: 'Buka Google Maps -> Cari Lokasi -> Bagikan -> Salin Link',
-                  helperMaxLines: 2,
+                const SizedBox(height: 12),
+                TextField(
+                  controller: mapsController,
+                  decoration: const InputDecoration(
+                    labelText: 'Link / Titik Google Maps',
+                    hintText: 'https://maps.app.goo.gl/...',
+                    helperText: 'Buka Google Maps -> Cari Lokasi -> Bagikan -> Salin Link',
+                    helperMaxLines: 2,
+                  ),
                 ),
-              ),
-            ],
+                const SizedBox(height: 12),
+
+                // Button to lock GPS Location
+                SizedBox(
+                  width: double.infinity,
+                  child: TextButton.icon(
+                    onPressed: isGpsLoading
+                        ? null
+                        : () async {
+                            setStateDialog(() {
+                              isGpsLoading = true;
+                            });
+                            try {
+                              final link = await getGpsLocation();
+                              if (link != null) {
+                                setStateDialog(() {
+                                  mapsController.text = link;
+                                });
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Lokasi GPS berhasil dideteksi! Silakan klik Simpan untuk memperbarui.'),
+                                    ),
+                                  );
+                                }
+                              } else {
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Gagal mendapatkan lokasi. Pastikan GPS aktif.'),
+                                    ),
+                                  );
+                                }
+                              }
+                            } catch (e) {
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('Gagal mengunci lokasi: $e')),
+                                );
+                              }
+                            } finally {
+                              setStateDialog(() {
+                                isGpsLoading = false;
+                              });
+                            }
+                          },
+                    icon: isGpsLoading
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: AppTheme.primaryBlue,
+                            ),
+                          )
+                        : const Icon(Icons.gps_fixed, color: AppTheme.primaryBlue),
+                    label: Text(
+                      isGpsLoading ? 'Mengunci Lokasi...' : 'Kunci Lokasi Otomatis via GPS',
+                      style: const TextStyle(
+                        color: AppTheme.primaryBlue,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    style: TextButton.styleFrom(
+                      backgroundColor: AppTheme.lightBlueBackground,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Batal'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final newName = nameController.text.trim();
+                final newAddress = addressController.text.trim();
+                final newMaps = mapsController.text.trim();
+                
+                if (newName.isNotEmpty) {
+                  await FirebaseFirestore.instance.collection('users').doc(user.uid).update({
+                    'name': newName,
+                    'addressDetail': newAddress,
+                    'mapsLink': newMaps,
+                  });
+                  final authService = Provider.of<AuthService>(context, listen: false);
+                  await authService.refreshUser();
+                  if (context.mounted) Navigator.pop(context);
+                }
+              },
+              child: const Text('Simpan'),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Batal'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              final newName = nameController.text.trim();
-              final newAddress = addressController.text.trim();
-              final newMaps = mapsController.text.trim();
-              
-              if (newName.isNotEmpty) {
-                await FirebaseFirestore.instance.collection('users').doc(user.uid).update({
-                  'name': newName,
-                  'addressDetail': newAddress,
-                  'mapsLink': newMaps,
-                });
-                if (context.mounted) Navigator.pop(context);
-              }
-            },
-            child: const Text('Simpan'),
-          ),
-        ],
       ),
     );
   }

@@ -4,3 +4,7 @@ import 'platform_helper_non_web.dart'
 String getDevice() {
   return getDeviceDetails();
 }
+
+Future<String?> getGpsLocation() {
+  return getDeviceGpsLocation();
+}
