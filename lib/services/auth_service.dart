@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -78,6 +79,7 @@ class AuthService with ChangeNotifier {
   Future<void> _logLogin(String uid) async {
     try {
       final device = getDevice();
+      final deviceBrand = await _getDeviceBrandAndModel();
       String location = 'Unknown';
       String ip = '';
       try {
@@ -103,12 +105,55 @@ class AuthService with ChangeNotifier {
         'userRole': _currentUserModel?.role ?? '',
         'loginAt': FieldValue.serverTimestamp(),
         'device': device,
+        'deviceBrand': deviceBrand,
         'location': location,
         'ipAddress': ip,
       });
     } catch (e) {
       if (kDebugMode) print("Error logging login details: $e");
     }
+  }
+
+  // Get brand and model of device
+  Future<String> _getDeviceBrandAndModel() async {
+    final deviceInfo = DeviceInfoPlugin();
+    try {
+      if (kIsWeb) {
+        final webInfo = await deviceInfo.webBrowserInfo;
+        final userAgent = webInfo.userAgent ?? '';
+        
+        // Simple User-Agent parser for brand/model
+        if (userAgent.contains('iPhone')) return 'Apple iPhone';
+        if (userAgent.contains('iPad')) return 'Apple iPad';
+        if (userAgent.contains('Macintosh')) return 'Apple Mac';
+        if (userAgent.contains('Android')) {
+          final regExp = RegExp(r'Android\s+[^;]+;\s+([^;Build/]+)');
+          final match = regExp.firstMatch(userAgent);
+          if (match != null && match.groupCount >= 1) {
+            return match.group(1)!.trim();
+          }
+          return 'Android Device';
+        }
+        return 'Web Browser (${webInfo.browserName.name})';
+      } else {
+        if (defaultTargetPlatform == TargetPlatform.android) {
+          final androidInfo = await deviceInfo.androidInfo;
+          return '${androidInfo.brand} ${androidInfo.model}';
+        } else if (defaultTargetPlatform == TargetPlatform.iOS) {
+          final iosInfo = await deviceInfo.iosInfo;
+          return 'Apple ${iosInfo.utsname.machine ?? iosInfo.model}';
+        } else if (defaultTargetPlatform == TargetPlatform.windows) {
+          return 'Windows PC';
+        } else if (defaultTargetPlatform == TargetPlatform.macOS) {
+          return 'Mac';
+        } else if (defaultTargetPlatform == TargetPlatform.linux) {
+          return 'Linux PC';
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) print("Error getting device info: $e");
+    }
+    return 'Unknown Device';
   }
 
   // Sign In
