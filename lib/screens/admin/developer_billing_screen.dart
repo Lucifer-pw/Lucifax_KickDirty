@@ -22,6 +22,7 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
   double _selectedPresetAmount = -1.0;
   String _ownerSelectedPackageName = 'Belum memilih paket';
   double _ownerSelectedPackagePrice = 0.0;
+  bool _enableOwnerLogs = false;
 
   @override
   void initState() {
@@ -86,12 +87,47 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
           _ownerSelectedPackagePrice = (bizData?['selectedPackagePrice'] as num?)?.toDouble() ?? 0.0;
         });
       }
+
+      // Fetch activity log config
+      final versionDoc = await FirebaseFirestore.instance.collection('app_config').doc('version_info').get();
+      if (versionDoc.exists) {
+        final versionData = versionDoc.data();
+        setState(() {
+          _enableOwnerLogs = versionData?['enableOwnerLogs'] == true;
+        });
+      }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Gagal memuat konfigurasi billing: $e')),
       );
     } finally {
       setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _toggleOwnerLogs(bool val) async {
+    setState(() {
+      _enableOwnerLogs = val;
+    });
+    try {
+      await FirebaseFirestore.instance.collection('app_config').doc('version_info').set({
+        'enableOwnerLogs': val,
+      }, SetOptions(merge: true));
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Akses log aktivitas owner berhasil ${val ? "diaktifkan" : "dinonaktifkan"}')),
+        );
+      }
+    } catch (e) {
+      setState(() {
+        _enableOwnerLogs = !val;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal memperbarui pengaturan: $e')),
+        );
+      }
     }
   }
 
@@ -605,6 +641,52 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
                               style: ElevatedButton.styleFrom(backgroundColor: Colors.grey),
                             ),
                           ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  const Divider(),
+                  const SizedBox(height: 16),
+
+                  // DEV FEATURE TOGGLES CARD
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: AppTheme.cardShadow,
+                      border: Border.all(color: AppTheme.lightGray, width: 0.5),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Developer Feature Access Toggles',
+                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppTheme.darkBlueText),
+                        ),
+                        const SizedBox(height: 4),
+                        const Text(
+                          'Aktifkan atau nonaktifkan fitur tambahan berikut untuk klien (Owner).',
+                          style: TextStyle(fontSize: 11, color: AppTheme.textGray),
+                        ),
+                        const SizedBox(height: 12),
+                        SwitchListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: const Text(
+                            'Log Aktivitas Karyawan (Owner)',
+                            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.darkBlueText),
+                          ),
+                          subtitle: const Text(
+                            'Owner dapat melihat seluruh catatan log tindakan staff/karyawan.',
+                            style: TextStyle(fontSize: 11, color: AppTheme.textGray),
+                          ),
+                          value: _enableOwnerLogs,
+                          activeColor: AppTheme.primaryBlue,
+                          onChanged: (val) {
+                            _toggleOwnerLogs(val);
+                          },
                         ),
                       ],
                     ),
