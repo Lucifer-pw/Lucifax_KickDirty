@@ -12,7 +12,7 @@ class ImageService {
         source: ImageSource.camera,
         maxWidth: 1200, // Increased for better readability of text/details
         maxHeight: 1200,
-        imageQuality: 80, // High quality but keeps file size small (~100-150KB)
+        imageQuality: 85, // Balanced high quality (under Firestore 1MB limits)
       );
 
       if (photo != null) {
@@ -35,7 +35,7 @@ class ImageService {
         source: ImageSource.gallery,
         maxWidth: 1200,
         maxHeight: 1200,
-        imageQuality: 80,
+        imageQuality: 85,
       );
 
       if (image != null) {
