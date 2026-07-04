@@ -72,41 +72,53 @@ class _ActivityLogsScreenState extends State<ActivityLogsScreen> {
     final authService = Provider.of<AuthService>(context, listen: false);
     final user = authService.currentUserModel;
 
-    // Strict access control: only developer & owner can see
-    final bool hasAccess = user != null && (user.role == 'owner' || user.role == 'developer');
+    return StreamBuilder<DocumentSnapshot>(
+      stream: FirebaseFirestore.instance.collection('app_config').doc('version_info').snapshots(),
+      builder: (context, configSnapshot) {
+        if (configSnapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(body: Center(child: CircularProgressIndicator()));
+        }
 
-    if (!hasAccess) {
-      return const Scaffold(
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.lock_outline, color: Colors.redAccent, size: 64),
-              SizedBox(height: 16),
-              Text(
-                'Akses Ditolak',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.darkBlueText),
+        final bool enableOwnerLogs = configSnapshot.hasData &&
+            configSnapshot.data!.exists &&
+            (configSnapshot.data!.data() as Map<String, dynamic>?)?['enableOwnerLogs'] == true;
+
+        // Strict access control: developer always has access, owner only if enableOwnerLogs is true
+        final bool hasAccess = user != null &&
+            (user.role == 'developer' || (user.role == 'owner' && enableOwnerLogs));
+
+        if (!hasAccess) {
+          return const Scaffold(
+            body: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.lock_outline, color: Colors.redAccent, size: 64),
+                  SizedBox(height: 16),
+                  Text(
+                    'Akses Ditolak',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.darkBlueText),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    'Hanya Owner dan Developer yang dapat mengakses log aktivitas.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: AppTheme.textGray),
+                  ),
+                ],
               ),
-              SizedBox(height: 8),
-              Text(
-                'Hanya Owner dan Developer yang dapat mengakses log aktivitas.',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: AppTheme.textGray),
-              ),
-            ],
+            ),
+          );
+        }
+
+        return Scaffold(
+          backgroundColor: AppTheme.lightBlueBackground,
+          appBar: AppBar(
+            title: const Text('Log Aktivitas Karyawan'),
+            centerTitle: true,
           ),
-        ),
-      );
-    }
-
-    return Scaffold(
-      backgroundColor: AppTheme.lightBlueBackground,
-      appBar: AppBar(
-        title: const Text('Log Aktivitas Karyawan'),
-        centerTitle: true,
-      ),
-      body: Stack(
-        children: [
+          body: Stack(
+            children: [
           const Watermark(),
           Column(
             children: [
@@ -326,5 +338,7 @@ class _ActivityLogsScreenState extends State<ActivityLogsScreen> {
         ],
       ),
     );
+  },
+);
   }
 }

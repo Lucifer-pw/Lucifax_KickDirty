@@ -160,7 +160,8 @@ service cloud.firestore {
     }
 
     function isOwnerOrDeveloper() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['owner', 'developer'];
+      let role = get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+      return role == 'developer' || (role == 'owner' && get(/databases/$(database)/documents/app_config/version_info).data.enableOwnerLogs == true);
     }
 
     function isDeveloper() {

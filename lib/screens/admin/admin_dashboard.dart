@@ -284,79 +284,90 @@ class _AdminDashboardState extends State<AdminDashboard> {
       appBar: AppBar(
         title: const Text('KickDirty Dashboard'),
         actions: [
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert),
-            onSelected: (value) async {
-              if (value == 'settings') {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const AdminSettingsScreen()),
-                );
-              } else if (value == 'developer_billing') {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const DeveloperBillingScreen()),
-                );
-              } else if (value == 'activity_logs') {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const ActivityLogsScreen()),
-                );
-              } else if (value == 'logout') {
-                InAppNotificationService.instance.stopListening();
-                await Provider.of<AuthService>(context, listen: false).signOut();
-                if (context.mounted) {
-                  Navigator.of(context).pushReplacement(
-                    MaterialPageRoute(builder: (_) => const LoginScreen()),
-                  );
-                }
-              }
+          StreamBuilder<DocumentSnapshot>(
+            stream: FirebaseFirestore.instance.collection('app_config').doc('version_info').snapshots(),
+            builder: (context, snapshot) {
+              final bool enableOwnerLogs = snapshot.hasData &&
+                  snapshot.data!.exists &&
+                  (snapshot.data!.data() as Map<String, dynamic>?)?['enableOwnerLogs'] == true;
+
+              final bool showLogsMenu = role == 'developer' || (role == 'owner' && enableOwnerLogs);
+
+              return PopupMenuButton<String>(
+                icon: const Icon(Icons.more_vert),
+                onSelected: (value) async {
+                  if (value == 'settings') {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const AdminSettingsScreen()),
+                    );
+                  } else if (value == 'developer_billing') {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const DeveloperBillingScreen()),
+                    );
+                  } else if (value == 'activity_logs') {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const ActivityLogsScreen()),
+                    );
+                  } else if (value == 'logout') {
+                    InAppNotificationService.instance.stopListening();
+                    await Provider.of<AuthService>(context, listen: false).signOut();
+                    if (context.mounted) {
+                      Navigator.of(context).pushReplacement(
+                        MaterialPageRoute(builder: (_) => const LoginScreen()),
+                      );
+                    }
+                  }
+                },
+                itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+                  if (canAccessSettings)
+                    const PopupMenuItem<String>(
+                      value: 'settings',
+                      child: Row(
+                        children: [
+                          Icon(Icons.settings, color: AppTheme.darkBlueText, size: 20),
+                          SizedBox(width: 10),
+                          Text('Pengaturan'),
+                        ],
+                      ),
+                    ),
+                  if (role == 'developer')
+                    const PopupMenuItem<String>(
+                      value: 'developer_billing',
+                      child: Row(
+                        children: [
+                          Icon(Icons.payment_outlined, color: AppTheme.darkBlueText, size: 20),
+                          SizedBox(width: 10),
+                          Text('Developer Billing'),
+                        ],
+                      ),
+                    ),
+                  if (showLogsMenu)
+                    const PopupMenuItem<String>(
+                      value: 'activity_logs',
+                      child: Row(
+                        children: [
+                          Icon(Icons.history_toggle_off_outlined, color: AppTheme.darkBlueText, size: 20),
+                          SizedBox(width: 10),
+                          Text('Log Aktivitas Staff'),
+                        ],
+                      ),
+                    ),
+                  const PopupMenuItem<String>(
+                    value: 'logout',
+                    child: Row(
+                      children: [
+                        Icon(Icons.logout, color: Colors.redAccent, size: 20),
+                        SizedBox(width: 10),
+                        Text('Logout', style: TextStyle(color: Colors.redAccent)),
+                      ],
+                    ),
+                  ),
+                ],
+              );
             },
-            itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-              if (canAccessSettings)
-                const PopupMenuItem<String>(
-                  value: 'settings',
-                  child: Row(
-                    children: [
-                      Icon(Icons.settings, color: AppTheme.darkBlueText, size: 20),
-                      SizedBox(width: 10),
-                      Text('Pengaturan'),
-                    ],
-                  ),
-                ),
-              if (role == 'developer')
-                const PopupMenuItem<String>(
-                  value: 'developer_billing',
-                  child: Row(
-                    children: [
-                      Icon(Icons.payment_outlined, color: AppTheme.darkBlueText, size: 20),
-                      SizedBox(width: 10),
-                      Text('Developer Billing'),
-                    ],
-                  ),
-                ),
-              if (role == 'owner' || role == 'developer')
-                const PopupMenuItem<String>(
-                  value: 'activity_logs',
-                  child: Row(
-                    children: [
-                      Icon(Icons.history_toggle_off_outlined, color: AppTheme.darkBlueText, size: 20),
-                      SizedBox(width: 10),
-                      Text('Log Aktivitas Staff'),
-                    ],
-                  ),
-                ),
-              const PopupMenuItem<String>(
-                value: 'logout',
-                child: Row(
-                  children: [
-                    Icon(Icons.logout, color: Colors.redAccent, size: 20),
-                    SizedBox(width: 10),
-                    Text('Logout', style: TextStyle(color: Colors.redAccent)),
-                  ],
-                ),
-              ),
-            ],
           ),
         ],
       ),
