@@ -20,6 +20,7 @@ import 'admin_chat_list_screen.dart';
 import 'sales_detail_screen.dart';
 import 'developer_billing_screen.dart';
 import 'billing_block_screen.dart';
+import 'activity_logs_screen.dart';
 import 'package:intl/intl.dart';
 
 import 'settings_screen.dart';
@@ -296,6 +297,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   context,
                   MaterialPageRoute(builder: (_) => const DeveloperBillingScreen()),
                 );
+              } else if (value == 'activity_logs') {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ActivityLogsScreen()),
+                );
               } else if (value == 'logout') {
                 InAppNotificationService.instance.stopListening();
                 await Provider.of<AuthService>(context, listen: false).signOut();
@@ -326,6 +332,17 @@ class _AdminDashboardState extends State<AdminDashboard> {
                       Icon(Icons.payment_outlined, color: AppTheme.darkBlueText, size: 20),
                       SizedBox(width: 10),
                       Text('Developer Billing'),
+                    ],
+                  ),
+                ),
+              if (role == 'owner' || role == 'developer')
+                const PopupMenuItem<String>(
+                  value: 'activity_logs',
+                  child: Row(
+                    children: [
+                      Icon(Icons.history_toggle_off_outlined, color: AppTheme.darkBlueText, size: 20),
+                      SizedBox(width: 10),
+                      Text('Log Aktivitas Staff'),
                     ],
                   ),
                 ),

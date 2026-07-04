@@ -184,17 +184,26 @@ class UpdateService {
       }
 
       bool hasUpdate = _isNewerVersion(currentVersion, currentBuild, latestVersion, latestBuild);
+      
+      bool isForceUpdate = false;
+      try {
+        DocumentSnapshot doc = await _db.collection('app_config').doc('version_info').get();
+        if (doc.exists) {
+          Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+          isForceUpdate = data['isForceUpdate'] == true;
+        }
+      } catch (_) {}
 
       if (kDebugMode) {
         print("Latest version: $latestVersion, Build: $latestBuild");
-        print("Has update: $hasUpdate, Download URL: $downloadUrl, Release URL: $releaseUrl");
+        print("Has update: $hasUpdate, Download URL: $downloadUrl, Release URL: $releaseUrl, Force: $isForceUpdate");
       }
 
       return UpdateInfo(
         latestVersion: latestVersion,
         downloadUrl: downloadUrl,
         releaseUrl: releaseUrl,
-        isForceUpdate: false,
+        isForceUpdate: isForceUpdate,
         hasUpdate: hasUpdate,
       );
     } catch (e) {

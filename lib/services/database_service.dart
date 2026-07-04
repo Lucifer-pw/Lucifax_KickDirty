@@ -5,6 +5,7 @@ import '../models/order_model.dart';
 import '../models/expense_model.dart';
 import '../models/category_model.dart';
 import '../models/voucher_model.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'whatsapp_service.dart';
 
 class DatabaseService with ChangeNotifier {
@@ -20,6 +21,39 @@ class DatabaseService with ChangeNotifier {
     }).catchError((e) {
       if (kDebugMode) print("Error triggering automatic WA: $e");
     });
+  }
+
+  // Helper to log staff actions (audit trail)
+  Future<void> _logActivity(String action, {String details = ''}) async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return;
+
+      final userDoc = await _db.collection('users').doc(user.uid).get();
+      if (!userDoc.exists) return;
+
+      final userData = userDoc.data();
+      if (userData == null) return;
+
+      final String name = userData['name'] ?? 'Unknown';
+      final String email = userData['email'] ?? user.email ?? '';
+      final String role = userData['role'] ?? 'staff';
+
+      // Skip logging customer actions (audit trail is for staff/owners/devs)
+      if (role == 'customer') return;
+
+      await _db.collection('activity_logs').add({
+        'userId': user.uid,
+        'userName': name,
+        'userEmail': email,
+        'userRole': role,
+        'action': action,
+        'details': details,
+        'timestamp': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      if (kDebugMode) print("Error writing activity log: $e");
+    }
   }
 
   // ==========================================
@@ -186,6 +220,9 @@ class DatabaseService with ChangeNotifier {
     // 3. Write document to Firestore using set (idempotent if invoiceId is used as document key)
     await _db.collection('orders').doc(invoiceId).set(finalOrder.toMap());
 
+    // Log the action
+    await _logActivity('Membuat pesanan baru #$invoiceId', details: 'Pelanggan: ${finalOrder.customerName}, Total: Rp ${finalOrder.totalAmount.toStringAsFixed(0)}');
+
     // 4. Award points if paymentStatus is sudah_bayar, or handle point deduction
     if (finalOrder.paymentStatus == 'sudah_bayar' || finalOrder.pointsRedeemed > 0) {
       await _awardPoints(finalOrder);
@@ -243,6 +280,7 @@ class DatabaseService with ChangeNotifier {
       'statusTimeline.$newStatus': FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),
     });
+    await _logActivity('Mengubah status pesanan #$orderId', details: 'Status Baru: $newStatus');
     _triggerWA(orderId, newStatus);
   }
 
@@ -254,6 +292,7 @@ class DatabaseService with ChangeNotifier {
       'statusTimeline.$newStatus': FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),
     });
+    await _logActivity('Mengubah status pesanan #$orderId (Upload Foto)', details: 'Status Baru: $newStatus');
     _triggerWA(orderId, newStatus);
   }
 
@@ -265,6 +304,7 @@ class DatabaseService with ChangeNotifier {
       'statusTimeline.$newStatus': FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),
     });
+    await _logActivity('Mengubah status pesanan #$orderId (Set Estimasi)', details: 'Status Baru: $newStatus, Estimasi: $estimation');
     _triggerWA(orderId, newStatus);
   }
 
@@ -300,6 +340,7 @@ class DatabaseService with ChangeNotifier {
       updateData['statusTimeline.sudah_bayar'] = FieldValue.serverTimestamp();
     }
     await _db.collection('orders').doc(orderId).update(updateData);
+    await _logActivity('Mengubah status pembayaran pesanan #$orderId', details: 'Status Baru: $newPaymentStatus');
 
     if (newPaymentStatus == 'sudah_bayar') {
       _triggerWA(orderId, 'dibayar');
@@ -355,16 +396,19 @@ class DatabaseService with ChangeNotifier {
   // Add a new expense
   Future<void> addExpense(ExpenseModel expense) async {
     await _db.collection('expenses').add(expense.toMap());
+    await _logActivity('Menambahkan pengeluaran baru', details: 'Nama: ${expense.title}, Nominal: Rp ${expense.amount.toStringAsFixed(0)}');
   }
 
   // Delete an expense
   Future<void> deleteExpense(String expenseId) async {
     await _db.collection('expenses').doc(expenseId).delete();
+    await _logActivity('Menghapus pengeluaran', details: 'ID Pengeluaran: $expenseId');
   }
 
   // Update an expense
   Future<void> updateExpense(ExpenseModel expense) async {
     await _db.collection('expenses').doc(expense.id).update(expense.toMap());
+    await _logActivity('Mengubah pengeluaran', details: 'Nama: ${expense.title}, Nominal Baru: Rp ${expense.amount.toStringAsFixed(0)}');
   }
 
   // ==========================================
@@ -707,11 +751,13 @@ class DatabaseService with ChangeNotifier {
   // Add category
   Future<void> addCategory(CategoryModel category) async {
     await _db.collection('categories').add(category.toMap());
+    await _logActivity('Menambahkan kategori layanan', details: 'Kategori: ${category.name}');
   }
 
   // Update category
   Future<void> updateCategory(CategoryModel category) async {
     await _db.collection('categories').doc(category.id).update(category.toMap());
+    await _logActivity('Mengubah kategori layanan', details: 'Kategori: ${category.name}');
   }
 
   // Delete category (only if no services reference it)
@@ -721,6 +767,7 @@ class DatabaseService with ChangeNotifier {
       return false; // Cannot delete - has associated services
     }
     await _db.collection('categories').doc(categoryId).delete();
+    await _logActivity('Menghapus kategori layanan', details: 'ID Kategori: $categoryId');
     return true;
   }
 
@@ -793,16 +840,19 @@ class DatabaseService with ChangeNotifier {
   // Add voucher
   Future<void> addVoucher(VoucherModel voucher) async {
     await _db.collection('vouchers').add(voucher.toMap());
+    await _logActivity('Menambahkan voucher baru', details: 'Kode: ${voucher.code}, Potongan: ${voucher.discountValue}');
   }
 
   // Update voucher
   Future<void> updateVoucher(VoucherModel voucher) async {
     await _db.collection('vouchers').doc(voucher.id).update(voucher.toMap());
+    await _logActivity('Mengubah voucher', details: 'Kode: ${voucher.code}');
   }
 
   // Delete voucher
   Future<void> deleteVoucher(String voucherId) async {
     await _db.collection('vouchers').doc(voucherId).delete();
+    await _logActivity('Menghapus voucher', details: 'ID Voucher: $voucherId');
   }
 
   // Toggle voucher active status

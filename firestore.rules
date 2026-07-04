@@ -145,10 +145,22 @@ service cloud.firestore {
     }
 
     // ============================================
+    // ACTIVITY LOGS COLLECTION
+    // ============================================
+    match /activity_logs/{logId} {
+      allow create: if request.auth != null;
+      allow read: if request.auth != null && isOwnerOrDeveloper();
+    }
+
+    // ============================================
     // HELPER FUNCTIONS
     // ============================================
     function isOwnerOrStaff() {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['owner', 'staff', 'developer'];
+    }
+
+    function isOwnerOrDeveloper() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['owner', 'developer'];
     }
 
     function isDeveloper() {
