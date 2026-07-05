@@ -73,7 +73,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
     });
   }
 
-  Widget _buildNavItem(int index, IconData icon, String label) {
+  Widget _buildNavItem(int index, IconData icon, String label, {int badgeCount = 0}) {
     final isSelected = _currentIndex == index;
     return GestureDetector(
       onTap: () => _onTabTapped(index),
@@ -88,10 +88,38 @@ class _AdminDashboardState extends State<AdminDashboard> {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              icon,
-              color: isSelected ? AppTheme.primaryBlue : AppTheme.textGray,
-              size: 24,
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Icon(
+                  icon,
+                  color: isSelected ? AppTheme.primaryBlue : AppTheme.textGray,
+                  size: 24,
+                ),
+                if (badgeCount > 0)
+                  Positioned(
+                    top: -6,
+                    right: -8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                      constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                      decoration: BoxDecoration(
+                        color: Colors.red,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: Colors.white, width: 1.5),
+                      ),
+                      child: Text(
+                        badgeCount > 99 ? '99+' : '$badgeCount',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 9,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ),
+              ],
             ),
             if (isSelected) ...[
               const SizedBox(width: 8),
@@ -241,30 +269,65 @@ class _AdminDashboardState extends State<AdminDashboard> {
               index: _currentIndex < screens.length ? _currentIndex : 0,
               children: screens,
             ),
-            bottomNavigationBar: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
-              decoration: BoxDecoration(
-                color: AppTheme.white,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.06),
-                    blurRadius: 10,
-                    offset: const Offset(0, -4),
-                  ),
-                ],
-              ),
-              child: SafeArea(
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    ...navItems.map((item) => _buildNavItem(
-                          item['index'] as int,
-                          item['icon'] as IconData,
-                          item['label'] as String,
-                        )),
-                  ],
-                ),
-              ),
+            bottomNavigationBar: StreamBuilder<List<OrderModel>>(
+              stream: dbService.getOrders(),
+              builder: (context, orderSnap) {
+                final orders = orderSnap.data ?? [];
+                final activeProcessCount = orders.where((o) =>
+                    o.status == 'dibayar' || o.status == 'diterima' || o.status == 'sedang_diproses').length;
+
+                return StreamBuilder<QuerySnapshot>(
+                  stream: currentUser != null
+                      ? FirebaseFirestore.instance
+                          .collection('chats')
+                          .where('participants', arrayContains: currentUser.uid)
+                          .snapshots()
+                      : const Stream.empty(),
+                  builder: (context, chatSnap) {
+                    int unreadChatCount = 0;
+                    if (chatSnap.hasData) {
+                      for (final doc in chatSnap.data!.docs) {
+                        final data = doc.data() as Map<String, dynamic>? ?? {};
+                        final unreadMap = data['unreadCount'] as Map<String, dynamic>? ?? {};
+                        unreadChatCount += (unreadMap[currentUser!.uid] as int? ?? 0);
+                      }
+                    }
+
+                    return Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: AppTheme.white,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.06),
+                            blurRadius: 10,
+                            offset: const Offset(0, -4),
+                          ),
+                        ],
+                      ),
+                      child: SafeArea(
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          children: [
+                            ...navItems.map((item) {
+                              final label = item['label'] as String;
+                              int badge = 0;
+                              if (label == 'Proses') badge = activeProcessCount;
+                              if (label == 'Pesan') badge = unreadChatCount;
+                              return _buildNavItem(
+                                item['index'] as int,
+                                item['icon'] as IconData,
+                                label,
+                                badgeCount: badge,
+                              );
+                            }),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                );
+              },
             ),
           ),
         );

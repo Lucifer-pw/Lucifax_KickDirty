@@ -430,42 +430,83 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
   Widget build(BuildContext context) {
     final dbService = Provider.of<DatabaseService>(context);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Proses Pesanan Aktif'),
-        automaticallyImplyLeading: !widget.isTab,
-        bottom: TabBar(
-          controller: _tabController,
-          labelColor: AppTheme.primaryBlue,
-          unselectedLabelColor: AppTheme.textGray,
-          indicatorColor: AppTheme.primaryBlue,
-          tabs: const [
-            Tab(icon: Icon(Icons.payments_outlined), text: 'Di Bayar'),
-            Tab(icon: Icon(Icons.receipt_long_outlined), text: 'Di Terima'),
-            Tab(icon: Icon(Icons.engineering_outlined), text: 'Di Proses'),
-            Tab(icon: Icon(Icons.check_circle_outline), text: 'Selesai'),
-          ],
-        ),
-      ),
-      body: StreamBuilder<List<OrderModel>>(
-        stream: dbService.getOrders(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
-          }
+    return StreamBuilder<List<OrderModel>>(
+      stream: dbService.getOrders(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(body: Center(child: CircularProgressIndicator()));
+        }
+        if (snapshot.hasError) {
+          return Scaffold(body: Center(child: Text('Error: ${snapshot.error}')));
+        }
 
-          final allOrders = snapshot.data ?? [];
-          
-          // Filter active orders based on tabs (ignore status 'diambil' in active process screen)
-          final ordersDiBayar = allOrders.where((o) => o.status == 'dibayar').toList();
-          final ordersDiterima = allOrders.where((o) => o.status == 'diterima').toList();
-          final ordersDiproses = allOrders.where((o) => o.status == 'sedang_diproses').toList();
-          final ordersSelesai = allOrders.where((o) => o.status == 'selesai').toList();
+        final allOrders = snapshot.data ?? [];
+        
+        // Filter active orders based on tabs (ignore status 'diambil' in active process screen)
+        final ordersDiBayar = allOrders.where((o) => o.status == 'dibayar').toList();
+        final ordersDiterima = allOrders.where((o) => o.status == 'diterima').toList();
+        final ordersDiproses = allOrders.where((o) => o.status == 'sedang_diproses').toList();
+        final ordersSelesai = allOrders.where((o) => o.status == 'selesai').toList();
 
-          return TabBarView(
+        Widget _buildTab(IconData icon, String text, int count) {
+          return Tab(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    Icon(icon, size: 24),
+                    if (count > 0)
+                      Positioned(
+                        top: -6,
+                        right: -8,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                          constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                          decoration: BoxDecoration(
+                            color: Colors.red,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: Colors.white, width: 1.5),
+                          ),
+                          child: Text(
+                            '$count',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 9,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 2),
+                Text(text, style: const TextStyle(fontSize: 10)),
+              ],
+            ),
+          );
+        }
+
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text('Proses Pesanan Aktif'),
+            automaticallyImplyLeading: !widget.isTab,
+            bottom: TabBar(
+              controller: _tabController,
+              labelColor: AppTheme.primaryBlue,
+              unselectedLabelColor: AppTheme.textGray,
+              indicatorColor: AppTheme.primaryBlue,
+              tabs: [
+                _buildTab(Icons.payments_outlined, 'Di Bayar', ordersDiBayar.length),
+                _buildTab(Icons.receipt_long_outlined, 'Di Terima', ordersDiterima.length),
+                _buildTab(Icons.engineering_outlined, 'Di Proses', ordersDiproses.length),
+                _buildTab(Icons.check_circle_outline, 'Selesai', ordersSelesai.length),
+              ],
+            ),
+          ),
+          body: TabBarView(
             controller: _tabController,
             children: [
               _buildOrderList(ordersDiBayar, 'dibayar'),
@@ -473,9 +514,9 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
               _buildOrderList(ordersDiproses, 'sedang_diproses'),
               _buildOrderList(ordersSelesai, 'selesai'),
             ],
-          );
-        },
-      ),
+          ),
+        );
+      },
     );
   }
 
