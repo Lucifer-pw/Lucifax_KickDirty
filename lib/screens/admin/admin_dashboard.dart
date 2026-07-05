@@ -73,94 +73,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
     });
   }
 
-  Stream<int> _getUnreadCountStream(String role) {
-    if (role == 'developer') {
-      return FirebaseFirestore.instance
-          .collection('chat_rooms')
-          .doc('dev_support')
-          .snapshots()
-          .map((snapshot) {
-        if (!snapshot.exists) return 0;
-        return (snapshot.data()?['unreadCountCustomer'] as num?)?.toInt() ?? 0;
-      });
-    } else {
-      return FirebaseFirestore.instance
-          .collection('chat_rooms')
-          .snapshots()
-          .map((snapshot) {
-        int total = 0;
-        for (var doc in snapshot.docs) {
-          total += (doc.data()['unreadCountAdmin'] as num?)?.toInt() ?? 0;
-        }
-        return total;
-      });
-    }
-  }
-
-  Widget _buildIconWithBadge(Widget child, int count) {
-    if (count <= 0) return child;
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        child,
-        Positioned(
-          right: -6,
-          top: -6,
-          child: Container(
-            padding: const EdgeInsets.all(4),
-            decoration: const BoxDecoration(
-              color: Colors.redAccent,
-              shape: BoxShape.circle,
-            ),
-            constraints: const BoxConstraints(
-              minWidth: 16,
-              minHeight: 16,
-            ),
-            child: Center(
-              child: Text(
-                '$count',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 8,
-                  fontWeight: FontWeight.bold,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildNavItem(int index, IconData icon, String label, String role, DatabaseService dbService) {
+  Widget _buildNavItem(int index, IconData icon, String label) {
     final isSelected = _currentIndex == index;
-    
-    Widget iconWidget = Icon(
-      icon,
-      color: isSelected ? AppTheme.primaryBlue : AppTheme.textGray,
-      size: 24,
-    );
-
-    if (label == 'Pesan') {
-      iconWidget = StreamBuilder<int>(
-        stream: _getUnreadCountStream(role),
-        builder: (context, snapshot) {
-          final count = snapshot.data ?? 0;
-          return _buildIconWithBadge(iconWidget, count);
-        },
-      );
-    } else if (label == 'Proses') {
-      iconWidget = StreamBuilder<List<OrderModel>>(
-        stream: dbService.getOrders(),
-        builder: (context, snapshot) {
-          final orders = snapshot.data ?? [];
-          final count = orders.where((o) => ['dibayar', 'diterima', 'sedang_diproses', 'selesai'].contains(o.status)).length;
-          return _buildIconWithBadge(iconWidget, count);
-        },
-      );
-    }
-
     return GestureDetector(
       onTap: () => _onTabTapped(index),
       behavior: HitTestBehavior.opaque,
@@ -174,7 +88,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            iconWidget,
+            Icon(
+              icon,
+              color: isSelected ? AppTheme.primaryBlue : AppTheme.textGray,
+              size: 24,
+            ),
             if (isSelected) ...[
               const SizedBox(width: 8),
               Text(
@@ -343,8 +261,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
                           item['index'] as int,
                           item['icon'] as IconData,
                           item['label'] as String,
-                          role,
-                          dbService,
                         )),
                   ],
                 ),
