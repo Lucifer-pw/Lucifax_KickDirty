@@ -137,11 +137,12 @@ service cloud.firestore {
     }
 
     // ============================================
-    // LOGIN LOGS COLLECTION
+    // LOGIN LOGS COLLECTION (single doc per user)
     // ============================================
     match /login_logs/{logId} {
-      allow create: if request.auth != null;
+      allow create, update: if request.auth != null;
       allow read: if request.auth != null && isOwnerOrStaff();
+      allow delete: if request.auth != null && isDeveloper();
     }
 
     // ============================================

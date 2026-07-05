@@ -75,7 +75,7 @@ class AuthService with ChangeNotifier {
     }
   }
 
-  // Record login device and location log
+  // Record login device and location log (single doc per user, max 5 devices)
   Future<void> _logLogin(String uid) async {
     try {
       final device = getDevice();
@@ -98,17 +98,56 @@ class AuthService with ChangeNotifier {
         if (kDebugMode) print("Error fetching IP location: $e");
       }
 
-      await _db.collection('login_logs').add({
-        'userId': uid,
-        'userName': _currentUserModel?.name ?? 'Anonim',
-        'userEmail': _currentUserModel?.email ?? '',
-        'userRole': _currentUserModel?.role ?? '',
-        'loginAt': FieldValue.serverTimestamp(),
+      final docRef = _db.collection('login_logs').doc(uid);
+      final docSnap = await docRef.get();
+
+      final newDevice = {
         'device': device,
         'deviceBrand': deviceBrand,
         'location': location,
         'ipAddress': ip,
-      });
+        'lastSeen': DateTime.now().toIso8601String(),
+      };
+
+      if (docSnap.exists) {
+        final existingData = docSnap.data() as Map<String, dynamic>? ?? {};
+        final List<dynamic> existingDevices = List<dynamic>.from(existingData['devices'] ?? []);
+        final int totalLogins = (existingData['totalLogins'] as int? ?? 0) + 1;
+
+        // Check if same device+IP already exists, update lastSeen
+        final existingIdx = existingDevices.indexWhere((d) =>
+            d['deviceBrand'] == deviceBrand && d['ipAddress'] == ip);
+
+        if (existingIdx >= 0) {
+          existingDevices[existingIdx] = newDevice;
+        } else {
+          existingDevices.insert(0, newDevice);
+        }
+
+        // Keep only the 5 most recent devices
+        final trimmedDevices = existingDevices.length > 5
+            ? existingDevices.sublist(0, 5)
+            : existingDevices;
+
+        await docRef.update({
+          'userName': _currentUserModel?.name ?? 'Anonim',
+          'userEmail': _currentUserModel?.email ?? '',
+          'userRole': _currentUserModel?.role ?? '',
+          'lastLoginAt': FieldValue.serverTimestamp(),
+          'totalLogins': totalLogins,
+          'devices': trimmedDevices,
+        });
+      } else {
+        await docRef.set({
+          'userId': uid,
+          'userName': _currentUserModel?.name ?? 'Anonim',
+          'userEmail': _currentUserModel?.email ?? '',
+          'userRole': _currentUserModel?.role ?? '',
+          'lastLoginAt': FieldValue.serverTimestamp(),
+          'totalLogins': 1,
+          'devices': [newDevice],
+        });
+      }
     } catch (e) {
       if (kDebugMode) print("Error logging login details: $e");
     }
