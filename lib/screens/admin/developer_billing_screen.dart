@@ -2,8 +2,11 @@ import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+import '../../services/auth_service.dart';
 import '../../services/image_service.dart';
 import '../../theme.dart';
+import '../chat_screen.dart';
 
 class DeveloperBillingScreen extends StatefulWidget {
   const DeveloperBillingScreen({Key? key}) : super(key: key);
@@ -388,6 +391,31 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
           icon: const Icon(Icons.arrow_back_ios_new, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.chat_outlined),
+            tooltip: 'Chat dengan Owner/Staff',
+            onPressed: () {
+              final authService = Provider.of<AuthService>(context, listen: false);
+              final user = authService.currentUserModel;
+              if (user != null) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => ChatScreen(
+                      customerId: 'dev_support',
+                      customerName: 'Dev Support (Developer)',
+                      customerPhone: 'Support System',
+                      senderId: user.uid,
+                      senderName: user.name,
+                      isAdmin: false,
+                    ),
+                  ),
+                );
+              }
+            },
+          ),
+        ],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())

@@ -21,6 +21,7 @@ import 'sales_detail_screen.dart';
 import 'developer_billing_screen.dart';
 import 'billing_block_screen.dart';
 import 'activity_logs_screen.dart';
+import '../chat_screen.dart';
 import 'package:intl/intl.dart';
 
 import 'settings_screen.dart';
@@ -311,6 +312,23 @@ class _AdminDashboardState extends State<AdminDashboard> {
                       context,
                       MaterialPageRoute(builder: (_) => const ActivityLogsScreen()),
                     );
+                  } else if (value == 'dev_support') {
+                    final user = currentUser;
+                    if (user != null) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => ChatScreen(
+                            customerId: 'dev_support',
+                            customerName: 'Developer Support',
+                            customerPhone: 'Support Chat',
+                            senderId: user.uid,
+                            senderName: user.name,
+                            isAdmin: true,
+                          ),
+                        ),
+                      );
+                    }
                   } else if (value == 'logout') {
                     InAppNotificationService.instance.stopListening();
                     await Provider.of<AuthService>(context, listen: false).signOut();
@@ -352,6 +370,17 @@ class _AdminDashboardState extends State<AdminDashboard> {
                           Icon(Icons.history_toggle_off_outlined, color: AppTheme.darkBlueText, size: 20),
                           SizedBox(width: 10),
                           Text('Log Aktivitas Staff'),
+                        ],
+                      ),
+                    ),
+                  if (role == 'owner' || role == 'staff')
+                    const PopupMenuItem<String>(
+                      value: 'dev_support',
+                      child: Row(
+                        children: [
+                          Icon(Icons.contact_support_outlined, color: AppTheme.darkBlueText, size: 20),
+                          SizedBox(width: 10),
+                          Text('Hubungi Developer'),
                         ],
                       ),
                     ),

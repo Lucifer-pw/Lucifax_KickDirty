@@ -586,6 +586,7 @@ class DatabaseService with ChangeNotifier {
 
   // Trigger automated chat welcome response from the Owner
   void _triggerAutoReply(String customerId) {
+    if (customerId == 'dev_support') return;
     _db.collection('app_config').doc('chat_config').get().then((doc) {
       final bool enabled = doc.exists && (doc.data()?['autoReplyEnabled'] == true);
       if (enabled) {

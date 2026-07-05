@@ -118,11 +118,15 @@ class _ChatScreenState extends State<ChatScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              widget.isAdmin ? widget.customerName : 'Hubungi Owner (KickDirty)',
+              widget.customerId == 'dev_support'
+                  ? (widget.isAdmin ? 'Hubungi Developer (Dukungan)' : 'Dukungan Developer (Owner & Staff)')
+                  : (widget.isAdmin ? widget.customerName : 'Hubungi Owner (KickDirty)'),
               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             Text(
-              widget.isAdmin ? 'WhatsApp: ${widget.customerPhone}' : 'Tanya seputar cucian sepatu Anda',
+              widget.customerId == 'dev_support'
+                  ? (widget.isAdmin ? 'Tanya seputar kendala aplikasi' : 'Chat bantuan kendala aplikasi')
+                  : (widget.isAdmin ? 'WhatsApp: ${widget.customerPhone}' : 'Tanya seputar cucian sepatu Anda'),
               style: const TextStyle(fontSize: 11, color: AppTheme.textGray),
             ),
           ],
