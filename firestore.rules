@@ -7,9 +7,14 @@ service cloud.firestore {
     // HELPER FUNCTIONS
     // ============================================
 
+    // Get the user data of the currently authenticated user
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
     // Get the role of the currently authenticated user
     function getUserRole() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+      return getUserData().role;
     }
 
     function isOwnerOrStaff() {
@@ -98,13 +103,20 @@ service cloud.firestore {
       allow get: if (resource != null && resource.data.showOnWeb == true)
                  || (request.auth != null
                      && (isOwnerOrStaff()
-                         || resource.data.customerId == request.auth.uid));
+                         || resource.data.customerId == request.auth.uid
+                         || resource.data.customerPhone == getUserData().phoneNumber));
 
-      allow list: if (request.auth != null && isOwnerOrStaff())
+      allow list: if (request.auth != null
+                      && (
+                        isOwnerOrStaff()
+                        || request.auth.uid == resource.data.customerId
+                        || getUserData().phoneNumber == resource.data.customerPhone
+                      ))
                   || (resource != null && resource.data.showOnWeb == true);
 
       // Only authenticated users can create orders; customerId must match auth uid
       allow create: if request.auth != null
+                    && request.resource.data.customerId == request.auth.uid
                     && request.resource.data.totalAmount >= 0;
 
       // Only admin/staff can update order status and payment fields.
