@@ -1,13 +1,19 @@
 String getCleanErrorMessage(dynamic error) {
   if (error == null) return 'Terjadi kesalahan.';
   
-  final errorStr = error.toString().toLowerCase();
+  final errorStr = error.toString();
+  final errorStrLower = errorStr.toLowerCase();
+
+  // Allow custom sanitized part-specific errors to pass through
+  if (errorStrLower.contains('akses ditolak (bagian:')) {
+    return errorStr;
+  }
 
   // 1. Handle permission denied (403 Forbidden)
-  if (errorStr.contains('permission-denied') || 
-      errorStr.contains('permission_denied') || 
-      errorStr.contains('insufficient permissions') || 
-      errorStr.contains('missing or insufficient permissions')) {
+  if (errorStrLower.contains('permission-denied') || 
+      errorStrLower.contains('permission_denied') || 
+      errorStrLower.contains('insufficient permissions') || 
+      errorStrLower.contains('missing or insufficient permissions')) {
     return 'Status 403 Forbidden: Akses Ditolak';
   }
 

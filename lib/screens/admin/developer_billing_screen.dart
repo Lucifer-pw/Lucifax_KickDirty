@@ -198,7 +198,7 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
         backup[col] = docs;
       } catch (e) {
         print("Failed to fetch collection $col: $e");
-        rethrow;
+        throw 'Akses Ditolak (Bagian: $col)';
       }
     }
     return backup;
