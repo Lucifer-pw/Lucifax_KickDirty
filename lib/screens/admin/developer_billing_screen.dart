@@ -37,7 +37,7 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
 
   // Auto backup config fields
   bool _enableAutoBackup = false;
-  int _autoBackupIntervalHours = 24;
+  int _autoBackupHour = 2; // Default to 2 AM (Dini Hari)
   Timestamp? _lastAutoBackupTime;
 
   @override
@@ -159,7 +159,7 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
           setState(() {
             _gdriveUrlController.text = data['gdriveUrl'] as String? ?? '';
             _enableAutoBackup = data['enableAutoBackup'] == true;
-            _autoBackupIntervalHours = data['autoBackupIntervalHours'] as int? ?? 24;
+            _autoBackupHour = data['autoBackupHour'] as int? ?? 2;
             _lastAutoBackupTime = data['lastAutoBackupTime'] as Timestamp?;
           });
         }
@@ -172,7 +172,7 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
       await FirebaseFirestore.instance.collection('app_config').doc('developer_config').set({
         'gdriveUrl': _gdriveUrlController.text.trim(),
         'enableAutoBackup': _enableAutoBackup,
-        'autoBackupIntervalHours': _autoBackupIntervalHours,
+        'autoBackupHour': _autoBackupHour,
         'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
     } catch (_) {}
@@ -185,10 +185,10 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
     _saveDeveloperConfig();
   }
 
-  void _onAutoBackupIntervalChanged(int? value) {
+  void _onAutoBackupHourChanged(int? value) {
     if (value != null) {
       setState(() {
-        _autoBackupIntervalHours = value;
+        _autoBackupHour = value;
       });
       _saveDeveloperConfig();
     }
@@ -1066,19 +1066,21 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                      children: [
                                        const Text(
-                                         'Interval Waktu:',
+                                         'Waktu Backup Harian:',
                                          style: TextStyle(fontSize: 11, color: AppTheme.textGray),
                                        ),
                                        DropdownButton<int>(
-                                         value: _autoBackupIntervalHours,
-                                         items: const [
-                                           DropdownMenuItem(value: 1, child: Text('1 Jam', style: TextStyle(fontSize: 11))),
-                                           DropdownMenuItem(value: 6, child: Text('6 Jam', style: TextStyle(fontSize: 11))),
-                                           DropdownMenuItem(value: 12, child: Text('12 Jam', style: TextStyle(fontSize: 11))),
-                                           DropdownMenuItem(value: 24, child: Text('24 Jam (Harian)', style: TextStyle(fontSize: 11))),
-                                           DropdownMenuItem(value: 168, child: Text('168 Jam (Mingguan)', style: TextStyle(fontSize: 11))),
-                                         ],
-                                         onChanged: _onAutoBackupIntervalChanged,
+                                         value: _autoBackupHour,
+                                         items: List.generate(24, (i) {
+                                            String label = '${i.toString().padLeft(2, '0')}:00';
+                                            if (i == 0) label += ' (Tengah Malam)';
+                                            if (i == 2) label += ' (Dini Hari - Rekomendasi)';
+                                            return DropdownMenuItem(
+                                              value: i,
+                                              child: Text(label, style: const TextStyle(fontSize: 11)),
+                                            );
+                                          }),
+                                         onChanged: _onAutoBackupHourChanged,
                                          style: const TextStyle(color: AppTheme.darkBlueText, fontSize: 11),
                                          underline: const SizedBox(),
                                        ),
