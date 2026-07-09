@@ -149,9 +149,7 @@ service cloud.firestore {
     // ============================================
     match /app_config/{docId} {
       // Sensitive docs: only admin can read
-      allow read: if docId in ['whatsapp_config']
-                  ? (request.auth != null && isOwnerOrStaff())
-                  : true;
+      allow read: if docId != 'whatsapp_config' || isOwnerOrStaff();
       allow write: if request.auth != null && isOwnerOrStaff();
     }
 
