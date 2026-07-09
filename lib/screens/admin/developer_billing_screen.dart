@@ -8,6 +8,7 @@ import '../../services/image_service.dart';
 import '../../theme.dart';
 import 'package:http/http.dart' as http;
 import '../../utils/platform_helper.dart';
+import '../../utils/error_helper.dart';
 import '../chat_screen.dart';
 
 class DeveloperBillingScreen extends StatefulWidget {
@@ -183,17 +184,22 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
     ];
 
     for (final col in collections) {
-      final snap = await FirebaseFirestore.instance.collection(col).get();
-      final List<Map<String, dynamic>> docs = [];
-      for (final doc in snap.docs) {
-        final data = doc.data();
-        final serializedData = _serializeTimestamps(data);
-        docs.add({
-          'id': doc.id,
-          'data': serializedData,
-        });
+      try {
+        final snap = await FirebaseFirestore.instance.collection(col).get();
+        final List<Map<String, dynamic>> docs = [];
+        for (final doc in snap.docs) {
+          final data = doc.data();
+          final serializedData = _serializeTimestamps(data);
+          docs.add({
+            'id': doc.id,
+            'data': serializedData,
+          });
+        }
+        backup[col] = docs;
+      } catch (e) {
+        print("Failed to fetch collection $col: $e");
+        rethrow;
       }
-      backup[col] = docs;
     }
     return backup;
   }
@@ -280,7 +286,7 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Gagal Backup ke Google Drive: $e')),
+        SnackBar(content: Text('Gagal Backup ke Google Drive: ${getCleanErrorMessage(e)}')),
       );
     } finally {
       setState(() {
@@ -306,7 +312,7 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Gagal membuat backup lokal: $e')),
+        SnackBar(content: Text('Gagal membuat backup lokal: ${getCleanErrorMessage(e)}')),
       );
     } finally {
       setState(() {
@@ -378,7 +384,7 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Gagal restore database: $e')),
+        SnackBar(content: Text('Gagal restore database: ${getCleanErrorMessage(e)}')),
       );
     } finally {
       setState(() {
@@ -636,6 +642,10 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
   Widget build(BuildContext context) {
     final String currentMonthCode = DateFormat('yyyy-MM').format(DateTime.now());
     final bool isCurrentMonthPaid = _lastPaidMonth == currentMonthCode;
+    
+    final authService = Provider.of<AuthService>(context, listen: false);
+    final user = authService.currentUserModel;
+    final bool isDeveloperUser = user?.role == 'developer';
 
     return Scaffold(
       appBar: AppBar(
@@ -972,123 +982,124 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 20),
-                  
-                  // DEVELOPER DATABASE TOOLS (BACKUP & RESTORE)
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: AppTheme.cardShadow,
-                      border: Border.all(color: AppTheme.lightGray, width: 0.5),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Row(
-                          children: [
-                            Icon(Icons.storage, color: AppTheme.primaryBlue, size: 20),
-                            SizedBox(width: 8),
-                            Text(
-                              'Developer Database Tools',
-                              style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppTheme.darkBlueText),
+                  if (isDeveloperUser) ...[
+                    const SizedBox(height: 20),
+                    // DEVELOPER DATABASE TOOLS (BACKUP & RESTORE)
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: AppTheme.cardShadow,
+                        border: Border.all(color: AppTheme.lightGray, width: 0.5),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Row(
+                            children: [
+                              Icon(Icons.storage, color: AppTheme.primaryBlue, size: 20),
+                              SizedBox(width: 8),
+                              Text(
+                                'Developer Database Tools',
+                                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppTheme.darkBlueText),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          const Text(
+                            'Ekspor/Impor seluruh koleksi database Firestore. Hanya untuk akun Developer.',
+                            style: TextStyle(fontSize: 11, color: AppTheme.textGray),
+                          ),
+                          const SizedBox(height: 16),
+                          
+                          // 1. Local Backup
+                          const Text(
+                            '1. Penyimpanan Lokal (PC / Laptop)',
+                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.darkBlueText),
+                          ),
+                          const SizedBox(height: 8),
+                          ElevatedButton.icon(
+                            onPressed: _isBackingUp ? null : _backupLocalJson,
+                            icon: _isBackingUp 
+                                ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                                : const Icon(Icons.download, size: 16),
+                            label: const Text('Unduh Backup JSON (Lokal)'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppTheme.primaryBlue,
+                              foregroundColor: Colors.white,
+                              minimumSize: const Size(double.infinity, 38),
                             ),
-                          ],
-                        ),
-                        const SizedBox(height: 4),
-                        const Text(
-                          'Ekspor/Impor seluruh koleksi database Firestore. Hanya untuk akun Developer.',
-                          style: TextStyle(fontSize: 11, color: AppTheme.textGray),
-                        ),
-                        const SizedBox(height: 16),
-                        
-                        // 1. Local Backup
-                        const Text(
-                          '1. Penyimpanan Lokal (PC / Laptop)',
-                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.darkBlueText),
-                        ),
-                        const SizedBox(height: 8),
-                        ElevatedButton.icon(
-                          onPressed: _isBackingUp ? null : _backupLocalJson,
-                          icon: _isBackingUp 
-                              ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                              : const Icon(Icons.download, size: 16),
-                          label: const Text('Unduh Backup JSON (Lokal)'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppTheme.primaryBlue,
-                            foregroundColor: Colors.white,
-                            minimumSize: const Size(double.infinity, 38),
                           ),
-                        ),
-                        const SizedBox(height: 16),
-                        
-                        // 2. Online Backup (Google Drive)
-                        const Text(
-                          '2. Penyimpanan Online (Google Drive)',
-                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.darkBlueText),
-                        ),
-                        const SizedBox(height: 8),
-                        TextField(
-                          controller: _gdriveUrlController,
-                          decoration: const InputDecoration(
-                            labelText: 'Google Apps Script Web App URL',
-                            hintText: 'https://script.google.com/macros/s/.../exec',
-                            prefixIcon: Icon(Icons.link, size: 18),
-                            border: OutlineInputBorder(),
-                            contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          const SizedBox(height: 16),
+                          
+                          // 2. Online Backup (Google Drive)
+                          const Text(
+                            '2. Penyimpanan Online (Google Drive)',
+                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.darkBlueText),
                           ),
-                          style: const TextStyle(fontSize: 12),
-                        ),
-                        const SizedBox(height: 8),
-                        ElevatedButton.icon(
-                          onPressed: _isBackingUp ? null : _backupToGDrive,
-                          icon: _isBackingUp 
-                              ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                              : const Icon(Icons.cloud_upload, size: 16),
-                          label: const Text('Kirim Backup ke Google Drive'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.green,
-                            foregroundColor: Colors.white,
-                            minimumSize: const Size(double.infinity, 38),
+                          const SizedBox(height: 8),
+                          TextField(
+                            controller: _gdriveUrlController,
+                            decoration: const InputDecoration(
+                              labelText: 'Google Apps Script Web App URL',
+                              hintText: 'https://script.google.com/macros/s/.../exec',
+                              prefixIcon: Icon(Icons.link, size: 18),
+                              border: OutlineInputBorder(),
+                              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            ),
+                            style: const TextStyle(fontSize: 12),
                           ),
-                        ),
-                        const SizedBox(height: 16),
-                        
-                        // 3. Restore Database
-                        const Text(
-                          '3. Restore / Impor Database',
-                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.red),
-                        ),
-                        const SizedBox(height: 8),
-                        TextField(
-                          controller: _restoreController,
-                          maxLines: 4,
-                          decoration: const InputDecoration(
-                            labelText: 'Tempelkan (Paste) Teks JSON Backup di Sini',
-                            hintText: '{\n  "users": [...],\n  "orders": [...]\n}',
-                            border: OutlineInputBorder(),
-                            contentPadding: EdgeInsets.all(10),
+                          const SizedBox(height: 8),
+                          ElevatedButton.icon(
+                            onPressed: _isBackingUp ? null : _backupToGDrive,
+                            icon: _isBackingUp 
+                                ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                                : const Icon(Icons.cloud_upload, size: 16),
+                            label: const Text('Kirim Backup ke Google Drive'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.green,
+                              foregroundColor: Colors.white,
+                              minimumSize: const Size(double.infinity, 38),
+                            ),
                           ),
-                          style: const TextStyle(fontSize: 11, fontFamily: 'monospace'),
-                        ),
-                        const SizedBox(height: 8),
-                        ElevatedButton.icon(
-                          onPressed: _isRestoring ? null : _restoreFromJson,
-                          icon: _isRestoring 
-                              ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                              : const Icon(Icons.settings_backup_restore, size: 16),
-                          label: const Text('Mulai Restore Database'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.red,
-                            foregroundColor: Colors.white,
-                            minimumSize: const Size(double.infinity, 38),
+                          const SizedBox(height: 16),
+                          
+                          // 3. Restore Database
+                          const Text(
+                            '3. Restore / Impor Database',
+                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.red),
                           ),
-                        ),
-                      ],
+                          const SizedBox(height: 8),
+                          TextField(
+                            controller: _restoreController,
+                            maxLines: 4,
+                            decoration: const InputDecoration(
+                              labelText: 'Tempelkan (Paste) Teks JSON Backup di Sini',
+                              hintText: '{\n  "users": [...],\n  "orders": [...]\n}',
+                              border: OutlineInputBorder(),
+                              contentPadding: EdgeInsets.all(10),
+                            ),
+                            style: const TextStyle(fontSize: 11, fontFamily: 'monospace'),
+                          ),
+                          const SizedBox(height: 8),
+                          ElevatedButton.icon(
+                            onPressed: _isRestoring ? null : _restoreFromJson,
+                            icon: _isRestoring 
+                                ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                                : const Icon(Icons.settings_backup_restore, size: 16),
+                            label: const Text('Mulai Restore Database'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.red,
+                              foregroundColor: Colors.white,
+                              minimumSize: const Size(double.infinity, 38),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
+                  ],
                   const SizedBox(height: 20),
                   const Divider(),
                   const SizedBox(height: 16),
