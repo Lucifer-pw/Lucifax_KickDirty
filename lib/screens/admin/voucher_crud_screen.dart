@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../../models/voucher_model.dart';
 import '../../services/database_service.dart';
 import '../../theme.dart';
+import '../../utils/error_helper.dart';
 
 class VoucherCrudScreen extends StatefulWidget {
   const VoucherCrudScreen({Key? key}) : super(key: key);
@@ -287,7 +288,7 @@ class _VoucherCrudScreenState extends State<VoucherCrudScreen> {
             return const Center(child: CircularProgressIndicator());
           }
           if (snapshot.hasError) {
-            return Center(child: Text('Terjadi kesalahan: ${snapshot.error}'));
+            return Center(child: Text(getCleanErrorMessage(snapshot.error)));
           }
 
           final vouchers = snapshot.data ?? [];

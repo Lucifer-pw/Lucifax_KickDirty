@@ -4,6 +4,7 @@ import '../../models/category_model.dart';
 import '../../services/database_service.dart';
 import '../../theme.dart';
 import 'service_crud_screen.dart';
+import '../../utils/error_helper.dart';
 
 class CategoryCrudScreen extends StatefulWidget {
   const CategoryCrudScreen({Key? key}) : super(key: key);
@@ -156,7 +157,7 @@ class _CategoryCrudScreenState extends State<CategoryCrudScreen> {
             return const Center(child: CircularProgressIndicator());
           }
           if (snapshot.hasError) {
-            return Center(child: Text('Terjadi kesalahan: ${snapshot.error}'));
+            return Center(child: Text(getCleanErrorMessage(snapshot.error)));
           }
 
           final categories = snapshot.data ?? [];

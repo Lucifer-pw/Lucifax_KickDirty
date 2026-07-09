@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../models/order_model.dart';
 import '../../theme.dart';
+import '../../utils/error_helper.dart';
 
 class ReviewModerationScreen extends StatefulWidget {
   const ReviewModerationScreen({Key? key}) : super(key: key);
@@ -102,7 +103,7 @@ class _ReviewModerationScreenState extends State<ReviewModerationScreen> {
               child: Padding(
                 padding: const EdgeInsets.all(24.0),
                 child: Text(
-                  'Terjadi kesalahan: ${snapshot.error}',
+                  getCleanErrorMessage(snapshot.error),
                   textAlign: TextAlign.center,
                   style: const TextStyle(color: AppTheme.textGray),
                 ),

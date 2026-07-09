@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import '../services/database_service.dart';
 import '../theme.dart';
+import '../utils/error_helper.dart';
 
 class ChatScreen extends StatefulWidget {
   final String customerId;
@@ -142,7 +143,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   return const Center(child: CircularProgressIndicator());
                 }
                 if (snapshot.hasError) {
-                  return Center(child: Text('Terjadi kesalahan: ${snapshot.error}'));
+                  return Center(child: Text(getCleanErrorMessage(snapshot.error)));
                 }
 
                 final messages = snapshot.data ?? [];

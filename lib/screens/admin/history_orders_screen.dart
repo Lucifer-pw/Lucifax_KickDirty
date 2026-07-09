@@ -10,6 +10,7 @@ import '../../services/database_service.dart';
 import '../../services/whatsapp_service.dart';
 import '../../theme.dart';
 import '../../widgets/invoice_detail_modal.dart';
+import '../../utils/error_helper.dart';
 
 class HistoryOrdersScreen extends StatefulWidget {
   final bool isTab;
@@ -404,7 +405,7 @@ class _HistoryOrdersScreenState extends State<HistoryOrdersScreen> {
                   return const Center(child: CircularProgressIndicator());
                 }
                 if (snapshot.hasError) {
-                  return Center(child: Text('Error: ${snapshot.error}'));
+                  return Center(child: Text(getCleanErrorMessage(snapshot.error)));
                 }
 
                 var orders = snapshot.data ?? [];

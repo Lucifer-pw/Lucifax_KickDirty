@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../models/service_model.dart';
 import '../../services/database_service.dart';
 import '../../theme.dart';
+import '../../utils/error_helper.dart';
 
 class ServiceCrudScreen extends StatefulWidget {
   final String categoryId;
@@ -177,7 +178,7 @@ class _ServiceCrudScreenState extends State<ServiceCrudScreen> {
             return const Center(child: CircularProgressIndicator());
           }
           if (snapshot.hasError) {
-            return Center(child: Text('Terjadi kesalahan: ${snapshot.error}'));
+            return Center(child: Text(getCleanErrorMessage(snapshot.error)));
           }
 
           final services = snapshot.data ?? [];

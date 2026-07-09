@@ -1,5 +1,6 @@
 import 'dart:html' as html;
 import 'dart:async';
+import 'dart:convert';
 
 String getDeviceDetails() {
   final userAgent = html.window.navigator.userAgent;
@@ -19,4 +20,18 @@ Future<String?> getDeviceGpsLocation() async {
     // Geolocation error or permission denied
   }
   return null;
+}
+
+void saveBackupFile(String content, String fileName) {
+  final bytes = utf8.encode(content);
+  final blob = html.Blob([bytes], 'application/json');
+  final url = html.Url.createObjectUrlFromBlob(blob);
+  final anchor = html.document.createElement('a') as html.AnchorElement
+    ..href = url
+    ..style.display = 'none'
+    ..download = fileName;
+  html.document.body?.children.add(anchor);
+  anchor.click();
+  html.document.body?.children.remove(anchor);
+  html.Url.revokeObjectUrl(url);
 }

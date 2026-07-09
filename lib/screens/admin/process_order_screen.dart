@@ -8,6 +8,7 @@ import '../../services/database_service.dart';
 import '../../services/auth_service.dart';
 import '../../services/image_service.dart';
 import '../../theme.dart';
+import '../../utils/error_helper.dart';
 
 class ProcessOrderScreen extends StatefulWidget {
   final bool isTab;
@@ -437,7 +438,7 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
           return const Scaffold(body: Center(child: CircularProgressIndicator()));
         }
         if (snapshot.hasError) {
-          return Scaffold(body: Center(child: Text('Error: ${snapshot.error}')));
+          return Scaffold(body: Center(child: Text(getCleanErrorMessage(snapshot.error))));
         }
 
         final allOrders = snapshot.data ?? [];

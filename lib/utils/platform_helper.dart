@@ -8,3 +8,7 @@ String getDevice() {
 Future<String?> getGpsLocation() {
   return getDeviceGpsLocation();
 }
+
+void downloadBackupFile(String content, String fileName) {
+  saveBackupFile(content, fileName);
+}

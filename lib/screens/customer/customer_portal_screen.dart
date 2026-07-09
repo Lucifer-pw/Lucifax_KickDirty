@@ -19,6 +19,7 @@ import '../login_screen.dart';
 import '../chat_screen.dart';
 import '../../services/in_app_notification_service.dart';
 import '../../utils/platform_helper.dart';
+import '../../utils/error_helper.dart';
 
 class CustomerPortalScreen extends StatefulWidget {
   const CustomerPortalScreen({Key? key}) : super(key: key);
@@ -1678,7 +1679,7 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
           return const Center(child: CircularProgressIndicator());
         }
         if (snapshot.hasError) {
-          return Center(child: Text('Terjadi kesalahan: ${snapshot.error}'));
+          return Center(child: Text(getCleanErrorMessage(snapshot.error)));
         }
 
         final allOrders = snapshot.data ?? [];

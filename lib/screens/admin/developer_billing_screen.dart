@@ -6,6 +6,8 @@ import 'package:provider/provider.dart';
 import '../../services/auth_service.dart';
 import '../../services/image_service.dart';
 import '../../theme.dart';
+import 'package:http/http.dart' as http;
+import '../../utils/platform_helper.dart';
 import '../chat_screen.dart';
 
 class DeveloperBillingScreen extends StatefulWidget {
@@ -17,11 +19,15 @@ class DeveloperBillingScreen extends StatefulWidget {
 
 class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
   final _amountController = TextEditingController(text: '150000');
+  final _gdriveUrlController = TextEditingController();
+  final _restoreController = TextEditingController();
   DateTime _nextDueDate = DateTime(2026, 8, 1);
   String _lastPaidMonth = '';
   String _qrImageBase64 = '';
   bool _isLoading = true;
   bool _isSaving = false;
+  bool _isBackingUp = false;
+  bool _isRestoring = false;
   double _selectedPresetAmount = -1.0;
   String _ownerSelectedPackageName = 'Belum memilih paket';
   double _ownerSelectedPackagePrice = 0.0;
@@ -31,6 +37,7 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
   void initState() {
     super.initState();
     _loadBillingConfig();
+    _loadDeveloperConfig();
     _amountController.addListener(_onAmountChanged);
   }
 
@@ -38,6 +45,8 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
   void dispose() {
     _amountController.removeListener(_onAmountChanged);
     _amountController.dispose();
+    _gdriveUrlController.dispose();
+    _restoreController.dispose();
     super.dispose();
   }
 
@@ -131,6 +140,250 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
           SnackBar(content: Text('Gagal memperbarui pengaturan: $e')),
         );
       }
+    }
+  }
+
+  Future<void> _loadDeveloperConfig() async {
+    try {
+      final doc = await FirebaseFirestore.instance.collection('app_config').doc('developer_config').get();
+      if (doc.exists) {
+        final data = doc.data();
+        if (data != null && data['gdriveUrl'] != null) {
+          setState(() {
+            _gdriveUrlController.text = data['gdriveUrl'] as String;
+          });
+        }
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _saveDeveloperConfig() async {
+    try {
+      await FirebaseFirestore.instance.collection('app_config').doc('developer_config').set({
+        'gdriveUrl': _gdriveUrlController.text.trim(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+    } catch (_) {}
+  }
+
+  Future<Map<String, dynamic>> _generateBackupData() async {
+    final Map<String, dynamic> backup = {};
+    final collections = [
+      'users',
+      'orders',
+      'customers',
+      'services',
+      'categories',
+      'vouchers',
+      'expenses',
+      'app_config',
+      'logistics_methods',
+      'developer_billing',
+      'developer_billing_invoices'
+    ];
+
+    for (final col in collections) {
+      final snap = await FirebaseFirestore.instance.collection(col).get();
+      final List<Map<String, dynamic>> docs = [];
+      for (final doc in snap.docs) {
+        final data = doc.data();
+        final serializedData = _serializeTimestamps(data);
+        docs.add({
+          'id': doc.id,
+          'data': serializedData,
+        });
+      }
+      backup[col] = docs;
+    }
+    return backup;
+  }
+
+  Map<String, dynamic> _serializeTimestamps(Map<String, dynamic> data) {
+    final Map<String, dynamic> result = {};
+    data.forEach((key, value) {
+      if (value is Timestamp) {
+        result[key] = {
+          '_type': 'Timestamp',
+          'seconds': value.seconds,
+          'nanoseconds': value.nanoseconds,
+        };
+      } else if (value is Map<String, dynamic>) {
+        result[key] = _serializeTimestamps(value);
+      } else if (value is List) {
+        result[key] = value.map((item) {
+          if (item is Map<String, dynamic>) {
+            return _serializeTimestamps(item);
+          }
+          return item;
+        }).toList();
+      } else {
+        result[key] = value;
+      }
+    });
+    return result;
+  }
+
+  dynamic _deserializeTimestamps(dynamic value) {
+    if (value is Map<String, dynamic>) {
+      if (value['_type'] == 'Timestamp') {
+        return Timestamp(value['seconds'] as int, value['nanoseconds'] as int);
+      }
+      final Map<String, dynamic> result = {};
+      value.forEach((k, v) {
+        result[k] = _deserializeTimestamps(v);
+      });
+      return result;
+    } else if (value is List) {
+      return value.map((item) => _deserializeTimestamps(item)).toList();
+    }
+    return value;
+  }
+
+  Future<void> _backupToGDrive() async {
+    final url = _gdriveUrlController.text.trim();
+    if (url.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Masukkan URL Google Apps Script terlebih dahulu.')),
+      );
+      return;
+    }
+
+    setState(() {
+      _isBackingUp = true;
+    });
+
+    try {
+      await _saveDeveloperConfig();
+      final backupData = await _generateBackupData();
+      final payload = {
+        'token': 'LucifaxKickDirtyBackupToken2026',
+        'backupData': backupData,
+      };
+
+      final response = await http.post(
+        Uri.parse(url),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(payload),
+      ).timeout(const Duration(seconds: 30));
+
+      if (response.statusCode == 200) {
+        final resData = jsonDecode(response.body);
+        if (resData['status'] == 'success') {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Backup online berhasil! Tersimpan sebagai: ${resData['fileName']}')),
+          );
+        } else {
+          throw Exception(resData['message'] ?? 'Gagal menyimpan.');
+        }
+      } else {
+        throw Exception('Server merespon dengan status: ${response.statusCode}');
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Gagal Backup ke Google Drive: $e')),
+      );
+    } finally {
+      setState(() {
+        _isBackingUp = false;
+      });
+    }
+  }
+
+  Future<void> _backupLocalJson() async {
+    setState(() {
+      _isBackingUp = true;
+    });
+
+    try {
+      final backupData = await _generateBackupData();
+      final jsonString = jsonEncode(backupData);
+      final fileName = 'backup_kickdirty_${DateFormat('yyyy-MM-dd').format(DateTime.now())}.json';
+
+      downloadBackupFile(jsonString, fileName);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('File backup JSON berhasil diunduh.')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Gagal membuat backup lokal: $e')),
+      );
+    } finally {
+      setState(() {
+        _isBackingUp = false;
+      });
+    }
+  }
+
+  Future<void> _restoreFromJson() async {
+    final jsonStr = _restoreController.text.trim();
+    if (jsonStr.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Tempelkan teks JSON backup terlebih dahulu.')),
+      );
+      return;
+    }
+
+    final bool confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('⚠️ PERINGATAN RESTORE'),
+          content: const Text(
+            'Tindakan ini akan menimpa dan menulis ulang seluruh data di database Anda. '
+            'Pastikan data backup Anda valid. Lanjutkan?'
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Batal'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, true),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              child: const Text('Ya, Timpa Data', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        );
+      },
+    ) ?? false;
+
+    if (!confirm) return;
+
+    setState(() {
+      _isRestoring = true;
+    });
+
+    try {
+      final Map<String, dynamic> backup = jsonDecode(jsonStr) as Map<String, dynamic>;
+
+      for (final col in backup.keys) {
+        final List<dynamic> docs = backup[col] as List<dynamic>;
+        for (final doc in docs) {
+          final String id = doc['id'] as String;
+          final Map<String, dynamic> rawData = doc['data'] as Map<String, dynamic>;
+          
+          final Map<String, dynamic> data = {};
+          rawData.forEach((k, v) {
+            data[k] = _deserializeTimestamps(v);
+          });
+
+          await FirebaseFirestore.instance.collection(col).doc(id).set(data, SetOptions(merge: true));
+        }
+      }
+
+      _restoreController.clear();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Database berhasil di-restore sepenuhnya!')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Gagal restore database: $e')),
+      );
+    } finally {
+      setState(() {
+        _isRestoring = false;
+      });
     }
   }
 
@@ -715,6 +968,123 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
                           onChanged: (val) {
                             _toggleOwnerLogs(val);
                           },
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  
+                  // DEVELOPER DATABASE TOOLS (BACKUP & RESTORE)
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: AppTheme.cardShadow,
+                      border: Border.all(color: AppTheme.lightGray, width: 0.5),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Row(
+                          children: [
+                            Icon(Icons.storage, color: AppTheme.primaryBlue, size: 20),
+                            SizedBox(width: 8),
+                            Text(
+                              'Developer Database Tools',
+                              style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppTheme.darkBlueText),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        const Text(
+                          'Ekspor/Impor seluruh koleksi database Firestore. Hanya untuk akun Developer.',
+                          style: TextStyle(fontSize: 11, color: AppTheme.textGray),
+                        ),
+                        const SizedBox(height: 16),
+                        
+                        // 1. Local Backup
+                        const Text(
+                          '1. Penyimpanan Lokal (PC / Laptop)',
+                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.darkBlueText),
+                        ),
+                        const SizedBox(height: 8),
+                        ElevatedButton.icon(
+                          onPressed: _isBackingUp ? null : _backupLocalJson,
+                          icon: _isBackingUp 
+                              ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                              : const Icon(Icons.download, size: 16),
+                          label: const Text('Unduh Backup JSON (Lokal)'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppTheme.primaryBlue,
+                            foregroundColor: Colors.white,
+                            minimumSize: const Size(double.infinity, 38),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        
+                        // 2. Online Backup (Google Drive)
+                        const Text(
+                          '2. Penyimpanan Online (Google Drive)',
+                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.darkBlueText),
+                        ),
+                        const SizedBox(height: 8),
+                        TextField(
+                          controller: _gdriveUrlController,
+                          decoration: const InputDecoration(
+                            labelText: 'Google Apps Script Web App URL',
+                            hintText: 'https://script.google.com/macros/s/.../exec',
+                            prefixIcon: Icon(Icons.link, size: 18),
+                            border: OutlineInputBorder(),
+                            contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          ),
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                        const SizedBox(height: 8),
+                        ElevatedButton.icon(
+                          onPressed: _isBackingUp ? null : _backupToGDrive,
+                          icon: _isBackingUp 
+                              ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                              : const Icon(Icons.cloud_upload, size: 16),
+                          label: const Text('Kirim Backup ke Google Drive'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green,
+                            foregroundColor: Colors.white,
+                            minimumSize: const Size(double.infinity, 38),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        
+                        // 3. Restore Database
+                        const Text(
+                          '3. Restore / Impor Database',
+                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.red),
+                        ),
+                        const SizedBox(height: 8),
+                        TextField(
+                          controller: _restoreController,
+                          maxLines: 4,
+                          decoration: const InputDecoration(
+                            labelText: 'Tempelkan (Paste) Teks JSON Backup di Sini',
+                            hintText: '{\n  "users": [...],\n  "orders": [...]\n}',
+                            border: OutlineInputBorder(),
+                            contentPadding: EdgeInsets.all(10),
+                          ),
+                          style: const TextStyle(fontSize: 11, fontFamily: 'monospace'),
+                        ),
+                        const SizedBox(height: 8),
+                        ElevatedButton.icon(
+                          onPressed: _isRestoring ? null : _restoreFromJson,
+                          icon: _isRestoring 
+                              ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                              : const Icon(Icons.settings_backup_restore, size: 16),
+                          label: const Text('Mulai Restore Database'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.red,
+                            foregroundColor: Colors.white,
+                            minimumSize: const Size(double.infinity, 38),
+                          ),
                         ),
                       ],
                     ),

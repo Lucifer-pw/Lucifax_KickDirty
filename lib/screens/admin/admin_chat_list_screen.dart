@@ -6,6 +6,7 @@ import '../../services/database_service.dart';
 import '../../services/auth_service.dart';
 import '../../theme.dart';
 import '../chat_screen.dart';
+import '../../utils/error_helper.dart';
 
 class AdminChatListScreen extends StatelessWidget {
   final bool isTab;
@@ -31,7 +32,7 @@ class AdminChatListScreen extends StatelessWidget {
                   return const Center(child: CircularProgressIndicator());
                 }
                 if (snapshot.hasError) {
-                  return Center(child: Text('Terjadi kesalahan: ${snapshot.error}'));
+                  return Center(child: Text(getCleanErrorMessage(snapshot.error)));
                 }
 
                 final rooms = snapshot.data ?? [];
