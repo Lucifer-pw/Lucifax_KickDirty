@@ -204,39 +204,40 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
     return backup;
   }
 
-  Map<String, dynamic> _serializeTimestamps(Map<String, dynamic> data) {
+  Map<String, dynamic> _serializeTimestamps(Map<dynamic, dynamic> data) {
     final Map<String, dynamic> result = {};
     data.forEach((key, value) {
+      final String keyStr = key.toString();
       if (value is Timestamp) {
-        result[key] = {
+        result[keyStr] = {
           '_type': 'Timestamp',
           'seconds': value.seconds,
           'nanoseconds': value.nanoseconds,
         };
-      } else if (value is Map<String, dynamic>) {
-        result[key] = _serializeTimestamps(value);
+      } else if (value is Map) {
+        result[keyStr] = _serializeTimestamps(value);
       } else if (value is List) {
-        result[key] = value.map((item) {
-          if (item is Map<String, dynamic>) {
+        result[keyStr] = value.map((item) {
+          if (item is Map) {
             return _serializeTimestamps(item);
           }
           return item;
         }).toList();
       } else {
-        result[key] = value;
+        result[keyStr] = value;
       }
     });
     return result;
   }
 
   dynamic _deserializeTimestamps(dynamic value) {
-    if (value is Map<String, dynamic>) {
+    if (value is Map) {
       if (value['_type'] == 'Timestamp') {
         return Timestamp(value['seconds'] as int, value['nanoseconds'] as int);
       }
       final Map<String, dynamic> result = {};
       value.forEach((k, v) {
-        result[k] = _deserializeTimestamps(v);
+        result[k.toString()] = _deserializeTimestamps(v);
       });
       return result;
     } else if (value is List) {
@@ -367,11 +368,11 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
         final List<dynamic> docs = backup[col] as List<dynamic>;
         for (final doc in docs) {
           final String id = doc['id'] as String;
-          final Map<String, dynamic> rawData = doc['data'] as Map<String, dynamic>;
+          final Map<dynamic, dynamic> rawData = doc['data'] as Map;
           
           final Map<String, dynamic> data = {};
           rawData.forEach((k, v) {
-            data[k] = _deserializeTimestamps(v);
+            data[k.toString()] = _deserializeTimestamps(v);
           });
 
           await FirebaseFirestore.instance.collection(col).doc(id).set(data, SetOptions(merge: true));
