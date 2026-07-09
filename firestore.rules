@@ -114,10 +114,15 @@ service cloud.firestore {
                       ))
                   || (resource != null && resource.data.showOnWeb == true);
 
-      // Only authenticated users can create orders; customerId must match auth uid
+      // Only authenticated users can create orders
       allow create: if request.auth != null
-                    && request.resource.data.customerId == request.auth.uid
-                    && request.resource.data.totalAmount >= 0;
+                    && (
+                      isOwnerOrStaff()
+                      || (
+                        request.resource.data.customerId == request.auth.uid
+                        && request.resource.data.totalAmount >= 0
+                      )
+                    );
 
       // Only admin/staff can update order status and payment fields.
       // Customer can only update review-related fields on their own order.
