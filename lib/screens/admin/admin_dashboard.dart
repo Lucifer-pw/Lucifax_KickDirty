@@ -27,6 +27,7 @@ import 'package:intl/intl.dart';
 import 'settings_screen.dart';
 import 'owner_billing_package_screen.dart';
 import '../../services/in_app_notification_service.dart';
+import '../../services/auto_backup_service.dart';
 
 class AdminDashboard extends StatefulWidget {
   const AdminDashboard({Key? key}) : super(key: key);
@@ -59,8 +60,17 @@ class _AdminDashboardState extends State<AdminDashboard> {
           authService.currentUserModel!.uid,
           authService.currentUserModel!.role,
         );
+        AutoBackupService.instance.startChecking(
+          authService.currentUserModel!.role,
+        );
       }
     });
+  }
+
+  @override
+  void dispose() {
+    AutoBackupService.instance.stopChecking();
+    super.dispose();
   }
 
   Future<void> _checkForUpdates() async {

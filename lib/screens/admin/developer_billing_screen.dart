@@ -9,6 +9,7 @@ import '../../theme.dart';
 import 'package:http/http.dart' as http;
 import '../../utils/platform_helper.dart';
 import '../../utils/error_helper.dart';
+import '../../services/auto_backup_service.dart';
 import '../chat_screen.dart';
 
 class DeveloperBillingScreen extends StatefulWidget {
@@ -33,6 +34,11 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
   String _ownerSelectedPackageName = 'Belum memilih paket';
   double _ownerSelectedPackagePrice = 0.0;
   bool _enableOwnerLogs = false;
+
+  // Auto backup config fields
+  bool _enableAutoBackup = false;
+  int _autoBackupIntervalHours = 24;
+  Timestamp? _lastAutoBackupTime;
 
   @override
   void initState() {
@@ -149,9 +155,12 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
       final doc = await FirebaseFirestore.instance.collection('app_config').doc('developer_config').get();
       if (doc.exists) {
         final data = doc.data();
-        if (data != null && data['gdriveUrl'] != null) {
+        if (data != null) {
           setState(() {
-            _gdriveUrlController.text = data['gdriveUrl'] as String;
+            _gdriveUrlController.text = data['gdriveUrl'] as String? ?? '';
+            _enableAutoBackup = data['enableAutoBackup'] == true;
+            _autoBackupIntervalHours = data['autoBackupIntervalHours'] as int? ?? 24;
+            _lastAutoBackupTime = data['lastAutoBackupTime'] as Timestamp?;
           });
         }
       }
@@ -162,88 +171,27 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
     try {
       await FirebaseFirestore.instance.collection('app_config').doc('developer_config').set({
         'gdriveUrl': _gdriveUrlController.text.trim(),
+        'enableAutoBackup': _enableAutoBackup,
+        'autoBackupIntervalHours': _autoBackupIntervalHours,
         'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
     } catch (_) {}
   }
 
-  Future<Map<String, dynamic>> _generateBackupData() async {
-    final Map<String, dynamic> backup = {};
-    final collections = [
-      'users',
-      'orders',
-      'customers',
-      'services',
-      'categories',
-      'vouchers',
-      'expenses',
-      'app_config',
-      'logistics_methods',
-      'developer_billing',
-      'developer_billing_invoices'
-    ];
-
-    for (final col in collections) {
-      try {
-        final snap = await FirebaseFirestore.instance.collection(col).get();
-        final List<Map<String, dynamic>> docs = [];
-        for (final doc in snap.docs) {
-          final data = doc.data();
-          final serializedData = _serializeTimestamps(data);
-          docs.add({
-            'id': doc.id,
-            'data': serializedData,
-          });
-        }
-        backup[col] = docs;
-      } catch (e) {
-        print("Failed to fetch collection $col: $e");
-        throw 'Akses Ditolak (Bagian: $col)';
-      }
-    }
-    return backup;
-  }
-
-  Map<String, dynamic> _serializeTimestamps(Map<dynamic, dynamic> data) {
-    final Map<String, dynamic> result = {};
-    data.forEach((key, value) {
-      final String keyStr = key.toString();
-      if (value is Timestamp) {
-        result[keyStr] = {
-          '_type': 'Timestamp',
-          'seconds': value.seconds,
-          'nanoseconds': value.nanoseconds,
-        };
-      } else if (value is Map) {
-        result[keyStr] = _serializeTimestamps(value);
-      } else if (value is List) {
-        result[keyStr] = value.map((item) {
-          if (item is Map) {
-            return _serializeTimestamps(item);
-          }
-          return item;
-        }).toList();
-      } else {
-        result[keyStr] = value;
-      }
+  void _onAutoBackupToggled(bool value) {
+    setState(() {
+      _enableAutoBackup = value;
     });
-    return result;
+    _saveDeveloperConfig();
   }
 
-  dynamic _deserializeTimestamps(dynamic value) {
-    if (value is Map) {
-      if (value['_type'] == 'Timestamp') {
-        return Timestamp(value['seconds'] as int, value['nanoseconds'] as int);
-      }
-      final Map<String, dynamic> result = {};
-      value.forEach((k, v) {
-        result[k.toString()] = _deserializeTimestamps(v);
+  void _onAutoBackupIntervalChanged(int? value) {
+    if (value != null) {
+      setState(() {
+        _autoBackupIntervalHours = value;
       });
-      return result;
-    } else if (value is List) {
-      return value.map((item) => _deserializeTimestamps(item)).toList();
+      _saveDeveloperConfig();
     }
-    return value;
   }
 
   Future<void> _backupToGDrive() async {
@@ -261,7 +209,7 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
 
     try {
       await _saveDeveloperConfig();
-      final backupData = await _generateBackupData();
+      final backupData = await AutoBackupService.instance.generateBackupData();
       final payload = {
         'token': 'LucifaxKickDirtyBackupToken2026',
         'backupData': backupData,
@@ -271,7 +219,7 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
         Uri.parse(url),
         headers: {'Content-Type': 'text/plain'}, // Avoids CORS preflight OPTIONS request for Google Apps Script
         body: jsonEncode(payload),
-      ).timeout(const Duration(seconds: 30));
+      ).timeout(const Duration(seconds: 45));
 
       if (response.statusCode == 200) {
         final resData = jsonDecode(response.body);
@@ -302,7 +250,7 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
     });
 
     try {
-      final backupData = await _generateBackupData();
+      final backupData = await AutoBackupService.instance.generateBackupData();
       final jsonString = jsonEncode(backupData);
       final fileName = 'backup_kickdirty_${DateFormat('yyyy-MM-dd').format(DateTime.now())}.json';
 
@@ -320,6 +268,22 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
         _isBackingUp = false;
       });
     }
+  }
+
+  dynamic _deserializeTimestamps(dynamic value) {
+    if (value is Map) {
+      if (value['_type'] == 'Timestamp') {
+        return Timestamp(value['seconds'] as int, value['nanoseconds'] as int);
+      }
+      final Map<String, dynamic> result = {};
+      value.forEach((k, v) {
+        result[k.toString()] = _deserializeTimestamps(v);
+      });
+      return result;
+    } else if (value is List) {
+      return value.map((item) => _deserializeTimestamps(item)).toList();
+    }
+    return value;
   }
 
   Future<void> _restoreFromJson() async {
@@ -1065,9 +1029,73 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
                               minimumSize: const Size(double.infinity, 38),
                             ),
                           ),
-                          const SizedBox(height: 16),
-                          
-                          // 3. Restore Database
+                           const SizedBox(height: 12),
+                           Container(
+                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                             decoration: BoxDecoration(
+                               color: AppTheme.primaryBlue.withOpacity(0.05),
+                               borderRadius: BorderRadius.circular(8),
+                               border: Border.all(color: AppTheme.primaryBlue.withOpacity(0.15)),
+                             ),
+                             child: Column(
+                               crossAxisAlignment: CrossAxisAlignment.start,
+                               children: [
+                                 Row(
+                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                   children: [
+                                     const Row(
+                                       children: [
+                                         Icon(Icons.sync, size: 18, color: AppTheme.primaryBlue),
+                                         SizedBox(width: 6),
+                                         Text(
+                                           'Backup Otomatis (Google Drive)',
+                                           style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.darkBlueText),
+                                         ),
+                                       ],
+                                     ),
+                                     Switch(
+                                       value: _enableAutoBackup,
+                                       onChanged: _onAutoBackupToggled,
+                                       activeColor: AppTheme.primaryBlue,
+                                     ),
+                                   ],
+                                 ),
+                                 if (_enableAutoBackup) ...[
+                                   const SizedBox(height: 4),
+                                   Row(
+                                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                     children: [
+                                       const Text(
+                                         'Interval Waktu:',
+                                         style: TextStyle(fontSize: 11, color: AppTheme.textGray),
+                                       ),
+                                       DropdownButton<int>(
+                                         value: _autoBackupIntervalHours,
+                                         items: const [
+                                           DropdownMenuItem(value: 1, child: Text('1 Jam', style: TextStyle(fontSize: 11))),
+                                           DropdownMenuItem(value: 6, child: Text('6 Jam', style: TextStyle(fontSize: 11))),
+                                           DropdownMenuItem(value: 12, child: Text('12 Jam', style: TextStyle(fontSize: 11))),
+                                           DropdownMenuItem(value: 24, child: Text('24 Jam (Harian)', style: TextStyle(fontSize: 11))),
+                                           DropdownMenuItem(value: 168, child: Text('168 Jam (Mingguan)', style: TextStyle(fontSize: 11))),
+                                         ],
+                                         onChanged: _onAutoBackupIntervalChanged,
+                                         style: const TextStyle(color: AppTheme.darkBlueText, fontSize: 11),
+                                         underline: const SizedBox(),
+                                       ),
+                                     ],
+                                   ),
+                                 ],
+                                 const SizedBox(height: 4),
+                                 Text(
+                                   'Terakhir Backup Otomatis: ${_lastAutoBackupTime == null ? "Belum Pernah" : DateFormat('dd MMM yyyy, HH:mm').format(_lastAutoBackupTime!.toDate())}',
+                                   style: const TextStyle(fontSize: 10, color: AppTheme.textGray, fontStyle: FontStyle.italic),
+                                 ),
+                               ],
+                             ),
+                           ),
+                           const SizedBox(height: 16),
+                           
+                           // 3. Restore Database
                           const Text(
                             '3. Restore / Impor Database',
                             style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.red),
