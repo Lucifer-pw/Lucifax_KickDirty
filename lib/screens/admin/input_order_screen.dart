@@ -12,6 +12,7 @@ import '../../models/voucher_model.dart';
 import '../../services/database_service.dart';
 import '../../services/image_service.dart';
 import '../../theme.dart';
+import '../../utils/error_helper.dart';
 
 class InputOrderScreen extends StatefulWidget {
   final bool isTab;
@@ -382,7 +383,7 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
                   );
                 } catch (e) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Gagal memperbarui: $e')),
+                    SnackBar(content: Text('Gagal memperbarui: ${getCleanErrorMessage(e)}')),
                   );
                 }
               },
@@ -436,7 +437,7 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
       } catch (e) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Gagal menghapus: $e')),
+            SnackBar(content: Text('Gagal menghapus: ${getCleanErrorMessage(e)}')),
           );
         }
       }
@@ -663,7 +664,7 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Gagal membuat pesanan: $e')),
+        SnackBar(content: Text('Gagal membuat pesanan: ${getCleanErrorMessage(e)}')),
       );
     } finally {
       if (mounted) {

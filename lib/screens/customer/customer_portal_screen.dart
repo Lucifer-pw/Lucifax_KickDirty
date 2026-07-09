@@ -604,7 +604,7 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
                                     } catch (e) {
                                       if (context.mounted) {
                                         ScaffoldMessenger.of(context).showSnackBar(
-                                          SnackBar(content: Text('Gagal mengunci lokasi: $e')),
+                                          SnackBar(content: Text('Gagal mengunci lokasi: ${getCleanErrorMessage(e)}')),
                                         );
                                       }
                                     } finally {
@@ -1069,7 +1069,7 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
                                     print("Submit Order Error: $e");
                                     if (context.mounted) {
                                       ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(content: Text('Gagal membuat pesanan: $e')),
+                                        SnackBar(content: Text('Gagal membuat pesanan: ${getCleanErrorMessage(e)}')),
                                       );
                                     }
                                   } finally {
@@ -1264,7 +1264,7 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
                             } catch (e) {
                               if (context.mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text('Gagal mengunggah bukti: $e')),
+                                  SnackBar(content: Text('Gagal mengunggah bukti: ${getCleanErrorMessage(e)}')),
                                 );
                               }
                             } finally {
@@ -1411,7 +1411,7 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
                             } catch (e) {
                               if (context.mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text('Gagal mengunci lokasi: $e')),
+                                  SnackBar(content: Text('Gagal mengunci lokasi: ${getCleanErrorMessage(e)}')),
                                 );
                               }
                             } finally {
