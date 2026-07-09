@@ -560,6 +560,7 @@ class DatabaseService with ChangeNotifier {
       'senderName': senderName,
       'message': message,
       'timestamp': timestamp,
+      'isAdmin': isAdmin,
     });
 
     // 2. Set/Update room document with unread indicators
