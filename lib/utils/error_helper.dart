@@ -25,6 +25,12 @@ String getCleanErrorMessage(dynamic error) {
     return 'Gagal memuat data. Periksa koneksi internet Anda.';
   }
 
-  // 3. Default fallback
-  return 'Terjadi kesalahan. Silakan coba beberapa saat lagi.';
+  // 3. Sanitize and return other error messages to assist debugging
+  String sanitized = errorStr
+      .replaceAll(RegExp(r'cloud_?firestore', caseSensitive: false), 'Sistem Data')
+      .replaceAll(RegExp(r'firestore', caseSensitive: false), 'Sistem Data')
+      .replaceAll(RegExp(r'firebase', caseSensitive: false), 'Sistem Cloud')
+      .replaceAll(RegExp(r'database', caseSensitive: false), 'Penyimpanan');
+
+  return sanitized;
 }
