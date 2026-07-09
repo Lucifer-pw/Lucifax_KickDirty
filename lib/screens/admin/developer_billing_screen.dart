@@ -268,7 +268,7 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
 
       final response = await http.post(
         Uri.parse(url),
-        headers: {'Content-Type': 'application/json'},
+        headers: {'Content-Type': 'text/plain'}, // Avoids CORS preflight OPTIONS request for Google Apps Script
         body: jsonEncode(payload),
       ).timeout(const Duration(seconds: 30));
 
