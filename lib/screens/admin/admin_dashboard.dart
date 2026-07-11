@@ -284,7 +284,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
               builder: (context, orderSnap) {
                 final orders = orderSnap.data ?? [];
                 final activeProcessCount = orders.where((o) =>
-                    o.status == 'dibayar' || o.status == 'diterima' || o.status == 'sedang_diproses').length;
+                    o.status == 'dibayar' || o.status == 'diterima' || o.status == 'sedang_diproses' || o.status == 'selesai').length;
 
                 return StreamBuilder<QuerySnapshot>(
                   stream: currentUser != null
