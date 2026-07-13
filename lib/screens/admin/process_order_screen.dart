@@ -103,7 +103,7 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
                     children: [
                       ElevatedButton.icon(
                         onPressed: () async {
-                          final img = await ImageService.pickImageFromCamera();
+                          final img = await ImageService.pickImageFromCamera(context: context);
                           if (img != null) {
                             setStateDialog(() {
                               tempPhotoBase64 = img;
@@ -116,7 +116,7 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
                       ),
                       ElevatedButton.icon(
                         onPressed: () async {
-                          final img = await ImageService.pickImageFromGallery();
+                          final img = await ImageService.pickImageFromGallery(context: context);
                           if (img != null) {
                             setStateDialog(() {
                               tempPhotoBase64 = img;
@@ -139,7 +139,35 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
                 ElevatedButton(
                   onPressed: tempPhotoBase64 == null
                       ? null
-                      : () => Navigator.pop(context, tempPhotoBase64),
+                      : () {
+                          final sizeInBytes = (tempPhotoBase64!.length * 3 / 4).round();
+                          if (sizeInBytes > 800 * 1024) {
+                            showDialog(
+                              context: context,
+                              builder: (BuildContext context) => AlertDialog(
+                                title: const Row(
+                                  children: [
+                                    Icon(Icons.warning_amber_rounded, color: Colors.orange),
+                                    SizedBox(width: 8),
+                                    Text('Ukuran Foto Terlalu Besar'),
+                                  ],
+                                ),
+                                content: Text(
+                                  'Ukuran bukti pembayaran adalah ${(sizeInBytes / 1024).toStringAsFixed(1)} KB.\n\n'
+                                  'Batas maksimal adalah 800 KB agar dapat disimpan di database. Silakan gunakan foto lain.',
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(context),
+                                    child: const Text('OK'),
+                                  ),
+                                ],
+                              ),
+                            );
+                          } else {
+                            Navigator.pop(context, tempPhotoBase64);
+                          }
+                        },
                   style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryBlue),
                   child: const Text('Konfirmasi & Bayar'),
                 ),
@@ -158,221 +186,258 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
     String nextStatus = '';
     String successMsg = '';
 
-    if (currentStatus == 'dibayar') {
-      // Require payment proof to transition to 'diterima'
-      if (order.paymentStatus != 'sudah_bayar' || order.paymentProof.isEmpty) {
-        final paymentProof = await _showUploadPaymentProofDialog();
-        if (paymentProof == null) {
+    try {
+      if (currentStatus == 'dibayar') {
+        // Require payment proof to transition to 'diterima'
+        if (order.paymentStatus != 'sudah_bayar' || order.paymentProof.isEmpty) {
+          final paymentProof = await _showUploadPaymentProofDialog();
+          if (paymentProof == null) {
+            return; // Batal
+          }
+          await dbService.updateOfflineOrderPayment(orderId, paymentProof);
+        }
+
+        nextStatus = 'diterima';
+        successMsg = 'Pembayaran dikonfirmasi & pesanan diterima!';
+        await dbService.updateOrderStatus(orderId, nextStatus);
+        await dbService.updateOrderPaymentStatus(orderId, 'sudah_bayar');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(successMsg)));
+        }
+        return;
+      } else if (currentStatus == 'diterima') {
+        // If order is not paid yet (offline walk-in cases), require payment proof first
+        if (order.paymentStatus != 'sudah_bayar' || order.paymentProof.isEmpty) {
+          final paymentProof = await _showUploadPaymentProofDialog();
+          if (paymentProof == null) {
+            return; // Batal
+          }
+          // Save the payment proof and mark as paid in database
+          await dbService.updateOfflineOrderPayment(orderId, paymentProof);
+        }
+
+        final estimation = await _showEstimationDialog('');
+        if (estimation == null || estimation.isEmpty) {
           return; // Batal
         }
-        await dbService.updateOfflineOrderPayment(orderId, paymentProof);
-      }
-
-      nextStatus = 'diterima';
-      successMsg = 'Pembayaran dikonfirmasi & pesanan diterima!';
-      await dbService.updateOrderStatus(orderId, nextStatus);
-      await dbService.updateOrderPaymentStatus(orderId, 'sudah_bayar');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(successMsg)));
-      }
-      return;
-    } else if (currentStatus == 'diterima') {
-      // If order is not paid yet (offline walk-in cases), require payment proof first
-      if (order.paymentStatus != 'sudah_bayar' || order.paymentProof.isEmpty) {
-        final paymentProof = await _showUploadPaymentProofDialog();
-        if (paymentProof == null) {
-          return; // Batal
+        nextStatus = 'sedang_diproses';
+        successMsg = 'Sepatu mulai diproses!';
+        await dbService.updateOrderStatusWithEstimation(orderId, nextStatus, estimation);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(successMsg)));
         }
-        // Save the payment proof and mark as paid in database
-        await dbService.updateOfflineOrderPayment(orderId, paymentProof);
-      }
-
-      final estimation = await _showEstimationDialog('');
-      if (estimation == null || estimation.isEmpty) {
-        return; // Batal
-      }
-      nextStatus = 'sedang_diproses';
-      successMsg = 'Sepatu mulai diproses!';
-      await dbService.updateOrderStatusWithEstimation(orderId, nextStatus, estimation);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(successMsg)));
-      }
-      return;
-    } else if (currentStatus == 'sedang_diproses') {
-      List<String>? photoAfterList = await showDialog<List<String>?>(
-        context: context,
-        builder: (context) {
-          List<String> capturedPhotos = [];
-          return StatefulBuilder(
-            builder: (context, setStateDialog) {
-              return AlertDialog(
-                title: const Text('Dokumentasi Hasil Cuci (After)'),
-                content: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Text('Ambil foto hasil cucian sepatu sebagai bukti sebelum diselesaikan. (Minimal 1 Foto)'),
-                    const SizedBox(height: 16),
-                    if (capturedPhotos.isNotEmpty)
-                      SizedBox(
-                        height: 80,
-                        child: ListView.builder(
-                          scrollDirection: Axis.horizontal,
-                          itemCount: capturedPhotos.length,
-                          itemBuilder: (context, idx) {
-                            return Stack(
-                              children: [
-                                Container(
-                                  margin: const EdgeInsets.only(right: 8),
-                                  width: 80,
-                                  height: 80,
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(8),
-                                    image: DecorationImage(
-                                      image: MemoryImage(base64Decode(capturedPhotos[idx].split(',')[1])),
-                                      fit: BoxFit.cover,
+        return;
+      } else if (currentStatus == 'sedang_diproses') {
+        List<String>? photoAfterList = await showDialog<List<String>?>(
+          context: context,
+          builder: (context) {
+            List<String> capturedPhotos = [];
+            return StatefulBuilder(
+              builder: (context, setStateDialog) {
+                return AlertDialog(
+                  title: const Text('Dokumentasi Hasil Cuci (After)'),
+                  content: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text('Ambil foto hasil cucian sepatu sebagai bukti sebelum diselesaikan. (Minimal 1 Foto)'),
+                      const SizedBox(height: 16),
+                      if (capturedPhotos.isNotEmpty)
+                        SizedBox(
+                          height: 80,
+                          child: ListView.builder(
+                            scrollDirection: Axis.horizontal,
+                            itemCount: capturedPhotos.length,
+                            itemBuilder: (context, idx) {
+                              return Stack(
+                                children: [
+                                  Container(
+                                    margin: const EdgeInsets.only(right: 8),
+                                    width: 80,
+                                    height: 80,
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(8),
+                                      image: DecorationImage(
+                                        image: MemoryImage(base64Decode(capturedPhotos[idx].split(',')[1])),
+                                        fit: BoxFit.cover,
+                                      ),
                                     ),
                                   ),
-                                ),
-                                Positioned(
-                                  top: 2,
-                                  right: 10,
-                                  child: InkWell(
-                                    onTap: () {
-                                      setStateDialog(() {
-                                        capturedPhotos.removeAt(idx);
-                                      });
-                                    },
-                                    child: const CircleAvatar(
-                                      radius: 10,
-                                      backgroundColor: Colors.red,
-                                      child: Icon(Icons.close, size: 12, color: Colors.white),
+                                  Positioned(
+                                    top: 2,
+                                    right: 10,
+                                    child: InkWell(
+                                      onTap: () {
+                                        setStateDialog(() {
+                                          capturedPhotos.removeAt(idx);
+                                        });
+                                      },
+                                      child: const CircleAvatar(
+                                        radius: 10,
+                                        backgroundColor: Colors.red,
+                                        child: Icon(Icons.close, size: 12, color: Colors.white),
+                                      ),
                                     ),
-                                  ),
-                                )
-                              ],
-                            );
-                          },
-                         ),
-                      )
-                    else
-                      Container(
-                        height: 80,
-                        width: double.infinity,
-                        color: Colors.grey[100],
-                        child: const Center(
-                          child: Text(
-                            'Belum ada foto diambil',
-                            style: TextStyle(color: AppTheme.textGray, fontSize: 12),
+                                  )
+                                ],
+                              );
+                            },
+                          ),
+                        )
+                      else
+                        Container(
+                          height: 80,
+                          width: double.infinity,
+                          color: Colors.grey[100],
+                          child: const Center(
+                            child: Text(
+                              'Belum ada foto diambil',
+                              style: TextStyle(color: AppTheme.textGray, fontSize: 12),
+                            ),
                           ),
                         ),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: () async {
+                                final img = await ImageService.pickImageFromCamera(context: context);
+                                if (img != null) {
+                                  setStateDialog(() {
+                                    capturedPhotos.add(img);
+                                  });
+                                }
+                              },
+                              icon: const Icon(Icons.camera_alt),
+                              label: const Text('Kamera'),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: () async {
+                                final img = await ImageService.pickImageFromGallery(context: context);
+                                if (img != null) {
+                                  setStateDialog(() {
+                                    capturedPhotos.add(img);
+                                  });
+                                }
+                              },
+                              icon: const Icon(Icons.photo),
+                              label: const Text('Galeri'),
+                            ),
+                          ),
+                        ],
                       ),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: () async {
-                              final img = await ImageService.pickImageFromCamera();
-                              if (img != null) {
-                                setStateDialog(() {
-                                  capturedPhotos.add(img);
-                                });
+                    ],
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, null),
+                      child: const Text('Batal'),
+                    ),
+                    ElevatedButton(
+                      onPressed: capturedPhotos.isEmpty
+                          ? null
+                          : () {
+                              int totalSize = capturedPhotos.fold(0, (sum, img) => sum + (img.length * 3 / 4).round());
+                              if (totalSize > 850 * 1024) {
+                                showDialog(
+                                  context: context,
+                                  builder: (BuildContext context) => AlertDialog(
+                                    title: const Row(
+                                      children: [
+                                        Icon(Icons.warning_amber_rounded, color: Colors.orange),
+                                        SizedBox(width: 8),
+                                        Text('Ukuran Total Terlalu Besar'),
+                                      ],
+                                    ),
+                                    content: Text(
+                                      'Total ukuran ${capturedPhotos.length} foto adalah ${(totalSize / 1024).toStringAsFixed(1)} KB.\n\n'
+                                      'Batas maksimal total untuk semua foto adalah 850 KB agar dapat disimpan di database. '
+                                      'Silakan hapus sebagian foto atau gunakan foto berukuran lebih kecil.',
+                                    ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () => Navigator.pop(context),
+                                        child: const Text('OK'),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              } else {
+                                Navigator.pop(context, capturedPhotos);
                               }
                             },
-                            icon: const Icon(Icons.camera_alt),
-                            label: const Text('Kamera'),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: () async {
-                              final img = await ImageService.pickImageFromGallery();
-                              if (img != null) {
-                                setStateDialog(() {
-                                  capturedPhotos.add(img);
-                                });
-                              }
-                            },
-                            icon: const Icon(Icons.photo),
-                            label: const Text('Galeri'),
-                          ),
-                        ),
-                      ],
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.primaryBlue,
+                        disabledBackgroundColor: Colors.grey[300],
+                      ),
+                      child: const Text('Simpan'),
                     ),
                   ],
+                );
+              },
+            );
+          },
+        );
+
+        if (photoAfterList == null || photoAfterList.isEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Foto After wajib diambil minimal 1 foto!')),
+          );
+          return;
+        }
+
+        nextStatus = 'selesai';
+        successMsg = 'Servis sepatu selesai!';
+        await dbService.updateOrderStatusWithPhoto(orderId, nextStatus, photoAfterList);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(successMsg)));
+        }
+        return;
+      } else if (currentStatus == 'selesai') {
+        if (order.paymentStatus == 'belum_bayar') {
+          if (mounted) {
+            showDialog(
+              context: context,
+              builder: (context) => AlertDialog(
+                title: const Row(
+                  children: [
+                    Icon(Icons.warning_amber_rounded, color: Colors.redAccent),
+                    SizedBox(width: 8),
+                    Text('Pembayaran Belum Lunas'),
+                  ],
+                ),
+                content: const Text(
+                  'Sepatu tidak dapat diserahkan karena status pembayaran masih belum lunas. Silakan selesaikan pembayaran terlebih dahulu.',
                 ),
                 actions: [
                   TextButton(
-                    onPressed: () => Navigator.pop(context, null),
-                    child: const Text('Batal'),
-                  ),
-                  ElevatedButton(
-                    onPressed: capturedPhotos.isEmpty
-                        ? null
-                        : () => Navigator.pop(context, capturedPhotos),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.primaryBlue,
-                      disabledBackgroundColor: Colors.grey[300],
-                    ),
-                    child: const Text('Simpan'),
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('OK'),
                   ),
                 ],
-              );
-            },
-          );
-        },
-      );
-
-      if (photoAfterList == null || photoAfterList.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Foto After wajib diambil minimal 1 foto!')),
-        );
-        return;
-      }
-
-      nextStatus = 'selesai';
-      successMsg = 'Servis sepatu selesai!';
-      await dbService.updateOrderStatusWithPhoto(orderId, nextStatus, photoAfterList);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(successMsg)));
-      }
-      return;
-    } else if (currentStatus == 'selesai') {
-      if (order.paymentStatus == 'belum_bayar') {
-        if (mounted) {
-          showDialog(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: const Row(
-                children: [
-                  Icon(Icons.warning_amber_rounded, color: Colors.redAccent),
-                  SizedBox(width: 8),
-                  Text('Pembayaran Belum Lunas'),
-                ],
               ),
-              content: const Text(
-                'Sepatu tidak dapat diserahkan karena status pembayaran masih belum lunas. Silakan selesaikan pembayaran terlebih dahulu.',
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('OK'),
-                ),
-              ],
-            ),
-          );
+            );
+          }
+          return;
         }
-        return;
+        nextStatus = 'diambil';
+        successMsg = 'Sepatu telah diserahkan ke pelanggan!';
       }
-      nextStatus = 'diambil';
-      successMsg = 'Sepatu telah diserahkan ke pelanggan!';
-    }
 
-    if (nextStatus.isNotEmpty) {
-      await dbService.updateOrderStatus(orderId, nextStatus);
+      if (nextStatus.isNotEmpty) {
+        await dbService.updateOrderStatus(orderId, nextStatus);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(successMsg)));
+        }
+      }
+    } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(successMsg)));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal memperbarui status: ${getCleanErrorMessage(e)}')),
+        );
       }
     }
   }

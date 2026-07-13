@@ -585,6 +585,34 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
       return;
     }
 
+    int totalSize = _photoBeforeList.fold(0, (sum, img) => sum + (img.length * 3 / 4).round());
+    if (totalSize > 850 * 1024) {
+      showDialog(
+        context: context,
+        builder: (BuildContext context) => AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.warning_amber_rounded, color: Colors.orange),
+              SizedBox(width: 8),
+              Text('Ukuran Total Foto Terlalu Besar'),
+            ],
+          ),
+          content: Text(
+            'Total ukuran ${_photoBeforeList.length} foto sebelum cuci adalah ${(totalSize / 1024).toStringAsFixed(1)} KB.\n\n'
+            'Batas maksimal total untuk semua foto adalah 850 KB agar dapat disimpan di database. '
+            'Silakan hapus sebagian foto atau gunakan foto berukuran lebih kecil.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
     setState(() {
       _isSubmitting = true;
     });
@@ -979,7 +1007,7 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
                               Expanded(
                                 child: OutlinedButton.icon(
                                   onPressed: () async {
-                                    final img = await ImageService.pickImageFromCamera();
+                                    final img = await ImageService.pickImageFromCamera(context: context);
                                     if (img != null) {
                                       setState(() {
                                         _photoBeforeList.add(img);
@@ -998,7 +1026,7 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
                               Expanded(
                                 child: OutlinedButton.icon(
                                   onPressed: () async {
-                                    final img = await ImageService.pickImageFromGallery();
+                                    final img = await ImageService.pickImageFromGallery(context: context);
                                     if (img != null) {
                                       setState(() {
                                         _photoBeforeList.add(img);
