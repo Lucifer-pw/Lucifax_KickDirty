@@ -691,9 +691,38 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
         _showQrisDialog(finalInvoiceId, order);
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Gagal membuat pesanan: ${getCleanErrorMessage(e)}')),
-      );
+      final errorStr = e.toString().toLowerCase();
+      if (errorStr.contains('exceeds') || errorStr.contains('too large') || errorStr.contains('size') || errorStr.contains('limit')) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: const Row(
+                children: [
+                  Icon(Icons.warning_amber_rounded, color: Colors.orange),
+                  SizedBox(width: 8),
+                  Text('Ukuran Foto Terlalu Besar'),
+                ],
+              ),
+              content: const Text(
+                'Gagal membuat pesanan karena total ukuran foto kondisi awal (Before) yang Anda unggah terlalu besar (melebihi batas database).\n\n'
+                'Silakan kurangi jumlah foto atau gunakan foto dengan resolusi lebih rendah.',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('OK'),
+                ),
+              ],
+            );
+          },
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal membuat pesanan: ${getCleanErrorMessage(e)}')),
+        );
+      }
     } finally {
       if (mounted) {
         setState(() {

@@ -435,9 +435,45 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Gagal memperbarui status: ${getCleanErrorMessage(e)}')),
-        );
+        final errorStr = e.toString().toLowerCase();
+        if (errorStr.contains('exceeds') || errorStr.contains('too large') || errorStr.contains('size') || errorStr.contains('limit')) {
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (BuildContext context) {
+              return AlertDialog(
+                title: const Row(
+                  children: [
+                    Icon(Icons.warning_amber_rounded, color: Colors.orange),
+                    SizedBox(width: 8),
+                    Text('Ukuran Foto Terlalu Besar'),
+                  ],
+                ),
+                content: const Text(
+                  'Gagal menyimpan karena ukuran foto yang Anda unggah terlalu besar (melebihi batas database).\n\n'
+                  'Silakan pilih atau ambil kembali foto lain dengan resolusi lebih rendah.',
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      _updateStatus(order);
+                    },
+                    child: const Text('Pilih Ulang Foto'),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Batal'),
+                  ),
+                ],
+              );
+            },
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Gagal memperbarui status: ${getCleanErrorMessage(e)}')),
+          );
+        }
       }
     }
   }
