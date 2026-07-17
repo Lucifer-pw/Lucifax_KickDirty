@@ -837,7 +837,7 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
                         SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            'Voucher: ${order.voucherCode}${order.voucherDiscount > 0 ? " (-Rp ${order.voucherDiscount.toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")})" : ""}',
+                            'Voucher: ${order.voucherCode}${order.voucherName.isNotEmpty ? " (${order.voucherName})" : ""}${order.voucherDiscount > 0 ? " (-Rp ${order.voucherDiscount.toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")})" : ""}',
                             style: TextStyle(fontSize: 12, color: Colors.green, fontWeight: FontWeight.bold),
                           ),
                         ),

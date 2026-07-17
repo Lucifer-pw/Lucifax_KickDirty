@@ -63,6 +63,7 @@ class OrderModel {
   final String estimatedCompletion;
   final String mapsLink;
   final String voucherCode;
+  final String voucherName;
   final double voucherDiscount;
   final Map<String, DateTime> statusTimeline;
   final DateTime createdAt;
@@ -95,6 +96,7 @@ class OrderModel {
     this.estimatedCompletion = '',
     this.mapsLink = '',
     this.voucherCode = '',
+    this.voucherName = '',
     this.voucherDiscount = 0.0,
     this.statusTimeline = const {},
     required this.createdAt,
@@ -144,6 +146,7 @@ class OrderModel {
       estimatedCompletion: map['estimatedCompletion'] ?? '',
       mapsLink: map['mapsLink'] ?? '',
       voucherCode: map['voucherCode'] ?? '',
+      voucherName: map['voucherName'] ?? '',
       voucherDiscount: (map['voucherDiscount'] as num?)?.toDouble() ?? 0.0,
       statusTimeline: timeline,
       createdAt: (map['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
@@ -183,6 +186,7 @@ class OrderModel {
       'estimatedCompletion': estimatedCompletion,
       'mapsLink': mapsLink,
       'voucherCode': voucherCode,
+      'voucherName': voucherName,
       'voucherDiscount': voucherDiscount,
       'statusTimeline': timelineDb,
       'createdAt': Timestamp.fromDate(createdAt),

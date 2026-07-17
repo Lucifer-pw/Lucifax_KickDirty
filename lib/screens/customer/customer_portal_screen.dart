@@ -1252,6 +1252,7 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
                                       pointsRedeemed: usePointsRedemption ? pointsNeeded : 0,
                                       mapsLink: orderMapsLink,
                                       voucherCode: appliedVoucher?.code ?? '',
+                                      voucherName: appliedVoucher?.name ?? '',
                                       voucherDiscount: finalVoucherDiscount,
                                       createdAt: DateTime.now(),
                                       updatedAt: DateTime.now(),

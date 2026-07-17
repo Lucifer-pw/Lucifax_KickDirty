@@ -723,6 +723,7 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
         pointsRedeemed: _usePointsRedemption ? 10 : 0,
         mapsLink: customerMapsLink,
         voucherCode: _appliedVoucher?.code ?? '',
+        voucherName: _appliedVoucher?.name ?? '',
         voucherDiscount: _voucherDiscount,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),

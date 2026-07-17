@@ -249,9 +249,7 @@ class InvoiceDetailModal extends StatelessWidget {
                   if (order.voucherCode.isNotEmpty)
                     _buildPriceSummaryRow(
                       'Voucher Terpasang',
-                      order.voucherDiscount > 0
-                          ? '${order.voucherCode} (-Rp ${order.voucherDiscount.toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")})'
-                          : order.voucherCode,
+                      '${order.voucherCode}${order.voucherName.isNotEmpty ? " (${order.voucherName})" : ""}${order.voucherDiscount > 0 ? " (-Rp ${order.voucherDiscount.toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")})" : ""}',
                       color: Colors.green,
                     ),
                   if (order.pointsRedeemed > 0 && pointsDiscount > 0)

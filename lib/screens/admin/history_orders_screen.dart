@@ -166,9 +166,7 @@ class _HistoryOrdersScreenState extends State<HistoryOrdersScreen> {
                         pw.Text('Ongkir: Rp ${order.deliveryFee.toStringAsFixed(0)}', style: const pw.TextStyle(fontSize: 8)),
                       if (order.voucherCode.isNotEmpty)
                         pw.Text(
-                          order.voucherDiscount > 0
-                              ? 'Voucher: ${order.voucherCode} (-Rp ${order.voucherDiscount.toStringAsFixed(0)})'
-                              : 'Voucher: ${order.voucherCode}',
+                          'Voucher: ${order.voucherCode}${order.voucherName.isNotEmpty ? " (${order.voucherName})" : ""}${order.voucherDiscount > 0 ? " (-Rp ${order.voucherDiscount.toStringAsFixed(0)})" : ""}',
                           style: const pw.TextStyle(fontSize: 8, color: PdfColors.green),
                         ),
                       if (order.pointsRedeemed > 0) ...[
@@ -321,14 +319,26 @@ class _HistoryOrdersScreenState extends State<HistoryOrdersScreen> {
                     pw.Text('Rp ${order.deliveryFee.toStringAsFixed(0)}', style: const pw.TextStyle(fontSize: 7)),
                   ],
                 ),
-              if (order.voucherDiscount > 0)
+              if (order.voucherCode.isNotEmpty) ...[
                 pw.Row(
                   mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                   children: [
-                    pw.Text('Diskon:', style: const pw.TextStyle(fontSize: 7, color: PdfColors.green)),
-                    pw.Text('-Rp ${order.voucherDiscount.toStringAsFixed(0)}', style: const pw.TextStyle(fontSize: 7, color: PdfColors.green)),
+                    pw.Text('Voucher:', style: const pw.TextStyle(fontSize: 7, color: PdfColors.green)),
+                    pw.Text(
+                      '${order.voucherCode}${order.voucherName.isNotEmpty ? " (${order.voucherName})" : ""}',
+                      style: const pw.TextStyle(fontSize: 7, color: PdfColors.green),
+                    ),
                   ],
                 ),
+                if (order.voucherDiscount > 0)
+                  pw.Row(
+                    mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                    children: [
+                      pw.Text('  Diskon Vch:', style: const pw.TextStyle(fontSize: 7, color: PdfColors.green)),
+                      pw.Text('-Rp ${order.voucherDiscount.toStringAsFixed(0)}', style: const pw.TextStyle(fontSize: 7, color: PdfColors.green)),
+                    ],
+                  ),
+              ],
               if (order.pointsRedeemed > 0)
                 pw.Row(
                   mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
