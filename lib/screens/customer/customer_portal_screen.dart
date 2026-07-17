@@ -21,6 +21,7 @@ import '../chat_screen.dart';
 import '../../services/in_app_notification_service.dart';
 import '../../utils/platform_helper.dart';
 import '../../utils/error_helper.dart';
+import '../../widgets/map_picker_widget.dart';
 
 class CustomerPortalScreen extends StatefulWidget {
   const CustomerPortalScreen({Key? key}) : super(key: key);
@@ -545,10 +546,33 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
                         // GPS maps link input
                         TextFormField(
                           controller: mapsLinkController,
-                          decoration: const InputDecoration(
+                          decoration: InputDecoration(
                             labelText: 'Link / Koordinat Google Maps',
                             hintText: 'https://maps.google.com/... atau -7.556,110.825',
-                            prefixIcon: Icon(Icons.map_outlined),
+                            prefixIcon: const Icon(Icons.map_outlined),
+                            suffixIcon: IconButton(
+                              icon: const Icon(Icons.pin_drop, color: AppTheme.primaryBlue),
+                              tooltip: 'Pilih di Peta secara Manual',
+                              onPressed: () async {
+                                final result = await Navigator.push<Map<String, String>>(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => MapPickerScreen(
+                                      initialMapsLink: orderMapsLink,
+                                    ),
+                                  ),
+                                );
+                                if (result != null) {
+                                  setStateSheet(() {
+                                    orderMapsLink = result['mapsLink'] ?? '';
+                                    mapsLinkController.text = result['mapsLink'] ?? '';
+                                    if (result['address'] != null && result['address']!.isNotEmpty) {
+                                      addressController.text = result['address']!;
+                                    }
+                                  });
+                                }
+                              },
+                            ),
                             helperText: 'Buka Google Maps -> Cari Lokasi -> Bagikan -> Salin Link, atau masukkan koordinat manual.',
                             helperMaxLines: 2,
                           ),
@@ -1604,11 +1628,34 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
                   maxLines: 2,
                 ),
                 const SizedBox(height: 12),
-                TextField(
+                 TextField(
                   controller: mapsController,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Link / Titik Google Maps',
                     hintText: 'https://maps.app.goo.gl/...',
+                    prefixIcon: const Icon(Icons.map_outlined),
+                    suffixIcon: IconButton(
+                      icon: const Icon(Icons.pin_drop, color: AppTheme.primaryBlue),
+                      tooltip: 'Pilih di Peta secara Manual',
+                      onPressed: () async {
+                        final result = await Navigator.push<Map<String, String>>(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => MapPickerScreen(
+                              initialMapsLink: mapsController.text,
+                            ),
+                          ),
+                        );
+                        if (result != null) {
+                          setStateDialog(() {
+                            mapsController.text = result['mapsLink'] ?? '';
+                            if (result['address'] != null && result['address']!.isNotEmpty) {
+                              addressController.text = result['address']!;
+                            }
+                          });
+                        }
+                      },
+                    ),
                     helperText: 'Buka Google Maps -> Cari Lokasi -> Bagikan -> Salin Link',
                     helperMaxLines: 2,
                   ),
