@@ -698,6 +698,48 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
                         ),
                         const SizedBox(height: 8),
 
+                        // Button to pick location manually
+                        SizedBox(
+                          width: double.infinity,
+                          child: TextButton.icon(
+                            onPressed: () async {
+                              final result = await Navigator.push<Map<String, String>>(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => MapPickerScreen(
+                                    initialMapsLink: orderMapsLink,
+                                  ),
+                                ),
+                              );
+                              if (result != null) {
+                                setStateSheet(() {
+                                  orderMapsLink = result['mapsLink'] ?? '';
+                                  mapsLinkController.text = result['mapsLink'] ?? '';
+                                  if (result['address'] != null && result['address']!.isNotEmpty) {
+                                    addressController.text = result['address']!;
+                                  }
+                                });
+                              }
+                            },
+                            icon: const Icon(Icons.pin_drop, color: Colors.red),
+                            label: const Text(
+                              'Pilih Lokasi Manual via Peta',
+                              style: TextStyle(
+                                color: Colors.red,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            style: TextButton.styleFrom(
+                              backgroundColor: Colors.red.withOpacity(0.08),
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+
                         // Button to lock GPS Location
                         SizedBox(
                           width: double.infinity,
@@ -1746,6 +1788,47 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
                     );
                   },
                 ),
+
+                // Button to pick location manually
+                SizedBox(
+                  width: double.infinity,
+                  child: TextButton.icon(
+                    onPressed: () async {
+                      final result = await Navigator.push<Map<String, String>>(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => MapPickerScreen(
+                            initialMapsLink: mapsController.text,
+                          ),
+                        ),
+                      );
+                      if (result != null) {
+                        setStateDialog(() {
+                          mapsController.text = result['mapsLink'] ?? '';
+                          if (result['address'] != null && result['address']!.isNotEmpty) {
+                            addressController.text = result['address']!;
+                          }
+                        });
+                      }
+                    },
+                    icon: const Icon(Icons.pin_drop, color: Colors.red),
+                    label: const Text(
+                      'Pilih Lokasi Manual via Peta',
+                      style: TextStyle(
+                        color: Colors.red,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    style: TextButton.styleFrom(
+                      backgroundColor: Colors.red.withOpacity(0.08),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
 
                 // Button to lock GPS Location
                 SizedBox(
