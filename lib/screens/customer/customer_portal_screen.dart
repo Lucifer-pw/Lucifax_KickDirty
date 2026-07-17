@@ -2918,6 +2918,79 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
 
 
   Widget _buildStepByStepSection() {
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance.collection('treatment_steps').orderBy('order').snapshots(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          return _buildStepByStepFallbackSection();
+        }
+
+        final docs = snapshot.data!.docs;
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Langkah Perawatan Sepatu',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: AppTheme.darkBlueText),
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    'Proses pengerjaan transparan & profesional untuk hasil yang maksimal.',
+                    style: TextStyle(fontSize: 12, color: AppTheme.textGray),
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(height: 16),
+            Container(
+              margin: EdgeInsets.symmetric(horizontal: 16),
+              padding: EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppTheme.white,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: AppTheme.cardShadow,
+                border: Border.all(color: AppTheme.lightGray),
+              ),
+              child: Column(
+                children: List.generate(docs.length, (index) {
+                  final data = docs[index].data() as Map<String, dynamic>;
+                  final stepNumber = data['stepNumber'] ?? '';
+                  final title = data['title'] ?? '';
+                  final desc = data['desc'] ?? '';
+                  final iconName = data['iconName'] ?? 'search';
+
+                  IconData icon = Icons.search;
+                  if (iconName == 'clean_hands') icon = Icons.clean_hands_outlined;
+                  else if (iconName == 'sunny') icon = Icons.wb_sunny_outlined;
+                  else if (iconName == 'spa') icon = Icons.spa_outlined;
+                  else if (iconName == 'verified') icon = Icons.verified_outlined;
+                  else if (iconName == 'water') icon = Icons.water_drop_outlined;
+                  else if (iconName == 'brush') icon = Icons.brush_outlined;
+                  else if (iconName == 'info') icon = Icons.info_outline;
+
+                  return Column(
+                    children: [
+                      _buildStepItem(stepNumber, title, desc, icon),
+                      if (index < docs.length - 1) _buildStepLine(),
+                    ],
+                  );
+                }),
+              ),
+            ),
+            SizedBox(height: 24),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildStepByStepFallbackSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -3013,6 +3086,61 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
   }
 
   Widget _buildFaqSection() {
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance.collection('faqs').orderBy('order').snapshots(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          return _buildFaqFallbackSection();
+        }
+
+        final docs = snapshot.data!.docs;
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16),
+              child: Text(
+                'Pertanyaan Umum (FAQ)',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: AppTheme.darkBlueText),
+              ),
+            ),
+            SizedBox(height: 12),
+            Container(
+              margin: EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                color: AppTheme.white,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: AppTheme.cardShadow,
+                border: Border.all(color: AppTheme.lightGray),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: Column(
+                  children: List.generate(docs.length, (index) {
+                    final data = docs[index].data() as Map<String, dynamic>;
+                    final question = data['question'] ?? '';
+                    final answer = data['answer'] ?? '';
+
+                    return Column(
+                      children: [
+                        _buildFaqTile(question, answer),
+                        if (index < docs.length - 1)
+                          Divider(height: 1, indent: 16, endIndent: 16),
+                      ],
+                    );
+                  }),
+                ),
+              ),
+            ),
+            SizedBox(height: 24),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildFaqFallbackSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

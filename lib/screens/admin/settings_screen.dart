@@ -13,6 +13,8 @@ import 'logistics_crud_screen.dart';
 import 'category_crud_screen.dart';
 import 'voucher_crud_screen.dart';
 import 'review_moderation_screen.dart';
+import 'treatment_steps_crud_screen.dart';
+import 'faq_crud_screen.dart';
 
 class AdminSettingsScreen extends StatefulWidget {
   AdminSettingsScreen({Key? key}) : super(key: key);
@@ -298,6 +300,32 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(builder: (_) => LogisticsCrudScreen()),
+                                  );
+                                },
+                              ),
+                              Divider(height: 1, indent: 56),
+                              _buildSettingTile(
+                                title: 'Kelola Langkah Perawatan',
+                                subtitle: 'CRUD urutan & deskripsi pencucian sepatu',
+                                icon: Icons.format_list_numbered,
+                                color: Colors.teal,
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(builder: (_) => TreatmentStepsCrudScreen()),
+                                  );
+                                },
+                              ),
+                              Divider(height: 1, indent: 56),
+                              _buildSettingTile(
+                                title: 'Kelola Tanya Jawab (FAQ)',
+                                subtitle: 'CRUD daftar FAQ & jawaban bantuan',
+                                icon: Icons.question_answer_outlined,
+                                color: Colors.purple,
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(builder: (_) => FaqCrudScreen()),
                                   );
                                 },
                               ),
