@@ -31,6 +31,7 @@ import 'settings_screen.dart';
 import 'owner_billing_package_screen.dart';
 import '../../services/in_app_notification_service.dart';
 import '../../services/auto_backup_service.dart';
+import '../../services/presence_service.dart';
 
 class AdminDashboard extends StatefulWidget {
   AdminDashboard({Key? key}) : super(key: key);
@@ -93,6 +94,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
       
       final authService = Provider.of<AuthService>(context, listen: false);
       if (authService.currentUserModel != null) {
+        PresenceService.instance.initialize(authService.currentUserModel!.uid);
         InAppNotificationService.instance.startListening(
           context,
           authService.currentUserModel!.uid,
@@ -108,6 +110,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
   @override
   void dispose() {
     _printerSubscription?.cancel();
+    PresenceService.instance.stop();
     AutoBackupService.instance.stopChecking();
     super.dispose();
   }
@@ -478,6 +481,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                       );
                     }
                   } else if (value == 'logout') {
+                    PresenceService.instance.stop();
                     InAppNotificationService.instance.stopListening();
                     await Provider.of<AuthService>(context, listen: false).signOut();
                     if (context.mounted) {
@@ -597,6 +601,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
                     
                     if ((role == 'owner' || role == 'developer') && billingConfig != null) ...[
                       _buildBillingDashboardBanner(context, billingConfig),
+                      SizedBox(height: 16),
+                    ],
+
+                    if (role == 'developer') ...[
+                      _buildEmployeeStatusCard(),
                       SizedBox(height: 16),
                     ],
                     
@@ -1122,6 +1131,186 @@ class _AdminDashboardState extends State<AdminDashboard> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildEmployeeStatusCard() {
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('users')
+          .where('role', whereIn: ['owner', 'staff', 'developer'])
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const SizedBox.shrink();
+        }
+        
+        final userDocs = snapshot.data!.docs;
+        
+        // Map and determine online status
+        final List<Map<String, dynamic>> employees = [];
+        int activeCount = 0;
+        
+        for (var doc in userDocs) {
+          final data = doc.data() as Map<String, dynamic>;
+          final lastSeenTimestamp = data['lastSeen'] as Timestamp?;
+          final lastSeen = lastSeenTimestamp?.toDate();
+          final bool isOnlineRaw = data['isOnline'] == true;
+          
+          // Consider online if flag is true AND lastSeen is within 2 minutes
+          final bool isOnline = isOnlineRaw && 
+              lastSeen != null && 
+              DateTime.now().difference(lastSeen).inMinutes <= 2;
+              
+          if (isOnline) {
+            activeCount++;
+          }
+          
+          employees.add({
+            'name': data['name'] ?? 'Karyawan',
+            'role': data['role'] ?? 'staff',
+            'isOnline': isOnline,
+            'initial': (data['name'] as String? ?? 'K').isNotEmpty 
+                ? (data['name'] as String)[0].toUpperCase() 
+                : 'K',
+          });
+        }
+        
+        // Sort: online employees first, then by name
+        employees.sort((a, b) {
+          if (a['isOnline'] != b['isOnline']) {
+            return a['isOnline'] ? -1 : 1;
+          }
+          return (a['name'] as String).compareTo(b['name'] as String);
+        });
+
+        return Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: const Color(0xFF1E2235), // Sleek dark card background matching the screenshot
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.15),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header Row
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.people_outline, color: Color(0xFFFF7A59), size: 22),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'Status Karyawan',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.green.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      '$activeCount Aktif',
+                      style: const TextStyle(
+                        color: Colors.greenAccent,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              
+              // Horizontal employee list
+              SizedBox(
+                height: 80,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: employees.length,
+                  itemBuilder: (context, index) {
+                    final emp = employees[index];
+                    final isOnline = emp['isOnline'] as bool;
+                    
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 16.0),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // Avatar Stack
+                          Stack(
+                            children: [
+                              CircleAvatar(
+                                radius: 22,
+                                backgroundColor: isOnline 
+                                    ? const Color(0xFFFF5722) // Orange avatar if online
+                                    : const Color(0xFF2E3245), // Dark/grey if offline
+                                child: Text(
+                                  emp['initial'],
+                                  style: TextStyle(
+                                    color: isOnline ? Colors.white : Colors.white60,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 15,
+                                  ),
+                                ),
+                              ),
+                              Positioned(
+                                right: 0,
+                                bottom: 0,
+                                child: Container(
+                                  width: 12,
+                                  height: 12,
+                                  decoration: BoxDecoration(
+                                    color: isOnline ? Colors.green : Colors.grey,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: const Color(0xFF1E2235), // Match card background
+                                      width: 2,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          
+                          // Name
+                          Text(
+                            emp['name'],
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: isOnline ? Colors.white : Colors.white70,
+                              fontSize: 11,
+                              fontWeight: isOnline ? FontWeight.bold : FontWeight.normal,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
