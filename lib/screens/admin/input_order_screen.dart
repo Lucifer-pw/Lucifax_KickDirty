@@ -13,6 +13,9 @@ import '../../services/database_service.dart';
 import '../../services/image_service.dart';
 import '../../theme.dart';
 import '../../utils/error_helper.dart';
+import '../../utils/platform_helper.dart';
+import '../../widgets/map_picker_widget.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class InputOrderScreen extends StatefulWidget {
   final bool isTab;
@@ -48,7 +51,48 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
 
   String _deliveryType = 'drop_off_only';
   final _deliveryAddressController = TextEditingController();
+  final _mapsLinkController = TextEditingController();
   final _deliveryFeeController = TextEditingController(text: '0');
+  bool _isGpsLoading = false;
+
+  Map<String, double>? _parseLatLng(String url) {
+    if (url.isEmpty) return null;
+    
+    // Try query=lat,lng or q=lat,lng
+    final regExp = RegExp(r'(?:query|q|place)=([+-]?\d+\.\d+)\s*,\s*([+-]?\d+\.\d+)');
+    final match = regExp.firstMatch(url);
+    if (match != null && match.groupCount >= 2) {
+      final lat = double.tryParse(match.group(1)!);
+      final lng = double.tryParse(match.group(2)!);
+      if (lat != null && lng != null) {
+        return {'latitude': lat, 'longitude': lng};
+      }
+    }
+    
+    // Try @lat,lng
+    final regExpAt = RegExp(r'@([+-]?\d+\.\d+)\s*,\s*([+-]?\d+\.\d+)');
+    final matchAt = regExpAt.firstMatch(url);
+    if (matchAt != null && matchAt.groupCount >= 2) {
+      final lat = double.tryParse(matchAt.group(1)!);
+      final lng = double.tryParse(matchAt.group(2)!);
+      if (lat != null && lng != null) {
+        return {'latitude': lat, 'longitude': lng};
+      }
+    }
+
+    // Try raw coordinates (e.g. -7.556,110.825)
+    final regExpRaw = RegExp(r'^([+-]?\d+\.\d+)\s*,\s*([+-]?\d+\.\d+)$');
+    final matchRaw = regExpRaw.firstMatch(url.trim());
+    if (matchRaw != null && matchRaw.groupCount >= 2) {
+      final lat = double.tryParse(matchRaw.group(1)!);
+      final lng = double.tryParse(matchRaw.group(2)!);
+      if (lat != null && lng != null) {
+        return {'latitude': lat, 'longitude': lng};
+      }
+    }
+
+    return null;
+  }
 
   List<String> _photoBeforeList = [];
 
@@ -539,15 +583,38 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
                                   ],
                                 ),
                                 onTap: () {
-                                  setState(() {
-                                    _nameController.text = name;
-                                    _phoneController.text = phone;
-                                    _selectedCustomerId = item['customerId'] ?? '';
-                                    _selectedCustomerPoints = points;
-                                    _usePointsRedemption = false; // Reset first
-                                  });
-                                  Navigator.pop(context); // Close dialog
-                                },
+                                   final customerId = item['customerId'] ?? '';
+                                   setState(() {
+                                     _nameController.text = name;
+                                     _phoneController.text = phone;
+                                     _selectedCustomerId = customerId;
+                                     _selectedCustomerPoints = points;
+                                     _usePointsRedemption = false; // Reset first
+                                     _deliveryAddressController.text = '';
+                                     _mapsLinkController.text = '';
+                                   });
+                                   if (customerId.isNotEmpty) {
+                                     FirebaseFirestore.instance
+                                         .collection('users')
+                                         .doc(customerId)
+                                         .get()
+                                         .then((userSnap) {
+                                       if (userSnap.exists) {
+                                         final address = userSnap.data()?['addressDetail'] as String? ?? '';
+                                         final mapLink = userSnap.data()?['mapsLink'] as String? ?? '';
+                                         setState(() {
+                                           if (address.isNotEmpty) {
+                                             _deliveryAddressController.text = address;
+                                           }
+                                           if (mapLink.isNotEmpty) {
+                                             _mapsLinkController.text = mapLink;
+                                           }
+                                         });
+                                       }
+                                     }).catchError((_) {});
+                                   }
+                                   Navigator.pop(context); // Close dialog
+                                 },
                               );
                             },
                           );
@@ -620,16 +687,8 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
     try {
       final dbService = Provider.of<DatabaseService>(context, listen: false);
 
-      // Fetch customer's maps link if selected
-      String customerMapsLink = '';
-      if (_selectedCustomerId.isNotEmpty) {
-        try {
-          final userSnap = await FirebaseFirestore.instance.collection('users').doc(_selectedCustomerId).get();
-          if (userSnap.exists) {
-            customerMapsLink = userSnap.data()?['mapsLink'] ?? '';
-          }
-        } catch (_) {}
-      }
+      // Fetch customer's maps link
+      String customerMapsLink = _mapsLinkController.text.trim();
 
       // Fetch dynamic logistics config to determine if address/fee should be populated
       bool requiresAddress = false;
@@ -683,6 +742,17 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
           if (_selectedCustomerId.isNotEmpty) 'uid': _selectedCustomerId,
           'lastOrderAt': FieldValue.serverTimestamp(),
         }, SetOptions(merge: true));
+
+        // If customer is registered, also sync address and map link to user document
+        if (_selectedCustomerId.isNotEmpty) {
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(_selectedCustomerId)
+              .update({
+            'addressDetail': _deliveryAddressController.text.trim(),
+            'mapsLink': customerMapsLink,
+          });
+        }
       } catch (e) {
         if (kDebugMode) print("Error saving customer record: $e");
       }
@@ -1136,12 +1206,277 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
                                   controller: _deliveryAddressController,
                                   maxLines: 2,
                                   decoration: const InputDecoration(
+                                    labelText: 'Detail Alamat',
                                     hintText: 'Alamat lengkap penjemputan/pengantaran',
                                     prefixIcon: Icon(Icons.location_on_outlined),
                                   ),
                                   validator: (v) => requiresAddress && (v == null || v.isEmpty)
                                       ? 'Alamat wajib diisi untuk metode ini'
                                       : null,
+                                ),
+                                const SizedBox(height: 12),
+                                TextFormField(
+                                  controller: _mapsLinkController,
+                                  decoration: InputDecoration(
+                                    labelText: 'Link / Koordinat Google Maps',
+                                    hintText: 'https://maps.google.com/... atau -7.556,110.825',
+                                    prefixIcon: const Icon(Icons.map_outlined),
+                                    suffixIcon: IconButton(
+                                      icon: const Icon(Icons.pin_drop, color: AppTheme.primaryBlue),
+                                      tooltip: 'Pilih di Peta secara Manual',
+                                      onPressed: () async {
+                                        final result = await Navigator.push<Map<String, String>>(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) => MapPickerScreen(
+                                              initialMapsLink: _mapsLinkController.text,
+                                            ),
+                                          ),
+                                        );
+                                        if (result != null) {
+                                          setState(() {
+                                            _mapsLinkController.text = result['mapsLink'] ?? '';
+                                            if (result['address'] != null && result['address']!.isNotEmpty) {
+                                              _deliveryAddressController.text = result['address']!;
+                                            }
+                                          });
+                                        }
+                                      },
+                                    ),
+                                    helperText: 'Buka Google Maps -> Cari Lokasi -> Bagikan -> Salin Link, atau masukkan koordinat manual.',
+                                    helperMaxLines: 2,
+                                  ),
+                                  onChanged: (val) {
+                                    setState(() {});
+                                  },
+                                ),
+                                const SizedBox(height: 8),
+
+                                // Minimap preview
+                                Builder(
+                                  builder: (context) {
+                                    final coords = _parseLatLng(_mapsLinkController.text);
+                                    if (coords == null) {
+                                      return Container(
+                                        padding: const EdgeInsets.all(12),
+                                        decoration: BoxDecoration(
+                                          color: Colors.amber.withOpacity(0.05),
+                                          borderRadius: BorderRadius.circular(16),
+                                          border: Border.all(color: Colors.amber.withOpacity(0.2)),
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            Icon(Icons.info_outline, color: Colors.amber[700], size: 20),
+                                            const SizedBox(width: 8),
+                                            Expanded(
+                                              child: Text(
+                                                'Lokasi GPS belum dikunci/dimasukkan (disarankan agar kurir tidak tersesat)',
+                                                style: TextStyle(
+                                                  fontSize: 11,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Colors.amber[800],
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                    }
+                                    
+                                    return Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        const Text(
+                                          'Pratinjau Peta Lokasi Pengiriman:',
+                                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppTheme.darkBlueText),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        GestureDetector(
+                                          onTap: () async {
+                                            final currentLink = _mapsLinkController.text.trim();
+                                            if (currentLink.startsWith('http') && await canLaunchUrl(Uri.parse(currentLink))) {
+                                              await launchUrl(Uri.parse(currentLink));
+                                            } else {
+                                              final mapUrl = 'https://www.google.com/maps/search/?api=1&query=${coords['latitude']},${coords['longitude']}';
+                                              if (await canLaunchUrl(Uri.parse(mapUrl))) {
+                                                await launchUrl(Uri.parse(mapUrl));
+                                              }
+                                            }
+                                          },
+                                          child: ClipRRect(
+                                            borderRadius: BorderRadius.circular(16),
+                                            child: Container(
+                                              height: 150,
+                                              width: double.infinity,
+                                              color: Colors.grey[200],
+                                              child: Stack(
+                                                children: [
+                                                  Image.network(
+                                                    'https://static-maps.yandex.ru/1.x/?ll=${coords['longitude']},${coords['latitude']}&z=15&size=450,150&l=map&pt=${coords['longitude']},${coords['latitude']},pm2rdm',
+                                                    fit: BoxFit.cover,
+                                                    width: double.infinity,
+                                                    height: double.infinity,
+                                                    errorBuilder: (context, error, stackTrace) {
+                                                      return Container(
+                                                        color: Colors.grey[300],
+                                                        child: const Center(
+                                                          child: Column(
+                                                            mainAxisAlignment: MainAxisAlignment.center,
+                                                            children: [
+                                                              Icon(Icons.map_outlined, color: Colors.grey, size: 36),
+                                                              SizedBox(height: 4),
+                                                              Text(
+                                                                'Peta tidak dapat dimuat',
+                                                                style: TextStyle(color: Colors.grey, fontSize: 12),
+                                                              ),
+                                                            ],
+                                                          ),
+                                                        ),
+                                                      );
+                                                    },
+                                                  ),
+                                                  Positioned(
+                                                    bottom: 8,
+                                                    right: 8,
+                                                    child: Container(
+                                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                                      decoration: BoxDecoration(
+                                                        color: Colors.black.withOpacity(0.6),
+                                                        borderRadius: BorderRadius.circular(8),
+                                                      ),
+                                                      child: const Row(
+                                                        children: [
+                                                          Icon(Icons.open_in_new, color: Colors.white, size: 10),
+                                                          SizedBox(width: 4),
+                                                          Text(
+                                                            'Buka Google Maps',
+                                                            style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    );
+                                  },
+                                ),
+                                const SizedBox(height: 8),
+
+                                // Button to pick location manually
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: TextButton.icon(
+                                    onPressed: () async {
+                                      final result = await Navigator.push<Map<String, String>>(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => MapPickerScreen(
+                                            initialMapsLink: _mapsLinkController.text,
+                                          ),
+                                        ),
+                                      );
+                                      if (result != null) {
+                                        setState(() {
+                                          _mapsLinkController.text = result['mapsLink'] ?? '';
+                                          if (result['address'] != null && result['address']!.isNotEmpty) {
+                                            _deliveryAddressController.text = result['address']!;
+                                          }
+                                        });
+                                      }
+                                    },
+                                    icon: const Icon(Icons.pin_drop, color: Colors.red),
+                                    label: const Text(
+                                      'Pilih Lokasi Manual via Peta',
+                                      style: TextStyle(
+                                        color: Colors.red,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    style: TextButton.styleFrom(
+                                      backgroundColor: Colors.red.withOpacity(0.08),
+                                      padding: const EdgeInsets.symmetric(vertical: 14),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(16),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+
+                                // Button to lock GPS Location
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: TextButton.icon(
+                                    onPressed: _isGpsLoading
+                                        ? null
+                                        : () async {
+                                            setState(() {
+                                              _isGpsLoading = true;
+                                            });
+                                            try {
+                                              final link = await getGpsLocation();
+                                              if (link != null) {
+                                                setState(() {
+                                                  _mapsLinkController.text = link;
+                                                });
+                                                if (context.mounted) {
+                                                  ScaffoldMessenger.of(context).showSnackBar(
+                                                    const SnackBar(
+                                                      content: Text('Lokasi GPS berhasil dikunci!'),
+                                                    ),
+                                                  );
+                                                }
+                                              } else {
+                                                if (context.mounted) {
+                                                  ScaffoldMessenger.of(context).showSnackBar(
+                                                    const SnackBar(
+                                                      content: Text('Gagal mendapatkan lokasi. Pastikan GPS aktif.'),
+                                                    ),
+                                                  );
+                                                }
+                                              }
+                                            } catch (e) {
+                                              if (context.mounted) {
+                                                ScaffoldMessenger.of(context).showSnackBar(
+                                                  SnackBar(content: Text('Gagal mengunci lokasi: ${getCleanErrorMessage(e)}')),
+                                                );
+                                              }
+                                            } finally {
+                                              setState(() {
+                                                _isGpsLoading = false;
+                                              });
+                                            }
+                                          },
+                                    icon: _isGpsLoading
+                                        ? const SizedBox(
+                                            width: 16,
+                                            height: 16,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              color: AppTheme.primaryBlue,
+                                            ),
+                                          )
+                                        : const Icon(Icons.gps_fixed, color: AppTheme.primaryBlue),
+                                    label: Text(
+                                      _isGpsLoading ? 'Mengunci Lokasi...' : 'Kunci Lokasi Otomatis via GPS',
+                                      style: const TextStyle(
+                                        color: AppTheme.primaryBlue,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    style: TextButton.styleFrom(
+                                      backgroundColor: AppTheme.lightBlueBackground,
+                                      padding: const EdgeInsets.symmetric(vertical: 14),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(16),
+                                      ),
+                                    ),
+                                  ),
                                 ),
                               ],
                               const SizedBox(height: 12),
