@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/order_model.dart';
 import '../theme.dart';
 
@@ -247,11 +248,37 @@ class InvoiceDetailModal extends StatelessWidget {
                       'Rp ${order.deliveryFee.toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")}',
                     ),
                   if (order.voucherCode.isNotEmpty)
-                    _buildPriceSummaryRow(
-                      'Voucher Terpasang',
-                      '${order.voucherCode}${order.voucherName.isNotEmpty ? " (${order.voucherName})" : ""}${order.voucherDiscount > 0 ? " (-Rp ${order.voucherDiscount.toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")})" : ""}',
-                      color: Colors.green,
-                    ),
+                    order.voucherName.isNotEmpty
+                        ? _buildPriceSummaryRow(
+                            'Voucher Terpasang',
+                            '${order.voucherCode} (${order.voucherName})${order.voucherDiscount > 0 ? " (-Rp ${order.voucherDiscount.toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")})" : ""}',
+                            color: Colors.green,
+                          )
+                        : FutureBuilder<QuerySnapshot>(
+                            future: FirebaseFirestore.instance
+                                .collection('vouchers')
+                                .where('code', isEqualTo: order.voucherCode)
+                                .limit(1)
+                                .get(),
+                            builder: (context, snapshot) {
+                              String displayText = order.voucherCode;
+                              if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
+                                final doc = snapshot.data!.docs.first;
+                                final name = doc.get('name') as String? ?? '';
+                                if (name.isNotEmpty) {
+                                  displayText = '${order.voucherCode} ($name)';
+                                }
+                              }
+                              final discountSuffix = order.voucherDiscount > 0
+                                  ? ' (-Rp ${order.voucherDiscount.toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")})'
+                                  : '';
+                              return _buildPriceSummaryRow(
+                                'Voucher Terpasang',
+                                '$displayText$discountSuffix',
+                                color: Colors.green,
+                              );
+                            },
+                          ),
                   if (order.pointsRedeemed > 0 && pointsDiscount > 0)
                     _buildPriceSummaryRow(
                       'Diskon Poin (${order.pointsRedeemed} Poin)',

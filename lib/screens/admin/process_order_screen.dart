@@ -831,18 +831,51 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
                   SizedBox(height: 8),
                   Padding(
                     padding: EdgeInsets.only(left: 26),
-                    child: Row(
-                      children: [
-                        Icon(Icons.confirmation_number_outlined, size: 16, color: Colors.green),
-                        SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            'Voucher: ${order.voucherCode}${order.voucherName.isNotEmpty ? " (${order.voucherName})" : ""}${order.voucherDiscount > 0 ? " (-Rp ${order.voucherDiscount.toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")})" : ""}',
-                            style: TextStyle(fontSize: 12, color: Colors.green, fontWeight: FontWeight.bold),
+                    child: order.voucherName.isNotEmpty
+                        ? Row(
+                            children: [
+                              Icon(Icons.confirmation_number_outlined, size: 16, color: Colors.green),
+                              SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Voucher: ${order.voucherCode} (${order.voucherName})${order.voucherDiscount > 0 ? " (-Rp ${order.voucherDiscount.toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")})" : ""}',
+                                  style: TextStyle(fontSize: 12, color: Colors.green, fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            ],
+                          )
+                        : FutureBuilder<QuerySnapshot>(
+                            future: FirebaseFirestore.instance
+                                .collection('vouchers')
+                                .where('code', isEqualTo: order.voucherCode)
+                                .limit(1)
+                                .get(),
+                            builder: (context, snapshot) {
+                              String displayText = order.voucherCode;
+                              if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
+                                final doc = snapshot.data!.docs.first;
+                                final name = doc.get('name') as String? ?? '';
+                                if (name.isNotEmpty) {
+                                  displayText = '${order.voucherCode} ($name)';
+                                }
+                              }
+                              final discountSuffix = order.voucherDiscount > 0
+                                  ? ' (-Rp ${order.voucherDiscount.toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")})'
+                                  : '';
+                              return Row(
+                                children: [
+                                  Icon(Icons.confirmation_number_outlined, size: 16, color: Colors.green),
+                                  SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      'Voucher: $displayText$discountSuffix',
+                                      style: TextStyle(fontSize: 12, color: Colors.green, fontWeight: FontWeight.bold),
+                                    ),
+                                  ),
+                                ],
+                              );
+                            },
                           ),
-                        ),
-                      ],
-                    ),
                   ),
                 ],
                 if (order.estimatedCompletion.isNotEmpty || order.status == 'sedang_diproses') ...[
