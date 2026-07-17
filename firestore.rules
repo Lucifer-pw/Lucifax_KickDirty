@@ -82,7 +82,8 @@ service cloud.firestore {
       allow create: if request.auth != null;
       allow update: if request.auth != null
                     && (request.auth.uid == resource.data.uid || isOwnerOrStaff());
-      allow delete: if request.auth != null && isOwnerOrStaff();
+      allow delete: if request.auth != null
+                    && (request.auth.uid == resource.data.uid || isOwnerOrStaff());
     }
 
     // ============================================
@@ -200,12 +201,18 @@ service cloud.firestore {
                   && (
                     resource == null
                     || resource.data.uid == request.auth.uid
+                    || !('uid' in resource.data)
+                    || resource.data.uid == ""
+                    || resource.data.uid == null
                     || isOwnerOrStaff()
                   );
       allow create: if request.auth != null;
       allow update: if request.auth != null
                     && (
                       resource.data.uid == request.auth.uid
+                      || !('uid' in resource.data)
+                      || resource.data.uid == ""
+                      || resource.data.uid == null
                       || isOwnerOrStaff()
                     );
       allow delete: if request.auth != null && isOwnerOrStaff();
