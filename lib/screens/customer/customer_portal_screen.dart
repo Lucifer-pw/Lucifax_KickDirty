@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../models/order_model.dart';
 import '../../models/service_model.dart';
@@ -695,6 +696,10 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
                             StreamBuilder<List<VoucherModel>>(
                               stream: _vouchersStream,
                               builder: (context, snapshot) {
+                                if (snapshot.hasError) {
+                                  if (kDebugMode) print("Vouchers Stream Error: ${snapshot.error}");
+                                  return Text('Gagal memuat voucher: ${getCleanErrorMessage(snapshot.error)}', style: const TextStyle(fontSize: 11, color: Colors.red));
+                                }
                                 final activeVouchers = snapshot.data ?? [];
                                 final eligibleVouchers = activeVouchers.where((v) => servicePrice >= v.minOrder && orderItems.length >= v.minQty).toList();
 

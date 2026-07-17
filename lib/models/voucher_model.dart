@@ -41,7 +41,7 @@ class VoucherModel {
       discountValue: (map['discountValue'] as num?)?.toDouble() ?? 0.0,
       minOrder: (map['minOrder'] as num?)?.toDouble() ?? 0.0,
       maxDiscount: (map['maxDiscount'] as num?)?.toDouble() ?? 0.0,
-      minQty: map['minQty'] as int? ?? 0,
+      minQty: (map['minQty'] as num?)?.toInt() ?? 0,
       isActive: map['isActive'] ?? true,
       validFrom: (map['validFrom'] as Timestamp?)?.toDate(),
       validTo: (map['validTo'] as Timestamp?)?.toDate(),

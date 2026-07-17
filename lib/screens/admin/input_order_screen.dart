@@ -1167,7 +1167,7 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
                   // 6. Voucher Card (Voucher diskon)
                   Card(
                     child: Padding(
-                      padding: const EdgeInsets.all(16.0),
+padding: const EdgeInsets.all(16.0),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -1176,6 +1176,10 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
                           StreamBuilder<List<VoucherModel>>(
                             stream: _vouchersStream,
                             builder: (context, snapshot) {
+                              if (snapshot.hasError) {
+                                if (kDebugMode) print("Vouchers Stream Error: ${snapshot.error}");
+                                return Text('Gagal memuat voucher: ${getCleanErrorMessage(snapshot.error)}', style: const TextStyle(fontSize: 11, color: Colors.red));
+                              }
                               final activeVouchers = snapshot.data ?? [];
                               final eligibleVouchers = activeVouchers.where((v) => _itemsPrice >= v.minOrder && _items.length >= v.minQty).toList();
 
