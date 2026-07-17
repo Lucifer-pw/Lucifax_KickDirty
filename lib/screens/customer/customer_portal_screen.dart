@@ -1602,83 +1602,91 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
                   newPhone = '62${newPhone.substring(1)}';
                 }
 
-                if (newPhone.isNotEmpty && newPhone != user.phoneNumber) {
-                  // Check if phone number is already registered to another user
-                  final checkPhone = await FirebaseFirestore.instance.collection('users')
-                      .where('phoneNumber', isEqualTo: newPhone)
-                      .get();
-                  final otherUsers = checkPhone.docs.where((doc) => doc.id != user.uid).toList();
-                  if (otherUsers.isNotEmpty) {
-                    if (context.mounted) {
-                      showDialog(
-                        context: context,
-                        builder: (context) => AlertDialog(
-                          title: const Row(
-                            children: [
-                              Icon(Icons.warning_amber_rounded, color: Colors.orange),
-                              SizedBox(width: 8),
-                              Text('Nomor Sudah Terdaftar'),
+                try {
+                  if (newPhone.isNotEmpty && newPhone != user.phoneNumber) {
+                    // Check if phone number is already registered to another user
+                    final checkPhone = await FirebaseFirestore.instance.collection('users')
+                        .where('phoneNumber', isEqualTo: newPhone)
+                        .get();
+                    final otherUsers = checkPhone.docs.where((doc) => doc.id != user.uid).toList();
+                    if (otherUsers.isNotEmpty) {
+                      if (context.mounted) {
+                        showDialog(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            title: const Row(
+                              children: [
+                                Icon(Icons.warning_amber_rounded, color: Colors.orange),
+                                SizedBox(width: 8),
+                                Text('Nomor Sudah Terdaftar'),
+                              ],
+                            ),
+                            content: const Text(
+                              'Nomor WhatsApp ini sudah digunakan oleh akun lain.\n\n'
+                              'Silakan gunakan nomor WhatsApp lain yang belum terdaftar.',
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context),
+                                child: const Text('OK'),
+                              ),
                             ],
                           ),
-                          content: const Text(
-                            'Nomor WhatsApp ini sudah digunakan oleh akun lain.\n\n'
-                            'Silakan gunakan nomor WhatsApp lain yang belum terdaftar.',
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(context),
-                              child: const Text('OK'),
-                            ),
-                          ],
-                        ),
-                      );
+                        );
+                      }
+                      return;
                     }
-                    return;
                   }
-                }
 
-                // Save to users collection
-                await FirebaseFirestore.instance.collection('users').doc(user.uid).update({
-                  'name': newName,
-                  'phoneNumber': newPhone,
-                  'addressDetail': newAddress,
-                  'mapsLink': newMaps,
-                });
-
-                // Sync with phone_lookups and customers
-                if (newPhone.isNotEmpty) {
-                  await FirebaseFirestore.instance.collection('phone_lookups').doc(newPhone).set({
-                    'email': user.email,
-                    'uid': user.uid,
+                  // Save to users collection
+                  await FirebaseFirestore.instance.collection('users').doc(user.uid).update({
+                    'name': newName,
+                    'phoneNumber': newPhone,
+                    'addressDetail': newAddress,
+                    'mapsLink': newMaps,
                   });
 
-                  final customerDoc = await FirebaseFirestore.instance.collection('customers').doc(newPhone).get();
-                  if (customerDoc.exists) {
-                    await FirebaseFirestore.instance.collection('customers').doc(newPhone).update({
+                  // Sync with phone_lookups and customers
+                  if (newPhone.isNotEmpty) {
+                    await FirebaseFirestore.instance.collection('phone_lookups').doc(newPhone).set({
+                      'email': user.email,
                       'uid': user.uid,
-                      'name': newName,
-                      'updatedAt': FieldValue.serverTimestamp(),
                     });
-                  } else {
-                    await FirebaseFirestore.instance.collection('customers').doc(newPhone).set({
-                      'name': newName,
-                      'phone': newPhone,
-                      'uid': user.uid,
-                      'loyaltyPoints': user.loyaltyPoints,
-                      'createdAt': FieldValue.serverTimestamp(),
-                    });
+
+                    final customerDoc = await FirebaseFirestore.instance.collection('customers').doc(newPhone).get();
+                    if (customerDoc.exists) {
+                      await FirebaseFirestore.instance.collection('customers').doc(newPhone).update({
+                        'uid': user.uid,
+                        'name': newName,
+                        'updatedAt': FieldValue.serverTimestamp(),
+                      });
+                    } else {
+                      await FirebaseFirestore.instance.collection('customers').doc(newPhone).set({
+                        'name': newName,
+                        'phone': newPhone,
+                        'uid': user.uid,
+                        'loyaltyPoints': user.loyaltyPoints,
+                        'createdAt': FieldValue.serverTimestamp(),
+                      });
+                    }
+
+                    // Clean up old lookup/customer records if changed
+                    final oldPhoneNormalized = user.phoneNumber.replaceAll(RegExp(r'[^0-9]'), '');
+                    if (oldPhoneNormalized.isNotEmpty && oldPhoneNormalized != newPhone) {
+                      await FirebaseFirestore.instance.collection('phone_lookups').doc(oldPhoneNormalized).delete();
+                    }
                   }
 
-                  // Clean up old lookup/customer records if changed
-                  final oldPhoneNormalized = user.phoneNumber.replaceAll(RegExp(r'[^0-9]'), '');
-                  if (oldPhoneNormalized.isNotEmpty && oldPhoneNormalized != newPhone) {
-                    await FirebaseFirestore.instance.collection('phone_lookups').doc(oldPhoneNormalized).delete();
+                  final authService = Provider.of<AuthService>(context, listen: false);
+                  await authService.refreshUser();
+                  if (context.mounted) Navigator.pop(context);
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Gagal memperbarui profil: ${getCleanErrorMessage(e)}')),
+                    );
                   }
                 }
-
-                final authService = Provider.of<AuthService>(context, listen: false);
-                await authService.refreshUser();
-                if (context.mounted) Navigator.pop(context);
               },
               child: const Text('Simpan'),
             ),

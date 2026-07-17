@@ -197,10 +197,17 @@ service cloud.firestore {
     // ============================================
     match /customers/{customerId} {
       allow read: if request.auth != null
-                  && (request.auth.uid == customerId || isOwnerOrStaff());
+                  && (
+                    resource == null
+                    || resource.data.uid == request.auth.uid
+                    || isOwnerOrStaff()
+                  );
       allow create: if request.auth != null;
       allow update: if request.auth != null
-                    && (request.auth.uid == customerId || isOwnerOrStaff());
+                    && (
+                      resource.data.uid == request.auth.uid
+                      || isOwnerOrStaff()
+                    );
       allow delete: if request.auth != null && isOwnerOrStaff();
     }
 
