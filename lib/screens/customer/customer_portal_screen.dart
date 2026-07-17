@@ -1452,6 +1452,7 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
 
   void _editProfileDialog(BuildContext context, UserModel user, DatabaseService dbService) {
     final nameController = TextEditingController(text: user.name);
+    final phoneController = TextEditingController(text: user.phoneNumber);
     final addressController = TextEditingController(text: user.addressDetail);
     final mapsController = TextEditingController(text: user.mapsLink);
     bool isGpsLoading = false;
@@ -1472,6 +1473,15 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
                     hintText: 'Masukkan nama baru',
                   ),
                   textCapitalization: TextCapitalization.words,
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: phoneController,
+                  decoration: const InputDecoration(
+                    labelText: 'Nomor WhatsApp',
+                    hintText: 'Contoh: 628123456789',
+                  ),
+                  keyboardType: TextInputType.phone,
                 ),
                 const SizedBox(height: 12),
                 TextField(
@@ -1575,12 +1585,14 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
             ElevatedButton(
               onPressed: () async {
                 final newName = nameController.text.trim();
+                final newPhone = phoneController.text.trim();
                 final newAddress = addressController.text.trim();
                 final newMaps = mapsController.text.trim();
                 
                 if (newName.isNotEmpty) {
                   await FirebaseFirestore.instance.collection('users').doc(user.uid).update({
                     'name': newName,
+                    'phoneNumber': newPhone,
                     'addressDetail': newAddress,
                     'mapsLink': newMaps,
                   });
