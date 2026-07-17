@@ -1605,36 +1605,37 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
                 try {
                   if (newPhone.isNotEmpty && newPhone != user.phoneNumber) {
                     // Check if phone number is already registered to another user
-                    final checkPhone = await FirebaseFirestore.instance.collection('users')
-                        .where('phoneNumber', isEqualTo: newPhone)
-                        .get();
-                    final otherUsers = checkPhone.docs.where((doc) => doc.id != user.uid).toList();
-                    if (otherUsers.isNotEmpty) {
-                      if (context.mounted) {
-                        showDialog(
-                          context: context,
-                          builder: (context) => AlertDialog(
-                            title: const Row(
-                              children: [
-                                Icon(Icons.warning_amber_rounded, color: Colors.orange),
-                                SizedBox(width: 8),
-                                Text('Nomor Sudah Terdaftar'),
+                    final lookupDoc = await FirebaseFirestore.instance.collection('phone_lookups').doc(newPhone).get();
+                    if (lookupDoc.exists) {
+                      final data = lookupDoc.data();
+                      final registeredUid = data?['uid'];
+                      if (registeredUid != user.uid) {
+                        if (context.mounted) {
+                          showDialog(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              title: const Row(
+                                children: [
+                                  Icon(Icons.warning_amber_rounded, color: Colors.orange),
+                                  SizedBox(width: 8),
+                                  Text('Nomor Sudah Terdaftar'),
+                                ],
+                              ),
+                              content: const Text(
+                                'Nomor WhatsApp ini sudah digunakan oleh akun lain.\n\n'
+                                'Silakan gunakan nomor WhatsApp lain yang belum terdaftar.',
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  child: const Text('OK'),
+                                ),
                               ],
                             ),
-                            content: const Text(
-                              'Nomor WhatsApp ini sudah digunakan oleh akun lain.\n\n'
-                              'Silakan gunakan nomor WhatsApp lain yang belum terdaftar.',
-                            ),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.pop(context),
-                                child: const Text('OK'),
-                              ),
-                            ],
-                          ),
-                        );
+                          );
+                        }
+                        return;
                       }
-                      return;
                     }
                   }
 
