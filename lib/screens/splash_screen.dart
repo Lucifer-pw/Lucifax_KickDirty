@@ -3,7 +3,7 @@ import '../theme.dart';
 
 class SplashScreen extends StatefulWidget {
   final Widget nextScreen;
-  const SplashScreen({Key? key, required this.nextScreen}) : super(key: key);
+  SplashScreen({Key? key, required this.nextScreen}) : super(key: key);
 
   @override
   State<SplashScreen> createState() => _SplashScreenState();
@@ -21,27 +21,27 @@ class _SplashScreenState extends State<SplashScreen>
 
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1800),
+      duration: Duration(milliseconds: 1800),
     );
 
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: _controller,
-        curve: const Interval(0.0, 0.6, curve: Curves.easeOut),
+        curve: Interval(0.0, 0.6, curve: Curves.easeOut),
       ),
     );
 
     _scaleAnimation = Tween<double>(begin: 0.7, end: 1.0).animate(
       CurvedAnimation(
         parent: _controller,
-        curve: const Interval(0.0, 0.6, curve: Curves.elasticOut),
+        curve: Interval(0.0, 0.6, curve: Curves.elasticOut),
       ),
     );
 
     _controller.forward();
 
     // Navigate to the next screen after 3 seconds
-    Future.delayed(const Duration(seconds: 3), () {
+    Future.delayed(Duration(seconds: 3), () {
       if (mounted) {
         Navigator.of(context).pushReplacement(
           PageRouteBuilder(
@@ -51,7 +51,7 @@ class _SplashScreenState extends State<SplashScreen>
                 (context, animation, secondaryAnimation, child) {
               return FadeTransition(opacity: animation, child: child);
             },
-            transitionDuration: const Duration(milliseconds: 800),
+            transitionDuration: Duration(milliseconds: 800),
           ),
         );
       }
@@ -70,7 +70,7 @@ class _SplashScreenState extends State<SplashScreen>
       body: Container(
         width: double.infinity,
         height: double.infinity,
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [
               Color(0xFF0A1628), // Deep dark navy
@@ -90,7 +90,7 @@ class _SplashScreenState extends State<SplashScreen>
               children: [
                 // Logo
                 Container(
-                  padding: const EdgeInsets.all(16),
+                  padding: EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     boxShadow: [
@@ -114,7 +114,7 @@ class _SplashScreenState extends State<SplashScreen>
                           shape: BoxShape.circle,
                           color: AppTheme.primaryBlue.withOpacity(0.2),
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.local_laundry_service,
                           size: 80,
                           color: Colors.white,
@@ -123,10 +123,10 @@ class _SplashScreenState extends State<SplashScreen>
                     },
                   ),
                 ),
-                const SizedBox(height: 32),
+                SizedBox(height: 32),
 
                 // "Kick Dirty" Title
-                const Text(
+                Text(
                   'Kick Dirty',
                   style: TextStyle(
                     color: Colors.white,
@@ -135,7 +135,7 @@ class _SplashScreenState extends State<SplashScreen>
                     letterSpacing: 2.0,
                   ),
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: 8),
 
                 // "Point of Sale System" Subtitle
                 Text(
@@ -147,7 +147,7 @@ class _SplashScreenState extends State<SplashScreen>
                     letterSpacing: 3.0,
                   ),
                 ),
-                const SizedBox(height: 60),
+                SizedBox(height: 60),
 
                 // Loading indicator
                 SizedBox(

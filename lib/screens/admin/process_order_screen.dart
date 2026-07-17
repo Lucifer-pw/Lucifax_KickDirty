@@ -12,7 +12,7 @@ import '../../utils/error_helper.dart';
 
 class ProcessOrderScreen extends StatefulWidget {
   final bool isTab;
-  const ProcessOrderScreen({Key? key, this.isTab = false}) : super(key: key);
+  ProcessOrderScreen({Key? key, this.isTab = false}) : super(key: key);
 
   @override
   State<ProcessOrderScreen> createState() => _ProcessOrderScreenState();
@@ -39,15 +39,15 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Input Estimasi Pengerjaan'),
+          title: Text('Input Estimasi Pengerjaan'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text('Masukkan estimasi waktu pengerjaan untuk pesanan ini agar customer dapat melihatnya.'),
-              const SizedBox(height: 16),
+              Text('Masukkan estimasi waktu pengerjaan untuk pesanan ini agar customer dapat melihatnya.'),
+              SizedBox(height: 16),
               TextField(
                 controller: estimationController,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Estimasi Pengerjaan',
                   hintText: 'Contoh: 2 Jam, 1 Hari, 3 Hari',
                   prefixIcon: Icon(Icons.access_time),
@@ -58,14 +58,14 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, null),
-              child: const Text('Batal'),
+              child: Text('Batal'),
             ),
             ElevatedButton(
               onPressed: () {
                 Navigator.pop(context, estimationController.text.trim());
               },
               style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryBlue),
-              child: const Text('Simpan'),
+              child: Text('Simpan'),
             ),
           ],
         );
@@ -82,21 +82,21 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
         return StatefulBuilder(
           builder: (context, setStateDialog) {
             return AlertDialog(
-              title: const Text('Konfirmasi Pembayaran (Wajib)'),
+              title: Text('Konfirmasi Pembayaran (Wajib)'),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text(
+                  Text(
                     'Customer belum membayar pesanan ini. Harap konfirmasi pembayaran dan ambil foto bukti pembayaran (EDC/Uang Tunai/Kuitansi) sebelum memproses pesanan.',
                     style: TextStyle(fontSize: 12),
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16),
                   if (tempPhotoBase64 != null) ...[
                     ClipRRect(
                       borderRadius: BorderRadius.circular(8),
                       child: _buildBase64Image(tempPhotoBase64!, 'Bukti Pembayaran', height: 120),
                     ),
-                    const SizedBox(height: 12),
+                    SizedBox(height: 12),
                   ],
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -110,8 +110,8 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
                             });
                           }
                         },
-                        icon: const Icon(Icons.camera_alt),
-                        label: const Text('Kamera'),
+                        icon: Icon(Icons.camera_alt),
+                        label: Text('Kamera'),
                         style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryBlue),
                       ),
                       ElevatedButton.icon(
@@ -123,8 +123,8 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
                             });
                           }
                         },
-                        icon: const Icon(Icons.photo),
-                        label: const Text('Galeri'),
+                        icon: Icon(Icons.photo),
+                        label: Text('Galeri'),
                         style: ElevatedButton.styleFrom(backgroundColor: Colors.grey),
                       ),
                     ],
@@ -134,7 +134,7 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context, null),
-                  child: const Text('Batal'),
+                  child: Text('Batal'),
                 ),
                 ElevatedButton(
                   onPressed: tempPhotoBase64 == null
@@ -145,7 +145,7 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
                             showDialog(
                               context: context,
                               builder: (BuildContext context) => AlertDialog(
-                                title: const Row(
+                                title: Row(
                                   children: [
                                     Icon(Icons.warning_amber_rounded, color: Colors.orange),
                                     SizedBox(width: 8),
@@ -159,7 +159,7 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
                                 actions: [
                                   TextButton(
                                     onPressed: () => Navigator.pop(context),
-                                    child: const Text('OK'),
+                                    child: Text('OK'),
                                   ),
                                 ],
                               ),
@@ -169,7 +169,7 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
                           }
                         },
                   style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryBlue),
-                  child: const Text('Konfirmasi & Bayar'),
+                  child: Text('Konfirmasi & Bayar'),
                 ),
               ],
             );
@@ -235,12 +235,12 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
             return StatefulBuilder(
               builder: (context, setStateDialog) {
                 return AlertDialog(
-                  title: const Text('Dokumentasi Hasil Cuci (After)'),
+                  title: Text('Dokumentasi Hasil Cuci (After)'),
                   content: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Text('Ambil foto hasil cucian sepatu sebagai bukti sebelum diselesaikan. (Minimal 1 Foto)'),
-                      const SizedBox(height: 16),
+                      Text('Ambil foto hasil cucian sepatu sebagai bukti sebelum diselesaikan. (Minimal 1 Foto)'),
+                      SizedBox(height: 16),
                       if (capturedPhotos.isNotEmpty)
                         SizedBox(
                           height: 80,
@@ -251,7 +251,7 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
                               return Stack(
                                 children: [
                                   Container(
-                                    margin: const EdgeInsets.only(right: 8),
+                                    margin: EdgeInsets.only(right: 8),
                                     width: 80,
                                     height: 80,
                                     decoration: BoxDecoration(
@@ -271,7 +271,7 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
                                           capturedPhotos.removeAt(idx);
                                         });
                                       },
-                                      child: const CircleAvatar(
+                                      child: CircleAvatar(
                                         radius: 10,
                                         backgroundColor: Colors.red,
                                         child: Icon(Icons.close, size: 12, color: Colors.white),
@@ -288,14 +288,14 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
                           height: 80,
                           width: double.infinity,
                           color: Colors.grey[100],
-                          child: const Center(
+                          child: Center(
                             child: Text(
                               'Belum ada foto diambil',
                               style: TextStyle(color: AppTheme.textGray, fontSize: 12),
                             ),
                           ),
                         ),
-                      const SizedBox(height: 16),
+                      SizedBox(height: 16),
                       Row(
                         children: [
                           Expanded(
@@ -308,11 +308,11 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
                                   });
                                 }
                               },
-                              icon: const Icon(Icons.camera_alt),
-                              label: const Text('Kamera'),
+                              icon: Icon(Icons.camera_alt),
+                              label: Text('Kamera'),
                             ),
                           ),
-                          const SizedBox(width: 8),
+                          SizedBox(width: 8),
                           Expanded(
                             child: OutlinedButton.icon(
                               onPressed: () async {
@@ -323,8 +323,8 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
                                   });
                                 }
                               },
-                              icon: const Icon(Icons.photo),
-                              label: const Text('Galeri'),
+                              icon: Icon(Icons.photo),
+                              label: Text('Galeri'),
                             ),
                           ),
                         ],
@@ -334,7 +334,7 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
                   actions: [
                     TextButton(
                       onPressed: () => Navigator.pop(context, null),
-                      child: const Text('Batal'),
+                      child: Text('Batal'),
                     ),
                     ElevatedButton(
                       onPressed: capturedPhotos.isEmpty
@@ -345,7 +345,7 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
                                 showDialog(
                                   context: context,
                                   builder: (BuildContext context) => AlertDialog(
-                                    title: const Row(
+                                    title: Row(
                                       children: [
                                         Icon(Icons.warning_amber_rounded, color: Colors.orange),
                                         SizedBox(width: 8),
@@ -360,7 +360,7 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
                                     actions: [
                                       TextButton(
                                         onPressed: () => Navigator.pop(context),
-                                        child: const Text('OK'),
+                                        child: Text('OK'),
                                       ),
                                     ],
                                   ),
@@ -373,7 +373,7 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
                         backgroundColor: AppTheme.primaryBlue,
                         disabledBackgroundColor: Colors.grey[300],
                       ),
-                      child: const Text('Simpan'),
+                      child: Text('Simpan'),
                     ),
                   ],
                 );
@@ -384,7 +384,7 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
 
         if (photoAfterList == null || photoAfterList.isEmpty) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Foto After wajib diambil minimal 1 foto!')),
+            SnackBar(content: Text('Foto After wajib diambil minimal 1 foto!')),
           );
           return;
         }
@@ -402,20 +402,20 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
             showDialog(
               context: context,
               builder: (context) => AlertDialog(
-                title: const Row(
+                title: Row(
                   children: [
                     Icon(Icons.warning_amber_rounded, color: Colors.redAccent),
                     SizedBox(width: 8),
                     Text('Pembayaran Belum Lunas'),
                   ],
                 ),
-                content: const Text(
+                content: Text(
                   'Sepatu tidak dapat diserahkan karena status pembayaran masih belum lunas. Silakan selesaikan pembayaran terlebih dahulu.',
                 ),
                 actions: [
                   TextButton(
                     onPressed: () => Navigator.pop(context),
-                    child: const Text('OK'),
+                    child: Text('OK'),
                   ),
                 ],
               ),
@@ -442,14 +442,14 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
             barrierDismissible: false,
             builder: (BuildContext context) {
               return AlertDialog(
-                title: const Row(
+                title: Row(
                   children: [
                     Icon(Icons.warning_amber_rounded, color: Colors.orange),
                     SizedBox(width: 8),
                     Text('Ukuran Foto Terlalu Besar'),
                   ],
                 ),
-                content: const Text(
+                content: Text(
                   'Gagal menyimpan karena ukuran foto yang Anda unggah terlalu besar (melebihi batas database).\n\n'
                   'Silakan pilih atau ambil kembali foto lain dengan resolusi lebih rendah.',
                 ),
@@ -459,11 +459,11 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
                       Navigator.pop(context);
                       _updateStatus(order);
                     },
-                    child: const Text('Pilih Ulang Foto'),
+                    child: Text('Pilih Ulang Foto'),
                   ),
                   TextButton(
                     onPressed: () => Navigator.pop(context),
-                    child: const Text('Batal'),
+                    child: Text('Batal'),
                   ),
                 ],
               );
@@ -536,7 +536,7 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
       stream: dbService.getOrders(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(body: Center(child: CircularProgressIndicator()));
+          return Scaffold(body: Center(child: CircularProgressIndicator()));
         }
         if (snapshot.hasError) {
           return Scaffold(body: Center(child: Text(getCleanErrorMessage(snapshot.error))));
@@ -564,8 +564,8 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
                         top: -6,
                         right: -8,
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                          constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                          padding: EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                          constraints: BoxConstraints(minWidth: 16, minHeight: 16),
                           decoration: BoxDecoration(
                             color: Colors.red,
                             borderRadius: BorderRadius.circular(10),
@@ -573,7 +573,7 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
                           ),
                           child: Text(
                             '$count',
-                            style: const TextStyle(
+                            style: TextStyle(
                               color: Colors.white,
                               fontSize: 9,
                               fontWeight: FontWeight.bold,
@@ -584,8 +584,8 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
                       ),
                   ],
                 ),
-                const SizedBox(height: 2),
-                Text(text, style: const TextStyle(fontSize: 10)),
+                SizedBox(height: 2),
+                Text(text, style: TextStyle(fontSize: 10)),
               ],
             ),
           );
@@ -593,7 +593,7 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
 
         return Scaffold(
           appBar: AppBar(
-            title: const Text('Proses Pesanan Aktif'),
+            title: Text('Proses Pesanan Aktif'),
             automaticallyImplyLeading: !widget.isTab,
             bottom: TabBar(
               controller: _tabController,
@@ -640,7 +640,7 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
               size: 64,
               color: AppTheme.textGray.withOpacity(0.5),
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
             Text(
               'Tidak ada pesanan di tahap ini',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(color: AppTheme.textGray),
@@ -651,7 +651,7 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       itemCount: orders.length,
       itemBuilder: (context, index) {
         final order = orders[index];
@@ -663,9 +663,9 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
         String formattedDate = "$day-$month-$year";
 
         return Card(
-          margin: const EdgeInsets.only(bottom: 16),
+          margin: EdgeInsets.only(bottom: 16),
           child: Padding(
-            padding: const EdgeInsets.all(16.0),
+            padding: EdgeInsets.all(16.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -675,51 +675,51 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
                   children: [
                     Text(
                       order.id,
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppTheme.primaryBlue),
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppTheme.primaryBlue),
                     ),
                     Text(
                       formattedDate,
-                      style: const TextStyle(color: AppTheme.textGray, fontSize: 12),
+                      style: TextStyle(color: AppTheme.textGray, fontSize: 12),
                     ),
                   ],
                 ),
-                const Divider(height: 24, color: AppTheme.lightGray),
+                Divider(height: 24, color: AppTheme.lightGray),
 
                 // Customer Info
                 Row(
                   children: [
-                    const Icon(Icons.person_outline, size: 18, color: AppTheme.textGray),
-                    const SizedBox(width: 8),
+                    Icon(Icons.person_outline, size: 18, color: AppTheme.textGray),
+                    SizedBox(width: 8),
                     Text(
                       order.customerName,
-                      style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                      style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
                     ),
-                    const Spacer(),
+                    Spacer(),
                     // WhatsApp Shortcut icon
                     IconButton(
-                      icon: const Icon(Icons.chat_bubble_outline, color: Colors.green, size: 20),
+                      icon: Icon(Icons.chat_bubble_outline, color: Colors.green, size: 20),
                       onPressed: () => _sendWhatsAppMessage(order),
                       tooltip: 'Kirim notifikasi WA',
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: 8),
 
                 // Items list
                 ...order.items.map((item) => Padding(
-                      padding: const EdgeInsets.only(left: 26, bottom: 4),
+                      padding: EdgeInsets.only(left: 26, bottom: 4),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Expanded(
                             child: Text(
                               '${item.itemName} (${item.serviceName})',
-                              style: const TextStyle(fontSize: 13, color: AppTheme.darkBlueText),
+                              style: TextStyle(fontSize: 13, color: AppTheme.darkBlueText),
                             ),
                           ),
                           Text(
                             'Rp ${item.price.toStringAsFixed(0)}',
-                            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                            style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
                           ),
                         ],
                       ),
@@ -727,17 +727,17 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
                 
                 // Delivery/Logistic Details
                 if (order.deliveryType == 'pickup_delivery') ...[
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8),
                   Padding(
-                    padding: const EdgeInsets.only(left: 26),
+                    padding: EdgeInsets.only(left: 26),
                     child: Row(
                       children: [
-                        const Icon(Icons.local_shipping_outlined, size: 16, color: AppTheme.primaryBlue),
-                        const SizedBox(width: 8),
+                        Icon(Icons.local_shipping_outlined, size: 16, color: AppTheme.primaryBlue),
+                        SizedBox(width: 8),
                         Expanded(
                           child: Text(
                             'Pengantaran: Kurir • Ongkir: Rp ${order.deliveryFee.toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")}',
-                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
                           ),
                         ),
                         StreamBuilder<DocumentSnapshot>(
@@ -746,9 +746,9 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
                             final role = Provider.of<AuthService>(context, listen: false).currentUserModel?.role ?? 'staff';
                             if (role == 'owner' || role == 'developer') {
                               return IconButton(
-                                icon: const Icon(Icons.edit_outlined, size: 14, color: AppTheme.primaryBlue),
+                                icon: Icon(Icons.edit_outlined, size: 14, color: AppTheme.primaryBlue),
                                 padding: EdgeInsets.zero,
-                                constraints: const BoxConstraints(),
+                                constraints: BoxConstraints(),
                                 onPressed: () => _showEditCourierFeeDialog(order),
                                 tooltip: 'Ubah biaya ongkir',
                               );
@@ -756,27 +756,27 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
                             final perms = (permSnap.data?.data() as Map<String, dynamic>?) ?? {};
                             if (perms['canEditCourierFee'] == true) {
                               return IconButton(
-                                icon: const Icon(Icons.edit_outlined, size: 14, color: AppTheme.primaryBlue),
+                                icon: Icon(Icons.edit_outlined, size: 14, color: AppTheme.primaryBlue),
                                 padding: EdgeInsets.zero,
-                                constraints: const BoxConstraints(),
+                                constraints: BoxConstraints(),
                                 onPressed: () => _showEditCourierFeeDialog(order),
                                 tooltip: 'Ubah biaya ongkir',
                               );
                             }
-                            return const SizedBox.shrink();
+                            return SizedBox.shrink();
                           },
                         ),
                       ],
                     ),
                   ),
                   Padding(
-                    padding: const EdgeInsets.only(left: 50, top: 2, right: 16),
+                    padding: EdgeInsets.only(left: 50, top: 2, right: 16),
                     child: Row(
                       children: [
                         Expanded(
                           child: Text(
                             'Alamat: ${order.deliveryAddress}',
-                            style: const TextStyle(fontSize: 11, color: AppTheme.textGray),
+                            style: TextStyle(fontSize: 11, color: AppTheme.textGray),
                           ),
                         ),
                         if (order.mapsLink.isNotEmpty)
@@ -787,8 +787,8 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
                                 await launchUrl(uri, mode: LaunchMode.externalApplication);
                               } catch (_) {}
                             },
-                            icon: const Icon(Icons.map, size: 14, color: AppTheme.primaryBlue),
-                            label: const Text('Buka Maps', style: TextStyle(fontSize: 10, color: AppTheme.primaryBlue)),
+                            icon: Icon(Icons.map, size: 14, color: AppTheme.primaryBlue),
+                            label: Text('Buka Maps', style: TextStyle(fontSize: 10, color: AppTheme.primaryBlue)),
                             style: TextButton.styleFrom(
                               padding: EdgeInsets.zero,
                               minimumSize: Size.zero,
@@ -799,8 +799,8 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
                     ),
                   ),
                 ] else ...[
-                  const SizedBox(height: 8),
-                  const Padding(
+                  SizedBox(height: 8),
+                  Padding(
                     padding: EdgeInsets.only(left: 26),
                     child: Row(
                       children: [
@@ -818,31 +818,31 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
                 ],
                 
                 if (order.notes.isNotEmpty) ...[
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8),
                   Padding(
-                    padding: const EdgeInsets.only(left: 26),
+                    padding: EdgeInsets.only(left: 26),
                     child: Text(
                       'Catatan: "${order.notes}"',
-                      style: const TextStyle(fontSize: 12, fontStyle: FontStyle.italic, color: Colors.orange),
+                      style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic, color: Colors.orange),
                     ),
                   ),
                 ],
                 if (order.estimatedCompletion.isNotEmpty || order.status == 'sedang_diproses') ...[
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8),
                   Padding(
-                    padding: const EdgeInsets.only(left: 26),
+                    padding: EdgeInsets.only(left: 26),
                     child: Row(
                       children: [
-                        const Icon(Icons.access_time, size: 14, color: Colors.orange),
-                        const SizedBox(width: 6),
+                        Icon(Icons.access_time, size: 14, color: Colors.orange),
+                        SizedBox(width: 6),
                         Text(
                           order.estimatedCompletion.isEmpty
                               ? 'Belum ada estimasi'
                               : 'Estimasi: ${order.estimatedCompletion}',
-                          style: const TextStyle(fontSize: 12, color: Colors.orange, fontWeight: FontWeight.w600),
+                          style: TextStyle(fontSize: 12, color: Colors.orange, fontWeight: FontWeight.w600),
                         ),
                         if (order.status == 'sedang_diproses' || order.status == 'diterima') ...[
-                          const SizedBox(width: 8),
+                          SizedBox(width: 8),
                           InkWell(
                             onTap: () async {
                               final newEst = await _showEstimationDialog(order.estimatedCompletion);
@@ -855,7 +855,7 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
                                 }
                               }
                             },
-                            child: const Padding(
+                            child: Padding(
                               padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                               child: Icon(Icons.edit, size: 14, color: AppTheme.primaryBlue),
                             ),
@@ -867,40 +867,40 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
                 ],
 
                 if (order.paymentProof.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  const Padding(
+                  SizedBox(height: 8),
+                  Padding(
                     padding: EdgeInsets.only(left: 26),
                     child: Text(
                       'Bukti Transfer:',
                       style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.darkBlueText),
                     ),
                   ),
-                  const SizedBox(height: 6),
+                  SizedBox(height: 6),
                   Padding(
-                    padding: const EdgeInsets.only(left: 26),
+                    padding: EdgeInsets.only(left: 26),
                     child: _buildBase64Image(order.paymentProof, 'Bukti Transfer', height: 120),
                   ),
                 ],
 
-                const SizedBox(height: 12),
+                SizedBox(height: 12),
                 Padding(
-                  padding: const EdgeInsets.only(left: 26),
+                  padding: EdgeInsets.only(left: 26),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
+                      Text(
                         'Total Keseluruhan (Grand Total):',
                         style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppTheme.darkBlueText),
                       ),
                       Text(
                         'Rp ${order.totalAmount.toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")}',
-                        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppTheme.primaryBlue),
+                        style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppTheme.primaryBlue),
                       ),
                     ],
                   ),
                 ),
 
-                const Divider(height: 24, color: AppTheme.lightGray),
+                Divider(height: 24, color: AppTheme.lightGray),
 
                 // Footer section with pricing, payment toggle, and transition buttons
                 Row(
@@ -911,7 +911,7 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
                       onTap: () => _togglePayment(order),
                       borderRadius: BorderRadius.circular(8),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                         decoration: BoxDecoration(
                           color: order.paymentStatus == 'sudah_bayar'
                               ? Colors.green.withOpacity(0.12)
@@ -925,7 +925,7 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
                               color: order.paymentStatus == 'sudah_bayar' ? Colors.green : Colors.red,
                               size: 14,
                             ),
-                            const SizedBox(width: 4),
+                            SizedBox(width: 4),
                             Text(
                               order.paymentStatus == 'sudah_bayar' ? 'LUNAS' : 'BELUM BAYAR',
                               style: TextStyle(
@@ -945,7 +945,7 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
                        style: ElevatedButton.styleFrom(
                          backgroundColor: AppTheme.primaryBlue,
                          foregroundColor: Colors.white,
-                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                         padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                        ),
                        icon: Icon(
@@ -966,7 +966,7 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
                                  : status == 'sedang_diproses'
                                      ? 'Selesai'
                                      : 'Serahkan',
-                         style: const TextStyle(fontSize: 12),
+                         style: TextStyle(fontSize: 12),
                        ),
                      ),
                   ],
@@ -989,7 +989,7 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
           content: TextField(
             controller: feeController,
             keyboardType: TextInputType.number,
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               labelText: 'Biaya Ongkir Kurir (Rp)',
               hintText: 'Contoh: 15000',
             ),
@@ -997,7 +997,7 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Batal'),
+              child: Text('Batal'),
             ),
             ElevatedButton(
               onPressed: () async {
@@ -1007,7 +1007,7 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
                 showDialog(
                   context: context,
                   barrierDismissible: false,
-                  builder: (context) => const Center(child: CircularProgressIndicator()),
+                  builder: (context) => Center(child: CircularProgressIndicator()),
                 );
 
                 try {
@@ -1037,7 +1037,7 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
                     Navigator.pop(context); // Close loading
                     Navigator.pop(context); // Close dialog
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Biaya ongkir & total invoice berhasil diperbarui!')),
+                      SnackBar(content: Text('Biaya ongkir & total invoice berhasil diperbarui!')),
                     );
                   }
                 } catch (e) {
@@ -1050,7 +1050,7 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
                 }
               },
               style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryBlue),
-              child: const Text('Simpan', style: TextStyle(color: Colors.white)),
+              child: Text('Simpan', style: TextStyle(color: Colors.white)),
             ),
           ],
         );
@@ -1071,22 +1071,22 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
             context: context,
             builder: (context) => Dialog(
               backgroundColor: Colors.black.withOpacity(0.9),
-              insetPadding: const EdgeInsets.all(16),
+              insetPadding: EdgeInsets.all(16),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   AppBar(
                     backgroundColor: Colors.transparent,
                     elevation: 0,
-                    title: Text(label, style: const TextStyle(color: Colors.white)),
+                    title: Text(label, style: TextStyle(color: Colors.white)),
                     leading: IconButton(
-                      icon: const Icon(Icons.close, color: Colors.white),
+                      icon: Icon(Icons.close, color: Colors.white),
                       onPressed: () => Navigator.pop(context),
                     ),
                   ),
                   Expanded(
                     child: Padding(
-                      padding: const EdgeInsets.all(16.0),
+                      padding: EdgeInsets.all(16.0),
                       child: InteractiveViewer(
                         child: Image.memory(
                           bytes,
@@ -1111,7 +1111,7 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
             child: Image.memory(
               bytes,
               fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) => const Center(
+              errorBuilder: (context, error, stackTrace) => Center(
                 child: Icon(Icons.broken_image, color: Colors.grey),
               ),
             ),
@@ -1126,7 +1126,7 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
           color: Colors.grey[200],
           borderRadius: BorderRadius.circular(12),
         ),
-        child: const Icon(Icons.broken_image, color: Colors.grey),
+        child: Icon(Icons.broken_image, color: Colors.grey),
       );
     }
   }

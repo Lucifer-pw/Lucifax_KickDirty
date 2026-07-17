@@ -8,7 +8,7 @@ import '../../utils/error_helper.dart';
 class ServiceCrudScreen extends StatefulWidget {
   final String categoryId;
   final String categoryName;
-  const ServiceCrudScreen({
+  ServiceCrudScreen({
     Key? key,
     required this.categoryId,
     required this.categoryName,
@@ -56,25 +56,25 @@ class _ServiceCrudScreenState extends State<ServiceCrudScreen> {
                 children: [
                   TextFormField(
                     controller: _nameController,
-                    decoration: const InputDecoration(hintText: 'Nama Layanan (Contoh: Deep Clean)'),
+                    decoration: InputDecoration(hintText: 'Nama Layanan (Contoh: Deep Clean)'),
                     validator: (v) => v == null || v.isEmpty ? 'Nama wajib diisi' : null,
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12),
                   TextFormField(
                     controller: _priceController,
                     keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(hintText: 'Tarif / Harga (Rp)'),
+                    decoration: InputDecoration(hintText: 'Tarif / Harga (Rp)'),
                     validator: (v) {
                       if (v == null || v.isEmpty) return 'Harga wajib diisi';
                       if (double.tryParse(v) == null) return 'Masukkan angka valid';
                       return null;
                     },
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12),
                   TextFormField(
                     controller: _descController,
                     maxLines: 2,
-                    decoration: const InputDecoration(hintText: 'Deskripsi Singkat'),
+                    decoration: InputDecoration(hintText: 'Deskripsi Singkat'),
                   ),
                 ],
               ),
@@ -83,7 +83,7 @@ class _ServiceCrudScreenState extends State<ServiceCrudScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Batal', style: TextStyle(color: AppTheme.textGray)),
+              child: Text('Batal', style: TextStyle(color: AppTheme.textGray)),
             ),
             ElevatedButton(
               onPressed: () async {
@@ -126,7 +126,7 @@ class _ServiceCrudScreenState extends State<ServiceCrudScreen> {
 
                 if (mounted) Navigator.pop(context);
               },
-              child: const Text('Simpan'),
+              child: Text('Simpan'),
             ),
           ],
         );
@@ -138,12 +138,12 @@ class _ServiceCrudScreenState extends State<ServiceCrudScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Hapus Layanan?'),
-        content: const Text('Apakah Anda yakin ingin menghapus layanan ini dari daftar?'),
+        title: Text('Hapus Layanan?'),
+        content: Text('Apakah Anda yakin ingin menghapus layanan ini dari daftar?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Batal', style: TextStyle(color: AppTheme.textGray)),
+            child: Text('Batal', style: TextStyle(color: AppTheme.textGray)),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -151,7 +151,7 @@ class _ServiceCrudScreenState extends State<ServiceCrudScreen> {
               if (mounted) Navigator.pop(context);
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Hapus'),
+            child: Text('Hapus'),
           ),
         ],
       ),
@@ -169,13 +169,13 @@ class _ServiceCrudScreenState extends State<ServiceCrudScreen> {
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showServiceDialog(),
         backgroundColor: AppTheme.primaryBlue,
-        child: const Icon(Icons.add, color: Colors.white),
+        child: Icon(Icons.add, color: Colors.white),
       ),
       body: StreamBuilder<List<ServiceModel>>(
         stream: dbService.getServicesByCategory(widget.categoryId),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return Center(child: CircularProgressIndicator());
           }
           if (snapshot.hasError) {
             return Center(child: Text(getCleanErrorMessage(snapshot.error)));
@@ -187,30 +187,30 @@ class _ServiceCrudScreenState extends State<ServiceCrudScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.cleaning_services_outlined, size: 64, color: AppTheme.textGray),
-                  const SizedBox(height: 16),
+                  Icon(Icons.cleaning_services_outlined, size: 64, color: AppTheme.textGray),
+                  SizedBox(height: 16),
                   Text('Belum ada layanan ditambahkan', style: Theme.of(context).textTheme.titleMedium),
-                  const SizedBox(height: 8),
-                  const Text('Klik tombol + di bawah untuk menambahkan', style: TextStyle(color: AppTheme.textGray)),
+                  SizedBox(height: 8),
+                  Text('Klik tombol + di bawah untuk menambahkan', style: TextStyle(color: AppTheme.textGray)),
                 ],
               ),
             );
           }
 
           return ListView.builder(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(16),
             itemCount: services.length,
             itemBuilder: (context, index) {
               final service = services[index];
               return Card(
-                margin: const EdgeInsets.only(bottom: 12),
+                margin: EdgeInsets.only(bottom: 12),
                 child: Padding(
-                  padding: const EdgeInsets.all(16.0),
+                  padding: EdgeInsets.all(16.0),
                   child: Row(
                     children: [
                       // Circular Icon background
                       Container(
-                        padding: const EdgeInsets.all(12),
+                        padding: EdgeInsets.all(12),
                         decoration: BoxDecoration(
                           color: (service.isActive ? AppTheme.primaryBlue : Colors.grey).withOpacity(0.08),
                           shape: BoxShape.circle,
@@ -221,7 +221,7 @@ class _ServiceCrudScreenState extends State<ServiceCrudScreen> {
                           size: 24,
                         ),
                       ),
-                      const SizedBox(width: 16),
+                      SizedBox(width: 16),
                       // Text Info
                       Expanded(
                         child: Column(
@@ -240,12 +240,12 @@ class _ServiceCrudScreenState extends State<ServiceCrudScreen> {
                                 ),
                                 if (!service.isActive) ...[
                                   Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                     decoration: BoxDecoration(
                                       color: Colors.red.shade100,
                                       borderRadius: BorderRadius.circular(4),
                                     ),
-                                    child: const Text(
+                                    child: Text(
                                       'Nonaktif',
                                       style: TextStyle(color: Colors.red, fontSize: 10, fontWeight: FontWeight.bold),
                                     ),
@@ -254,7 +254,7 @@ class _ServiceCrudScreenState extends State<ServiceCrudScreen> {
                               ],
                             ),
                             if (service.description.isNotEmpty) ...[
-                              const SizedBox(height: 4),
+                              SizedBox(height: 4),
                               Text(
                                 service.description,
                                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -262,10 +262,10 @@ class _ServiceCrudScreenState extends State<ServiceCrudScreen> {
                                     ),
                               ),
                             ],
-                            const SizedBox(height: 8),
+                            SizedBox(height: 8),
                             // Price Badge
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                               decoration: BoxDecoration(
                                 color: (service.isActive ? AppTheme.secondaryBlue : Colors.grey).withOpacity(0.12),
                                 borderRadius: BorderRadius.circular(8),
@@ -282,7 +282,7 @@ class _ServiceCrudScreenState extends State<ServiceCrudScreen> {
                           ],
                         ),
                       ),
-                      const SizedBox(width: 8),
+                      SizedBox(width: 8),
                       // Actions (Switch for Active status, Edit, Delete)
                       Column(
                         children: [
@@ -297,11 +297,11 @@ class _ServiceCrudScreenState extends State<ServiceCrudScreen> {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               IconButton(
-                                icon: const Icon(Icons.edit_outlined, color: AppTheme.primaryBlue, size: 20),
+                                icon: Icon(Icons.edit_outlined, color: AppTheme.primaryBlue, size: 20),
                                 onPressed: () => _showServiceDialog(service),
                               ),
                               IconButton(
-                                icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 20),
+                                icon: Icon(Icons.delete_outline, color: Colors.redAccent, size: 20),
                                 onPressed: () => _confirmDelete(service.id),
                               ),
                             ],

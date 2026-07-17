@@ -7,7 +7,7 @@ import 'service_crud_screen.dart';
 import '../../utils/error_helper.dart';
 
 class CategoryCrudScreen extends StatefulWidget {
-  const CategoryCrudScreen({Key? key}) : super(key: key);
+  CategoryCrudScreen({Key? key}) : super(key: key);
 
   @override
   State<CategoryCrudScreen> createState() => _CategoryCrudScreenState();
@@ -47,14 +47,14 @@ class _CategoryCrudScreenState extends State<CategoryCrudScreen> {
                 children: [
                   TextFormField(
                     controller: _nameController,
-                    decoration: const InputDecoration(hintText: 'Nama Kategori (Contoh: Sepatu, Tas, Helm)'),
+                    decoration: InputDecoration(hintText: 'Nama Kategori (Contoh: Sepatu, Tas, Helm)'),
                     validator: (v) => v == null || v.isEmpty ? 'Nama wajib diisi' : null,
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12),
                   TextFormField(
                     controller: _descController,
                     maxLines: 2,
-                    decoration: const InputDecoration(hintText: 'Deskripsi Kategori'),
+                    decoration: InputDecoration(hintText: 'Deskripsi Kategori'),
                   ),
                 ],
               ),
@@ -63,7 +63,7 @@ class _CategoryCrudScreenState extends State<CategoryCrudScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Batal', style: TextStyle(color: AppTheme.textGray)),
+              child: Text('Batal', style: TextStyle(color: AppTheme.textGray)),
             ),
             ElevatedButton(
               onPressed: () async {
@@ -97,7 +97,7 @@ class _CategoryCrudScreenState extends State<CategoryCrudScreen> {
 
                 if (mounted) Navigator.pop(context);
               },
-              child: const Text('Simpan'),
+              child: Text('Simpan'),
             ),
           ],
         );
@@ -109,12 +109,12 @@ class _CategoryCrudScreenState extends State<CategoryCrudScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Hapus Kategori?'),
+        title: Text('Hapus Kategori?'),
         content: Text('Apakah Anda yakin ingin menghapus kategori "${category.name}"?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Batal', style: TextStyle(color: AppTheme.textGray)),
+            child: Text('Batal', style: TextStyle(color: AppTheme.textGray)),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -124,13 +124,13 @@ class _CategoryCrudScreenState extends State<CategoryCrudScreen> {
                 Navigator.pop(context);
                 if (!success) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Gagal menghapus! Kategori masih memiliki layanan aktif.')),
+                    SnackBar(content: Text('Gagal menghapus! Kategori masih memiliki layanan aktif.')),
                   );
                 }
               }
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Hapus'),
+            child: Text('Hapus'),
           ),
         ],
       ),
@@ -143,18 +143,18 @@ class _CategoryCrudScreenState extends State<CategoryCrudScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Kelola Kategori Jasa'),
+        title: Text('Kelola Kategori Jasa'),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showCategoryDialog(),
         backgroundColor: AppTheme.primaryBlue,
-        child: const Icon(Icons.add, color: Colors.white),
+        child: Icon(Icons.add, color: Colors.white),
       ),
       body: StreamBuilder<List<CategoryModel>>(
         stream: dbService.getCategories(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return Center(child: CircularProgressIndicator());
           }
           if (snapshot.hasError) {
             return Center(child: Text(getCleanErrorMessage(snapshot.error)));
@@ -166,23 +166,23 @@ class _CategoryCrudScreenState extends State<CategoryCrudScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.category_outlined, size: 64, color: AppTheme.textGray),
-                  const SizedBox(height: 16),
+                  Icon(Icons.category_outlined, size: 64, color: AppTheme.textGray),
+                  SizedBox(height: 16),
                   Text('Belum ada kategori jasa', style: Theme.of(context).textTheme.titleMedium),
-                  const SizedBox(height: 8),
-                  const Text('Klik + untuk menambahkan kategori baru', style: TextStyle(color: AppTheme.textGray)),
+                  SizedBox(height: 8),
+                  Text('Klik + untuk menambahkan kategori baru', style: TextStyle(color: AppTheme.textGray)),
                 ],
               ),
             );
           }
 
           return ListView.builder(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(16),
             itemCount: categories.length,
             itemBuilder: (context, index) {
               final cat = categories[index];
               return Card(
-                margin: const EdgeInsets.only(bottom: 12),
+                margin: EdgeInsets.only(bottom: 12),
                 child: InkWell(
                   borderRadius: BorderRadius.circular(12),
                   onTap: () {
@@ -197,11 +197,11 @@ class _CategoryCrudScreenState extends State<CategoryCrudScreen> {
                     );
                   },
                   child: Padding(
-                    padding: const EdgeInsets.all(16.0),
+                    padding: EdgeInsets.all(16.0),
                     child: Row(
                       children: [
                         Container(
-                          padding: const EdgeInsets.all(12),
+                          padding: EdgeInsets.all(12),
                           decoration: BoxDecoration(
                             color: (cat.isActive ? AppTheme.primaryBlue : Colors.grey).withOpacity(0.08),
                             shape: BoxShape.circle,
@@ -212,7 +212,7 @@ class _CategoryCrudScreenState extends State<CategoryCrudScreen> {
                             size: 24,
                           ),
                         ),
-                        const SizedBox(width: 16),
+                        SizedBox(width: 16),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -225,7 +225,7 @@ class _CategoryCrudScreenState extends State<CategoryCrudScreen> {
                                     ),
                               ),
                               if (cat.description.isNotEmpty) ...[
-                                const SizedBox(height: 4),
+                                SizedBox(height: 4),
                                 Text(
                                   cat.description,
                                   style: TextStyle(
@@ -237,7 +237,7 @@ class _CategoryCrudScreenState extends State<CategoryCrudScreen> {
                             ],
                           ),
                         ),
-                        const SizedBox(width: 8),
+                        SizedBox(width: 8),
                         Column(
                           children: [
                             Switch(
@@ -251,11 +251,11 @@ class _CategoryCrudScreenState extends State<CategoryCrudScreen> {
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 IconButton(
-                                  icon: const Icon(Icons.edit_outlined, color: AppTheme.primaryBlue, size: 20),
+                                  icon: Icon(Icons.edit_outlined, color: AppTheme.primaryBlue, size: 20),
                                   onPressed: () => _showCategoryDialog(cat),
                                 ),
                                 IconButton(
-                                  icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 20),
+                                  icon: Icon(Icons.delete_outline, color: Colors.redAccent, size: 20),
                                   onPressed: () => _confirmDelete(cat),
                                 ),
                               ],

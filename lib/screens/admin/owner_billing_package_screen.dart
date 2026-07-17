@@ -9,7 +9,7 @@ import '../../theme.dart';
 import 'owner_billing_history_screen.dart';
 
 class OwnerBillingPackageScreen extends StatefulWidget {
-  const OwnerBillingPackageScreen({super.key});
+  OwnerBillingPackageScreen({super.key});
 
   @override
   State<OwnerBillingPackageScreen> createState() => _OwnerBillingPackageScreenState();
@@ -27,7 +27,7 @@ class _OwnerBillingPackageScreenState extends State<OwnerBillingPackageScreen> {
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: Colors.grey[300]!),
         ),
-        child: const Center(
+        child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -61,7 +61,7 @@ class _OwnerBillingPackageScreenState extends State<OwnerBillingPackageScreen> {
         height: height,
         width: height,
         color: Colors.grey[200],
-        child: const Icon(Icons.broken_image, size: 64, color: Colors.red),
+        child: Icon(Icons.broken_image, size: 64, color: Colors.red),
       );
     }
   }
@@ -79,16 +79,16 @@ class _OwnerBillingPackageScreenState extends State<OwnerBillingPackageScreen> {
           child: Wrap(
             children: [
               ListTile(
-                leading: const Icon(Icons.camera_alt, color: AppTheme.primaryBlue),
-                title: const Text('Kamera (Ambil Foto Bukti)'),
+                leading: Icon(Icons.camera_alt, color: AppTheme.primaryBlue),
+                title: Text('Kamera (Ambil Foto Bukti)'),
                 onTap: () async {
                   final img = await ImageService.pickImageFromCamera();
                   if (context.mounted) Navigator.pop(context, img);
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.photo_library, color: AppTheme.primaryBlue),
-                title: const Text('Galeri (Pilih Foto Bukti)'),
+                leading: Icon(Icons.photo_library, color: AppTheme.primaryBlue),
+                title: Text('Galeri (Pilih Foto Bukti)'),
                 onTap: () async {
                   final img = await ImageService.pickImageFromGallery();
                   if (context.mounted) Navigator.pop(context, img);
@@ -138,7 +138,7 @@ class _OwnerBillingPackageScreenState extends State<OwnerBillingPackageScreen> {
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Bukti pembayaran berhasil diunggah! Menunggu konfirmasi developer.')),
+        SnackBar(content: Text('Bukti pembayaran berhasil diunggah! Menunggu konfirmasi developer.')),
       );
     } catch (e) {
       if (!mounted) return;
@@ -194,11 +194,11 @@ class _OwnerBillingPackageScreenState extends State<OwnerBillingPackageScreen> {
                 final formattedNewDueDate = DateFormat('dd MMMM yyyy').format(newDueDate);
 
                 return Container(
-                  decoration: const BoxDecoration(
+                  decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
                   ),
-                  padding: const EdgeInsets.all(24),
+                  padding: EdgeInsets.all(24),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -213,21 +213,21 @@ class _OwnerBillingPackageScreenState extends State<OwnerBillingPackageScreen> {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 16),
-                      const Center(
+                      SizedBox(height: 16),
+                      Center(
                         child: Text(
                           'Pembayaran Maintenance Bulanan',
                           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.darkBlueText),
                         ),
                       ),
-                      const SizedBox(height: 20),
+                      SizedBox(height: 20),
 
                       if (invoiceStatus != 'menunggu_konfirmasi') ...[
-                        const Text(
+                        Text(
                           'Pilih Durasi Berlangganan:',
                           style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppTheme.darkBlueText),
                         ),
-                        const SizedBox(height: 8),
+                        SizedBox(height: 8),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [1, 3, 6, 12].map((months) {
@@ -241,8 +241,8 @@ class _OwnerBillingPackageScreenState extends State<OwnerBillingPackageScreen> {
                                   });
                                 },
                                 child: Container(
-                                  margin: const EdgeInsets.symmetric(horizontal: 4),
-                                  padding: const EdgeInsets.symmetric(vertical: 10),
+                                  margin: EdgeInsets.symmetric(horizontal: 4),
+                                  padding: EdgeInsets.symmetric(vertical: 10),
                                   decoration: BoxDecoration(
                                     color: isSel ? AppTheme.primaryBlue : Colors.grey[100],
                                     borderRadius: BorderRadius.circular(10),
@@ -265,11 +265,11 @@ class _OwnerBillingPackageScreenState extends State<OwnerBillingPackageScreen> {
                             );
                           }).toList(),
                         ),
-                        const SizedBox(height: 16),
+                        SizedBox(height: 16),
                         if (selectedMonths == 12) ...[
                           Container(
-                            margin: const EdgeInsets.only(bottom: 12),
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            margin: EdgeInsets.only(bottom: 12),
+                            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                             decoration: BoxDecoration(
                               color: Colors.green[50],
                               borderRadius: BorderRadius.circular(8),
@@ -277,12 +277,12 @@ class _OwnerBillingPackageScreenState extends State<OwnerBillingPackageScreen> {
                             ),
                             child: Row(
                               children: [
-                                const Icon(Icons.star, color: Colors.green, size: 16),
-                                const SizedBox(width: 6),
+                                Icon(Icons.star, color: Colors.green, size: 16),
+                                SizedBox(width: 6),
                                 Expanded(
                                   child: Text(
                                     'Promo Tahunan Aktif! Hemat Rp ${(baseAmount * 12 - calculatedAmount).toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")} (Gratis 2 Bulan)',
-                                    style: const TextStyle(color: Colors.green, fontSize: 11, fontWeight: FontWeight.bold),
+                                    style: TextStyle(color: Colors.green, fontSize: 11, fontWeight: FontWeight.bold),
                                   ),
                                 ),
                               ],
@@ -292,7 +292,7 @@ class _OwnerBillingPackageScreenState extends State<OwnerBillingPackageScreen> {
                       ],
 
                       Container(
-                        padding: const EdgeInsets.all(12),
+                        padding: EdgeInsets.all(12),
                         decoration: BoxDecoration(
                           color: AppTheme.lightGray,
                           borderRadius: BorderRadius.circular(12),
@@ -302,40 +302,40 @@ class _OwnerBillingPackageScreenState extends State<OwnerBillingPackageScreen> {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                const Text('Total Tagihan:', style: TextStyle(fontSize: 12)),
-                                Text('Rp $formattedCalculatedAmount', style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primaryBlue)),
+                                Text('Total Tagihan:', style: TextStyle(fontSize: 12)),
+                                Text('Rp $formattedCalculatedAmount', style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primaryBlue)),
                               ],
                             ),
-                            const SizedBox(height: 8),
+                            SizedBox(height: 8),
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                const Text('Jatuh Tempo Baru:', style: TextStyle(fontSize: 12)),
-                                Text(formattedNewDueDate, style: const TextStyle(fontWeight: FontWeight.bold)),
+                                Text('Jatuh Tempo Baru:', style: TextStyle(fontSize: 12)),
+                                Text(formattedNewDueDate, style: TextStyle(fontWeight: FontWeight.bold)),
                               ],
                             ),
                           ],
                         ),
                       ),
-                      const SizedBox(height: 20),
-                      const Center(
+                      SizedBox(height: 20),
+                      Center(
                         child: Text(
                           'Scan kode QRIS di bawah ini untuk transfer:',
                           style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.darkBlueText),
                         ),
                       ),
-                      const SizedBox(height: 12),
+                      SizedBox(height: 12),
                       Center(child: _buildBase64Image(qrImage, height: 200)),
-                      const SizedBox(height: 20),
+                      SizedBox(height: 20),
                       if (invoiceStatus == 'menunggu_konfirmasi') ...[
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                           decoration: BoxDecoration(
                             color: Colors.orange.shade50,
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(color: Colors.orange.shade100),
                           ),
-                          child: const Row(
+                          child: Row(
                             children: [
                               Icon(Icons.hourglass_empty, color: Colors.orange),
                               SizedBox(width: 10),
@@ -348,7 +348,7 @@ class _OwnerBillingPackageScreenState extends State<OwnerBillingPackageScreen> {
                             ],
                           ),
                         ),
-                        const SizedBox(height: 12),
+                        SizedBox(height: 12),
                       ],
                       SizedBox(
                         width: double.infinity,
@@ -361,16 +361,16 @@ class _OwnerBillingPackageScreenState extends State<OwnerBillingPackageScreen> {
                           style: ElevatedButton.styleFrom(
                             backgroundColor: invoiceStatus == 'menunggu_konfirmasi' ? Colors.orange : Colors.green,
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                            padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                           ),
-                          icon: const Icon(Icons.upload_file, color: Colors.white, size: 18),
+                          icon: Icon(Icons.upload_file, color: Colors.white, size: 18),
                           label: Text(
                             invoiceStatus == 'menunggu_konfirmasi' ? 'Unggah Ulang Bukti Bayar' : 'Unggah Bukti Pembayaran',
-                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
                           ),
                         ),
                       ),
-                      const SizedBox(height: 10),
+                      SizedBox(height: 10),
                     ],
                   ),
                 );
@@ -387,7 +387,7 @@ class _OwnerBillingPackageScreenState extends State<OwnerBillingPackageScreen> {
           context: context,
           builder: (context) {
             return AlertDialog(
-              title: const Text('Konfirmasi Pilihan Paket'),
+              title: Text('Konfirmasi Pilihan Paket'),
               content: Text(
                 'Apakah Anda yakin ingin memilih $packageName?\n\n'
                 'Tagihan biaya baru Anda sebesar Rp ${price.toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")} / bulan '
@@ -396,12 +396,12 @@ class _OwnerBillingPackageScreenState extends State<OwnerBillingPackageScreen> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context, false),
-                  child: const Text('Batal'),
+                  child: Text('Batal'),
                 ),
                 ElevatedButton(
                   onPressed: () => Navigator.pop(context, true),
                   style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryBlue),
-                  child: const Text('Ya, Pilih', style: TextStyle(color: Colors.white)),
+                  child: Text('Ya, Pilih', style: TextStyle(color: Colors.white)),
                 ),
               ],
             );
@@ -440,19 +440,19 @@ class _OwnerBillingPackageScreenState extends State<OwnerBillingPackageScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Status & Paket Layanan'),
+        title: Text('Status & Paket Layanan'),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, size: 20),
+          icon: Icon(Icons.arrow_back_ios_new, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.history_edu_outlined),
+            icon: Icon(Icons.history_edu_outlined),
             tooltip: 'Riwayat Pembayaran',
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const OwnerBillingHistoryScreen()),
+                MaterialPageRoute(builder: (_) => OwnerBillingHistoryScreen()),
               );
             },
           ),
@@ -462,7 +462,7 @@ class _OwnerBillingPackageScreenState extends State<OwnerBillingPackageScreen> {
         stream: FirebaseFirestore.instance.collection('developer_billing').doc('config').snapshots(),
         builder: (context, billingSnapshot) {
           if (billingSnapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return Center(child: CircularProgressIndicator());
           }
 
           double billingAmount = 150000.0;
@@ -522,13 +522,13 @@ class _OwnerBillingPackageScreenState extends State<OwnerBillingPackageScreen> {
               }
 
               return SingleChildScrollView(
-                padding: const EdgeInsets.all(16.0),
+                padding: EdgeInsets.all(16.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Billing Status Card
                     Container(
-                      padding: const EdgeInsets.all(20),
+                      padding: EdgeInsets.all(20),
                       decoration: BoxDecoration(
                         color: AppTheme.white,
                         borderRadius: BorderRadius.circular(20),
@@ -544,8 +544,8 @@ class _OwnerBillingPackageScreenState extends State<OwnerBillingPackageScreen> {
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const Text('Status Aplikasi', style: TextStyle(fontSize: 12, color: AppTheme.textGray)),
-                                  const SizedBox(height: 4),
+                                  Text('Status Aplikasi', style: TextStyle(fontSize: 12, color: AppTheme.textGray)),
+                                  SizedBox(height: 4),
                                   Text(
                                     statusBillingText,
                                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: sisaHariColor),
@@ -553,7 +553,7 @@ class _OwnerBillingPackageScreenState extends State<OwnerBillingPackageScreen> {
                                 ],
                               ),
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                                 decoration: BoxDecoration(
                                   color: sisaHariColor.withOpacity(0.1),
                                   borderRadius: BorderRadius.circular(12),
@@ -565,27 +565,27 @@ class _OwnerBillingPackageScreenState extends State<OwnerBillingPackageScreen> {
                               ),
                             ],
                           ),
-                          const Divider(height: 24),
+                          Divider(height: 24),
                           Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Padding(
+                              Padding(
                                 padding: EdgeInsets.only(top: 2.0),
                                 child: Icon(Icons.dns_outlined, color: AppTheme.primaryBlue, size: 20),
                               ),
-                              const SizedBox(width: 10),
+                              SizedBox(width: 10),
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    const Text(
+                                    Text(
                                       'Paket Terbayar Saat Ini:',
                                       style: TextStyle(fontSize: 12, color: AppTheme.textGray, height: 1.2),
                                     ),
-                                    const SizedBox(height: 4),
+                                    SizedBox(height: 4),
                                     Text(
                                       activePackageLabel,
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontWeight: FontWeight.bold,
                                         fontSize: 14,
                                         color: AppTheme.darkBlueText,
@@ -597,27 +597,27 @@ class _OwnerBillingPackageScreenState extends State<OwnerBillingPackageScreen> {
                               ),
                             ],
                           ),
-                          const SizedBox(height: 16),
+                          SizedBox(height: 16),
                           Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Padding(
+                              Padding(
                                 padding: EdgeInsets.only(top: 2.0),
                                 child: Icon(Icons.event_note, color: Colors.indigo, size: 20),
                               ),
-                              const SizedBox(width: 10),
+                              SizedBox(width: 10),
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    const Text(
+                                    Text(
                                       'Jatuh Tempo Berikutnya:',
                                       style: TextStyle(fontSize: 12, color: AppTheme.textGray, height: 1.2),
                                     ),
-                                    const SizedBox(height: 4),
+                                    SizedBox(height: 4),
                                     Text(
                                       DateFormat('dd MMMM yyyy').format(billingDueDate),
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontWeight: FontWeight.bold,
                                         fontSize: 14,
                                         color: AppTheme.darkBlueText,
@@ -629,7 +629,7 @@ class _OwnerBillingPackageScreenState extends State<OwnerBillingPackageScreen> {
                               ),
                             ],
                           ),
-                          const SizedBox(height: 20),
+                          SizedBox(height: 20),
                           SizedBox(
                             width: double.infinity,
                             height: 50,
@@ -638,10 +638,10 @@ class _OwnerBillingPackageScreenState extends State<OwnerBillingPackageScreen> {
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: AppTheme.primaryBlue,
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                                padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                               ),
-                              icon: const Icon(Icons.payment, color: Colors.white, size: 18),
-                              label: const Text(
+                              icon: Icon(Icons.payment, color: Colors.white, size: 18),
+                              label: Text(
                                 'Bayar Tagihan Sekarang',
                                 style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
                               ),
@@ -651,12 +651,12 @@ class _OwnerBillingPackageScreenState extends State<OwnerBillingPackageScreen> {
                       ),
                     ),
 
-                    const SizedBox(height: 24),
-                    const Text(
+                    SizedBox(height: 24),
+                    Text(
                       'PILIHAN PAKET MAINTENANCE APLIKASI',
                       style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppTheme.darkBlueText, letterSpacing: 0.5),
                     ),
-                    const SizedBox(height: 12),
+                    SizedBox(height: 12),
 
                     // Package 1 Card
                     _buildPackageCard(
@@ -706,7 +706,7 @@ class _OwnerBillingPackageScreenState extends State<OwnerBillingPackageScreen> {
                         'Prioritas Utama Respon Bantuan Teknis Developer 24/7',
                       ],
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16),
                   ],
                 ),
               );
@@ -732,7 +732,7 @@ class _OwnerBillingPackageScreenState extends State<OwnerBillingPackageScreen> {
         );
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         color: AppTheme.white,
         borderRadius: BorderRadius.circular(20),
@@ -752,16 +752,16 @@ class _OwnerBillingPackageScreenState extends State<OwnerBillingPackageScreen> {
             if (isHot)
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 4),
+                padding: EdgeInsets.symmetric(vertical: 4),
                 color: Colors.orange,
-                child: const Text(
+                child: Text(
                   'SANGAT DIREKOMENDASIKAN (BRANDING PROFESSIONAL)',
                   textAlign: TextAlign.center,
                   style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5),
                 ),
               ),
             Padding(
-              padding: const EdgeInsets.all(20.0),
+              padding: EdgeInsets.all(20.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -780,39 +780,39 @@ class _OwnerBillingPackageScreenState extends State<OwnerBillingPackageScreen> {
                       ),
                       if (isActive)
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
                             color: Colors.green.shade50,
                             borderRadius: BorderRadius.circular(8),
                             border: Border.all(color: Colors.green.shade200),
                           ),
-                          child: const Text('Aktif', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 11)),
+                          child: Text('Aktif', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 11)),
                         ),
                     ],
                   ),
-                  const SizedBox(height: 6),
+                  SizedBox(height: 6),
                   Text(
                     'Rp $priceFormatted / bulan',
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.darkBlueText),
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.darkBlueText),
                   ),
-                  const Divider(height: 20),
+                  Divider(height: 20),
                   ...features.map((feature) => Padding(
-                        padding: const EdgeInsets.only(bottom: 6.0),
+                        padding: EdgeInsets.only(bottom: 6.0),
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Icon(Icons.check_circle, color: Colors.green, size: 16),
-                            const SizedBox(width: 8),
+                            Icon(Icons.check_circle, color: Colors.green, size: 16),
+                            SizedBox(width: 8),
                             Expanded(
                               child: Text(
                                 feature,
-                                style: const TextStyle(fontSize: 12, color: AppTheme.darkBlueText, height: 1.3),
+                                style: TextStyle(fontSize: 12, color: AppTheme.darkBlueText, height: 1.3),
                               ),
                             ),
                           ],
                         ),
                       )),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16),
                   SizedBox(
                     width: double.infinity,
                     height: 40,

@@ -3,8 +3,8 @@ import 'package:package_info_plus/package_info_plus.dart';
 import '../theme.dart';
 
 class Watermark extends StatefulWidget {
-  final Color textColor;
-  const Watermark({Key? key, this.textColor = AppTheme.textGray}) : super(key: key);
+  final Color? textColor;
+  Watermark({Key? key, this.textColor}) : super(key: key);
 
   @override
   State<Watermark> createState() => _WatermarkState();
@@ -32,25 +32,26 @@ class _WatermarkState extends State<Watermark> {
 
   @override
   Widget build(BuildContext context) {
+    final color = widget.textColor ?? AppTheme.textGray;
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 16.0),
+      padding: EdgeInsets.symmetric(vertical: 16.0),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
             "Powered by Lucifax",
             style: TextStyle(
-              color: widget.textColor.withOpacity(0.8),
+              color: color.withOpacity(0.8),
               fontSize: 12,
               fontWeight: FontWeight.w600,
               letterSpacing: 1.1,
             ),
           ),
-          const SizedBox(height: 2),
+          SizedBox(height: 2),
           Text(
             "Version $_version",
             style: TextStyle(
-              color: widget.textColor.withOpacity(0.5),
+              color: color.withOpacity(0.5),
               fontSize: 10,
               fontWeight: FontWeight.normal,
             ),

@@ -13,7 +13,7 @@ import '../../services/auto_backup_service.dart';
 import '../chat_screen.dart';
 
 class DeveloperBillingScreen extends StatefulWidget {
-  const DeveloperBillingScreen({Key? key}) : super(key: key);
+  DeveloperBillingScreen({Key? key}) : super(key: key);
 
   @override
   State<DeveloperBillingScreen> createState() => _DeveloperBillingScreenState();
@@ -198,7 +198,7 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
     final url = _gdriveUrlController.text.trim();
     if (url.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Masukkan URL Google Apps Script terlebih dahulu.')),
+        SnackBar(content: Text('Masukkan URL Google Apps Script terlebih dahulu.')),
       );
       return;
     }
@@ -219,7 +219,7 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
         Uri.parse(url),
         headers: {'Content-Type': 'text/plain'}, // Avoids CORS preflight OPTIONS request for Google Apps Script
         body: jsonEncode(payload),
-      ).timeout(const Duration(seconds: 45));
+      ).timeout(Duration(seconds: 45));
 
       if (response.statusCode == 200) {
         final resData = jsonDecode(response.body);
@@ -257,7 +257,7 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
       downloadBackupFile(jsonString, fileName);
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('File backup JSON berhasil diunduh.')),
+        SnackBar(content: Text('File backup JSON berhasil diunduh.')),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -290,7 +290,7 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
     final jsonStr = _restoreController.text.trim();
     if (jsonStr.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Tempelkan teks JSON backup terlebih dahulu.')),
+        SnackBar(content: Text('Tempelkan teks JSON backup terlebih dahulu.')),
       );
       return;
     }
@@ -299,20 +299,20 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('⚠️ PERINGATAN RESTORE'),
-          content: const Text(
+          title: Text('⚠️ PERINGATAN RESTORE'),
+          content: Text(
             'Tindakan ini akan menimpa dan menulis ulang seluruh data di database Anda. '
             'Pastikan data backup Anda valid. Lanjutkan?'
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('Batal'),
+              child: Text('Batal'),
             ),
             ElevatedButton(
               onPressed: () => Navigator.pop(context, true),
               style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-              child: const Text('Ya, Timpa Data', style: TextStyle(color: Colors.white)),
+              child: Text('Ya, Timpa Data', style: TextStyle(color: Colors.white)),
             ),
           ],
         );
@@ -345,7 +345,7 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
 
       _restoreController.clear();
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Database berhasil di-restore sepenuhnya!')),
+        SnackBar(content: Text('Database berhasil di-restore sepenuhnya!')),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -362,7 +362,7 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
     final double? amount = double.tryParse(_amountController.text.trim());
     if (amount == null || amount <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Nominal biaya maintenance tidak valid')),
+        SnackBar(content: Text('Nominal biaya maintenance tidak valid')),
       );
       return;
     }
@@ -379,7 +379,7 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Konfigurasi billing berhasil disimpan!')),
+          SnackBar(content: Text('Konfigurasi billing berhasil disimpan!')),
         );
         Navigator.pop(context);
       }
@@ -519,7 +519,7 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: Colors.grey[300]!),
         ),
-        child: const Icon(Icons.qr_code_2, size: 64, color: Colors.grey),
+        child: Icon(Icons.qr_code_2, size: 64, color: Colors.grey),
       );
     }
 
@@ -543,13 +543,13 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
         height: 180,
         width: 180,
         color: Colors.grey[200],
-        child: const Icon(Icons.broken_image, size: 64, color: Colors.red),
+        child: Icon(Icons.broken_image, size: 64, color: Colors.red),
       );
     }
   }
 
   Widget _buildBase64Image(String base64Str, {double height = 200}) {
-    if (base64Str.isEmpty) return const SizedBox();
+    if (base64Str.isEmpty) return SizedBox();
     String cleanBase64 = base64Str;
     if (base64Str.contains(',')) {
       cleanBase64 = base64Str.split(',')[1];
@@ -565,7 +565,7 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
         ),
       );
     } catch (_) {
-      return const Icon(Icons.broken_image, size: 48, color: Colors.red);
+      return Icon(Icons.broken_image, size: 48, color: Colors.red);
     }
   }
 
@@ -576,7 +576,7 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
         return Dialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           child: Padding(
-            padding: const EdgeInsets.all(16.0),
+            padding: EdgeInsets.all(16.0),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -585,15 +585,15 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
                   children: [
                     Text(
                       'Bukti Bayar - $monthName',
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.close),
+                      icon: Icon(Icons.close),
                       onPressed: () => Navigator.pop(context),
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: 12),
                 _buildBase64Image(base64Str, height: 350),
               ],
             ),
@@ -614,14 +614,14 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Developer Billing Panel'),
+        title: Text('Developer Billing Panel'),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, size: 20),
+          icon: Icon(Icons.arrow_back_ios_new, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.chat_outlined),
+            icon: Icon(Icons.chat_outlined),
             tooltip: 'Chat dengan Owner/Staff',
             onPressed: () {
               final authService = Provider.of<AuthService>(context, listen: false);
@@ -646,25 +646,25 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
         ],
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Manajemen Billing Maintenance Aplikasi',
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.darkBlueText),
                   ),
-                  const SizedBox(height: 8),
-                  const Text(
+                  SizedBox(height: 8),
+                  Text(
                     'Atur biaya maintenance bulanan untuk klien/owner. Jika belum ditandai Lunas setelah tanggal jatuh tempo, aplikasi Owner & Staff akan otomatis terkunci.',
                     style: TextStyle(fontSize: 12, color: AppTheme.textGray, height: 1.4),
                   ),
                   // Info Paket Pilihan Owner saat ini
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.all(16),
+                    padding: EdgeInsets.all(16),
                     decoration: BoxDecoration(
                       color: AppTheme.primaryBlue.withOpacity(0.05),
                       borderRadius: BorderRadius.circular(12),
@@ -673,35 +673,35 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'Paket Pilihan Owner Saat Ini:',
                           style: TextStyle(fontSize: 12, color: AppTheme.textGray, fontWeight: FontWeight.bold),
                         ),
-                        const SizedBox(height: 6),
+                        SizedBox(height: 6),
                         Text(
                           _ownerSelectedPackageName,
-                          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppTheme.darkBlueText),
+                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppTheme.darkBlueText),
                         ),
                         if (_ownerSelectedPackagePrice > 0) ...[
-                          const SizedBox(height: 4),
+                          SizedBox(height: 4),
                           Text(
                             'Tarif Dasar: Rp ${_ownerSelectedPackagePrice.toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")} / Bulan',
-                            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.primaryBlue),
+                            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.primaryBlue),
                           ),
                         ],
                       ],
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  SizedBox(height: 20),
 
                    // Dropdown Pilihan Paket
                    DropdownButtonFormField<double>(
                      value: _selectedPresetAmount,
-                     decoration: const InputDecoration(
+                     decoration: InputDecoration(
                        labelText: 'Paket Maintenance',
                        border: OutlineInputBorder(),
                      ),
-                     items: const [
+                     items: [
                        DropdownMenuItem(
                          value: 100000.0,
                          child: Text('Paket 1 (Rp 100.000 / Bulan)'),
@@ -730,27 +730,27 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
                        }
                      },
                    ),
-                   const SizedBox(height: 16),
+                   SizedBox(height: 16),
 
                    // Input nominal biaya
                    TextField(
                      controller: _amountController,
                      keyboardType: TextInputType.number,
-                     decoration: const InputDecoration(
+                     decoration: InputDecoration(
                        labelText: 'Biaya Maintenance Bulanan (Rp)',
                        prefixText: 'Rp ',
                      ),
                    ),
-                   const SizedBox(height: 16),
+                   SizedBox(height: 16),
 
                   // Due Date Selection (Start date of billing)
                   ListTile(
                     contentPadding: EdgeInsets.zero,
-                    leading: const Icon(Icons.calendar_month, color: AppTheme.primaryBlue),
-                    title: const Text('Jatuh Tempo Pembayaran', style: TextStyle(fontSize: 12, color: AppTheme.textGray)),
+                    leading: Icon(Icons.calendar_month, color: AppTheme.primaryBlue),
+                    title: Text('Jatuh Tempo Pembayaran', style: TextStyle(fontSize: 12, color: AppTheme.textGray)),
                     subtitle: Text(
                       DateFormat('dd MMMM yyyy').format(_nextDueDate),
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppTheme.darkBlueText),
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppTheme.darkBlueText),
                     ),
                     onTap: () async {
                       final picked = await showDatePicker(
@@ -766,8 +766,8 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
                       }
                     },
                   ),
-                  const Divider(),
-                  const SizedBox(height: 12),
+                  Divider(),
+                  SizedBox(height: 12),
 
                   // Current Month Billing Status card
                   (() {
@@ -793,7 +793,7 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
 
                     return Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.all(16),
+                      padding: EdgeInsets.all(16),
                       decoration: BoxDecoration(
                         color: cardBgColor,
                         borderRadius: BorderRadius.circular(12),
@@ -804,9 +804,9 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
                         children: [
                           Text(
                             'Tagihan Bulan Ini (${DateFormat('MMMM yyyy').format(DateTime.now())}):',
-                            style: const TextStyle(fontSize: 12, color: AppTheme.textGray),
+                            style: TextStyle(fontSize: 12, color: AppTheme.textGray),
                           ),
-                          const SizedBox(height: 4),
+                          SizedBox(height: 4),
                           Text(
                             statusText,
                             style: TextStyle(
@@ -816,13 +816,13 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
                             ),
                           ),
                           if (!isCurrentMonthPaid && !isBillingActive) ...[
-                            const SizedBox(height: 4),
+                            SizedBox(height: 4),
                             Text(
                               'Sistem kunci otomatis baru aktif pada jatuh tempo ${DateFormat('dd/MM/yyyy').format(_nextDueDate)}',
                               style: TextStyle(fontSize: 10, color: Colors.amber.shade900, fontStyle: FontStyle.italic),
                             ),
                           ],
-                          const SizedBox(height: 16),
+                          SizedBox(height: 16),
                           SizedBox(
                             width: double.infinity,
                             height: 46,
@@ -839,13 +839,13 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: isCurrentMonthPaid ? Colors.redAccent : Colors.green,
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                                padding: const EdgeInsets.symmetric(horizontal: 12),
+                                padding: EdgeInsets.symmetric(horizontal: 12),
                               ),
                               child: FittedBox(
                                 fit: BoxFit.scaleDown,
                                 child: Text(
                                   isCurrentMonthPaid ? 'Batalkan Konfirmasi / Tandai Belum Lunas' : 'Konfirmasi Pembayaran / Tandai Lunas',
-                                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white),
+                                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white),
                                 ),
                               ),
                             ),
@@ -854,18 +854,18 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
                       ),
                     );
                   })(),
-                  const SizedBox(height: 16),
-                  const Divider(),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 16),
+                  Divider(),
+                  SizedBox(height: 12),
 
                   // QR Code Upload Area
-                  const Text('QR Code Pembayaran (QRIS)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppTheme.darkBlueText)),
-                  const SizedBox(height: 12),
+                  Text('QR Code Pembayaran (QRIS)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppTheme.darkBlueText)),
+                  SizedBox(height: 12),
                   Center(
                     child: Column(
                       children: [
                         _buildQRPreview(),
-                        const SizedBox(height: 12),
+                        SizedBox(height: 12),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
@@ -878,11 +878,11 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
                                   });
                                 }
                               },
-                              icon: const Icon(Icons.camera_alt),
-                              label: const Text('Ambil Foto QR'),
+                              icon: Icon(Icons.camera_alt),
+                              label: Text('Ambil Foto QR'),
                               style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryBlue),
                             ),
-                            const SizedBox(width: 12),
+                            SizedBox(width: 12),
                             ElevatedButton.icon(
                               onPressed: () async {
                                 final img = await ImageService.pickImageFromGallery();
@@ -892,8 +892,8 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
                                   });
                                 }
                               },
-                              icon: const Icon(Icons.photo_library),
-                              label: const Text('Galeri QR'),
+                              icon: Icon(Icons.photo_library),
+                              label: Text('Galeri QR'),
                               style: ElevatedButton.styleFrom(backgroundColor: Colors.grey),
                             ),
                           ],
@@ -901,14 +901,14 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 20),
-                  const Divider(),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 20),
+                  Divider(),
+                  SizedBox(height: 16),
 
                   // DEV FEATURE TOGGLES CARD
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.all(16),
+                    padding: EdgeInsets.all(16),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(12),
@@ -918,23 +918,23 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'Developer Feature Access Toggles',
                           style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppTheme.darkBlueText),
                         ),
-                        const SizedBox(height: 4),
-                        const Text(
+                        SizedBox(height: 4),
+                        Text(
                           'Aktifkan atau nonaktifkan fitur tambahan berikut untuk klien (Owner).',
                           style: TextStyle(fontSize: 11, color: AppTheme.textGray),
                         ),
-                        const SizedBox(height: 12),
+                        SizedBox(height: 12),
                         SwitchListTile(
                           contentPadding: EdgeInsets.zero,
-                          title: const Text(
+                          title: Text(
                             'Log Aktivitas Karyawan (Owner)',
                             style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.darkBlueText),
                           ),
-                          subtitle: const Text(
+                          subtitle: Text(
                             'Owner dapat melihat seluruh catatan log tindakan staff/karyawan.',
                             style: TextStyle(fontSize: 11, color: AppTheme.textGray),
                           ),
@@ -948,11 +948,11 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
                     ),
                   ),
                   if (isDeveloperUser) ...[
-                    const SizedBox(height: 20),
+                    SizedBox(height: 20),
                     // DEVELOPER DATABASE TOOLS (BACKUP & RESTORE)
                     Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.all(16),
+                      padding: EdgeInsets.all(16),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(12),
@@ -962,7 +962,7 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Row(
+                          Row(
                             children: [
                               Icon(Icons.storage, color: AppTheme.primaryBlue, size: 20),
                               SizedBox(width: 8),
@@ -972,66 +972,66 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
                               ),
                             ],
                           ),
-                          const SizedBox(height: 4),
-                          const Text(
+                          SizedBox(height: 4),
+                          Text(
                             'Ekspor/Impor seluruh koleksi database Firestore. Hanya untuk akun Developer.',
                             style: TextStyle(fontSize: 11, color: AppTheme.textGray),
                           ),
-                          const SizedBox(height: 16),
+                          SizedBox(height: 16),
                           
                           // 1. Local Backup
-                          const Text(
+                          Text(
                             '1. Penyimpanan Lokal (PC / Laptop)',
                             style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.darkBlueText),
                           ),
-                          const SizedBox(height: 8),
+                          SizedBox(height: 8),
                           ElevatedButton.icon(
                             onPressed: _isBackingUp ? null : _backupLocalJson,
                             icon: _isBackingUp 
-                                ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                                : const Icon(Icons.download, size: 16),
-                            label: const Text('Unduh Backup JSON (Lokal)'),
+                                ? SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                                : Icon(Icons.download, size: 16),
+                            label: Text('Unduh Backup JSON (Lokal)'),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: AppTheme.primaryBlue,
                               foregroundColor: Colors.white,
-                              minimumSize: const Size(double.infinity, 38),
+                              minimumSize: Size(double.infinity, 38),
                             ),
                           ),
-                          const SizedBox(height: 16),
+                          SizedBox(height: 16),
                           
                           // 2. Online Backup (Google Drive)
-                          const Text(
+                          Text(
                             '2. Penyimpanan Online (Google Drive)',
                             style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.darkBlueText),
                           ),
-                          const SizedBox(height: 8),
+                          SizedBox(height: 8),
                           TextField(
                             controller: _gdriveUrlController,
-                            decoration: const InputDecoration(
+                            decoration: InputDecoration(
                               labelText: 'Google Apps Script Web App URL',
                               hintText: 'https://script.google.com/macros/s/.../exec',
                               prefixIcon: Icon(Icons.link, size: 18),
                               border: OutlineInputBorder(),
                               contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                             ),
-                            style: const TextStyle(fontSize: 12),
+                            style: TextStyle(fontSize: 12),
                           ),
-                          const SizedBox(height: 8),
+                          SizedBox(height: 8),
                           ElevatedButton.icon(
                             onPressed: _isBackingUp ? null : _backupToGDrive,
                             icon: _isBackingUp 
-                                ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                                : const Icon(Icons.cloud_upload, size: 16),
-                            label: const Text('Kirim Backup ke Google Drive'),
+                                ? SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                                : Icon(Icons.cloud_upload, size: 16),
+                            label: Text('Kirim Backup ke Google Drive'),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.green,
                               foregroundColor: Colors.white,
-                              minimumSize: const Size(double.infinity, 38),
+                              minimumSize: Size(double.infinity, 38),
                             ),
                           ),
-                           const SizedBox(height: 12),
+                           SizedBox(height: 12),
                            Container(
-                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                             padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                              decoration: BoxDecoration(
                                color: AppTheme.primaryBlue.withOpacity(0.05),
                                borderRadius: BorderRadius.circular(8),
@@ -1043,7 +1043,7 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
                                  Row(
                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                    children: [
-                                     const Row(
+                                     Row(
                                        children: [
                                          Icon(Icons.sync, size: 18, color: AppTheme.primaryBlue),
                                          SizedBox(width: 6),
@@ -1061,11 +1061,11 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
                                    ],
                                  ),
                                  if (_enableAutoBackup) ...[
-                                   const SizedBox(height: 4),
+                                   SizedBox(height: 4),
                                    Row(
                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                      children: [
-                                       const Text(
+                                       Text(
                                          'Waktu Backup Harian:',
                                          style: TextStyle(fontSize: 11, color: AppTheme.textGray),
                                        ),
@@ -1077,70 +1077,70 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
                                             if (i == 2) label += ' (Dini Hari - Rekomendasi)';
                                             return DropdownMenuItem(
                                               value: i,
-                                              child: Text(label, style: const TextStyle(fontSize: 11)),
+                                              child: Text(label, style: TextStyle(fontSize: 11)),
                                             );
                                           }),
                                          onChanged: _onAutoBackupHourChanged,
-                                         style: const TextStyle(color: AppTheme.darkBlueText, fontSize: 11),
-                                         underline: const SizedBox(),
+                                         style: TextStyle(color: AppTheme.darkBlueText, fontSize: 11),
+                                         underline: SizedBox(),
                                        ),
                                      ],
                                    ),
                                  ],
-                                 const SizedBox(height: 4),
+                                 SizedBox(height: 4),
                                  Text(
                                    'Terakhir Backup Otomatis: ${_lastAutoBackupTime == null ? "Belum Pernah" : DateFormat('dd MMM yyyy, HH:mm').format(_lastAutoBackupTime!.toDate())}',
-                                   style: const TextStyle(fontSize: 10, color: AppTheme.textGray, fontStyle: FontStyle.italic),
+                                   style: TextStyle(fontSize: 10, color: AppTheme.textGray, fontStyle: FontStyle.italic),
                                  ),
                                ],
                              ),
                            ),
-                           const SizedBox(height: 16),
+                           SizedBox(height: 16),
                            
                            // 3. Restore Database
-                          const Text(
+                          Text(
                             '3. Restore / Impor Database',
                             style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.red),
                           ),
-                          const SizedBox(height: 8),
+                          SizedBox(height: 8),
                           TextField(
                             controller: _restoreController,
                             maxLines: 4,
-                            decoration: const InputDecoration(
+                            decoration: InputDecoration(
                               labelText: 'Tempelkan (Paste) Teks JSON Backup di Sini',
                               hintText: '{\n  "users": [...],\n  "orders": [...]\n}',
                               border: OutlineInputBorder(),
                               contentPadding: EdgeInsets.all(10),
                             ),
-                            style: const TextStyle(fontSize: 11, fontFamily: 'monospace'),
+                            style: TextStyle(fontSize: 11, fontFamily: 'monospace'),
                           ),
-                          const SizedBox(height: 8),
+                          SizedBox(height: 8),
                           ElevatedButton.icon(
                             onPressed: _isRestoring ? null : _restoreFromJson,
                             icon: _isRestoring 
-                                ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                                : const Icon(Icons.settings_backup_restore, size: 16),
-                            label: const Text('Mulai Restore Database'),
+                                ? SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                                : Icon(Icons.settings_backup_restore, size: 16),
+                            label: Text('Mulai Restore Database'),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.red,
                               foregroundColor: Colors.white,
-                              minimumSize: const Size(double.infinity, 38),
+                              minimumSize: Size(double.infinity, 38),
                             ),
                           ),
                         ],
                       ),
                     ),
                   ],
-                  const SizedBox(height: 20),
-                  const Divider(),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 20),
+                  Divider(),
+                  SizedBox(height: 16),
 
                   // INVOICE HISTORY SECTION
-                  const Text(
+                  Text(
                     'Riwayat Pembayaran & Konfirmasi',
                     style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppTheme.darkBlueText),
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8),
                   StreamBuilder<QuerySnapshot>(
                     stream: FirebaseFirestore.instance
                         .collection('developer_billing_invoices')
@@ -1148,11 +1148,11 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
                         .snapshots(),
                     builder: (context, invSnap) {
                       if (!invSnap.hasData) {
-                        return const Center(child: CircularProgressIndicator());
+                        return Center(child: CircularProgressIndicator());
                       }
                       final docs = invSnap.data!.docs;
                       if (docs.isEmpty) {
-                        return const Padding(
+                        return Padding(
                           padding: EdgeInsets.symmetric(vertical: 16.0),
                           child: Text(
                             'Belum ada invoice yang dibuat.',
@@ -1163,7 +1163,7 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
 
                       return ListView.builder(
                         shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
+                        physics: NeverScrollableScrollPhysics(),
                         itemCount: docs.length,
                         itemBuilder: (context, index) {
                           final data = docs[index].data() as Map<String, dynamic>;
@@ -1203,40 +1203,40 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
                           }
 
                           return Card(
-                            margin: const EdgeInsets.only(bottom: 8),
+                            margin: EdgeInsets.only(bottom: 8),
                             child: Padding(
-                              padding: const EdgeInsets.all(12.0),
+                              padding: EdgeInsets.all(12.0),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Row(
                                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
-                                      Text(monthName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                                      Text(monthName, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                                       Text(statusLabel, style: TextStyle(color: statusColor, fontWeight: FontWeight.bold, fontSize: 12)),
                                     ],
                                   ),
-                                  const SizedBox(height: 6),
-                                  Text('Nominal: Rp $amountFormatted | Durasi: ${durationMonths == 12 ? "1 Tahun" : "$durationMonths Bulan"}', style: const TextStyle(fontSize: 12)),
+                                  SizedBox(height: 6),
+                                  Text('Nominal: Rp $amountFormatted | Durasi: ${durationMonths == 12 ? "1 Tahun" : "$durationMonths Bulan"}', style: TextStyle(fontSize: 12)),
                                   if (paidAt != null)
-                                    Text('Lunas Pada: ${DateFormat('dd/MM/yyyy HH:mm').format(paidAt)}', style: const TextStyle(fontSize: 11, color: AppTheme.textGray)),
+                                    Text('Lunas Pada: ${DateFormat('dd/MM/yyyy HH:mm').format(paidAt)}', style: TextStyle(fontSize: 11, color: AppTheme.textGray)),
                                   if (ownerName.isNotEmpty)
                                     Padding(
-                                      padding: const EdgeInsets.only(top: 2.0),
+                                      padding: EdgeInsets.only(top: 2.0),
                                       child: Text(
                                         'Dibayar Oleh: $ownerName${ownerPhone.isNotEmpty ? " ($ownerPhone)" : ""}',
-                                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppTheme.darkBlueText),
+                                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppTheme.darkBlueText),
                                       ),
                                     ),
                                   if (paymentProof.isNotEmpty) ...[
-                                    const SizedBox(height: 8),
+                                    SizedBox(height: 8),
                                     Row(
                                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                       children: [
                                         TextButton.icon(
                                           onPressed: () => _showImageDialog(context, paymentProof, monthName),
-                                          icon: const Icon(Icons.receipt_long, size: 16),
-                                          label: const Text('Lihat Bukti Bayar', style: TextStyle(fontSize: 11)),
+                                          icon: Icon(Icons.receipt_long, size: 16),
+                                          label: Text('Lihat Bukti Bayar', style: TextStyle(fontSize: 11)),
                                         ),
                                         if (status == 'menunggu_konfirmasi') ...[
                                           Row(
@@ -1244,15 +1244,15 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
                                               TextButton(
                                                 onPressed: () => _rejectInvoicePayment(docId, monthCode),
                                                 style: TextButton.styleFrom(foregroundColor: Colors.red),
-                                                child: const Text('Tolak', style: TextStyle(fontSize: 11)),
+                                                child: Text('Tolak', style: TextStyle(fontSize: 11)),
                                               ),
                                               ElevatedButton(
                                                 onPressed: () => _confirmInvoicePaid(docId, monthCode),
                                                 style: ElevatedButton.styleFrom(
                                                   backgroundColor: Colors.green,
-                                                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                                                  padding: EdgeInsets.symmetric(horizontal: 12),
                                                 ),
-                                                child: const Text('Konfirmasi Lunas', style: TextStyle(fontSize: 11, color: Colors.white)),
+                                                child: Text('Konfirmasi Lunas', style: TextStyle(fontSize: 11, color: Colors.white)),
                                               ),
                                             ],
                                           ),
@@ -1269,7 +1269,7 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
                     },
                   ),
 
-                  const SizedBox(height: 40),
+                  SizedBox(height: 40),
                   SizedBox(
                     width: double.infinity,
                     height: 50,
@@ -1277,8 +1277,8 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
                       onPressed: _isSaving ? null : _saveBillingConfig,
                       style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryBlue),
                       child: _isSaving
-                          ? const CircularProgressIndicator(color: Colors.white)
-                          : const Text('Simpan Konfigurasi'),
+                          ? CircularProgressIndicator(color: Colors.white)
+                          : Text('Simpan Konfigurasi'),
                     ),
                   ),
                 ],

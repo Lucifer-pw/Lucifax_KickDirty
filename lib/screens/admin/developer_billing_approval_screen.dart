@@ -5,7 +5,7 @@ import 'package:intl/intl.dart';
 import '../../theme.dart';
 
 class DeveloperBillingApprovalScreen extends StatefulWidget {
-  const DeveloperBillingApprovalScreen({super.key});
+  DeveloperBillingApprovalScreen({super.key});
 
   @override
   State<DeveloperBillingApprovalScreen> createState() => _DeveloperBillingApprovalScreenState();
@@ -15,7 +15,7 @@ class _DeveloperBillingApprovalScreenState extends State<DeveloperBillingApprova
   bool _isProcessing = false;
 
   Widget _buildBase64Image(String base64Str, {double height = 200}) {
-    if (base64Str.isEmpty) return const SizedBox();
+    if (base64Str.isEmpty) return SizedBox();
     String cleanBase64 = base64Str;
     if (base64Str.contains(',')) {
       cleanBase64 = base64Str.split(',')[1];
@@ -31,7 +31,7 @@ class _DeveloperBillingApprovalScreenState extends State<DeveloperBillingApprova
         ),
       );
     } catch (_) {
-      return const Icon(Icons.broken_image, size: 48, color: Colors.red);
+      return Icon(Icons.broken_image, size: 48, color: Colors.red);
     }
   }
 
@@ -42,7 +42,7 @@ class _DeveloperBillingApprovalScreenState extends State<DeveloperBillingApprova
         return Dialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           child: Padding(
-            padding: const EdgeInsets.all(16.0),
+            padding: EdgeInsets.all(16.0),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -51,15 +51,15 @@ class _DeveloperBillingApprovalScreenState extends State<DeveloperBillingApprova
                   children: [
                     Text(
                       'Bukti Bayar - $monthName',
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.close),
+                      icon: Icon(Icons.close),
                       onPressed: () => Navigator.pop(context),
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: 12),
                 _buildBase64Image(base64Str, height: 380),
               ],
             ),
@@ -170,9 +170,9 @@ class _DeveloperBillingApprovalScreenState extends State<DeveloperBillingApprova
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Konfirmasi Billing Owner'),
+        title: Text('Konfirmasi Billing Owner'),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, size: 20),
+          icon: Icon(Icons.arrow_back_ios_new, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -185,7 +185,7 @@ class _DeveloperBillingApprovalScreenState extends State<DeveloperBillingApprova
                 .snapshots(),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
+                return Center(child: CircularProgressIndicator());
               }
 
               final docs = snapshot.data?.docs ?? [];
@@ -195,7 +195,7 @@ class _DeveloperBillingApprovalScreenState extends State<DeveloperBillingApprova
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(Icons.verified_user_outlined, size: 64, color: Colors.grey[400]),
-                      const SizedBox(height: 16),
+                      SizedBox(height: 16),
                       Text(
                         'Belum ada bukti pembayaran billing dari owner.',
                         style: TextStyle(fontSize: 14, color: Colors.grey[600]),
@@ -206,7 +206,7 @@ class _DeveloperBillingApprovalScreenState extends State<DeveloperBillingApprova
               }
 
               return ListView.builder(
-                padding: const EdgeInsets.all(16),
+                padding: EdgeInsets.all(16),
                 itemCount: docs.length,
                 itemBuilder: (context, index) {
                   final data = docs[index].data() as Map<String, dynamic>;
@@ -247,11 +247,11 @@ class _DeveloperBillingApprovalScreenState extends State<DeveloperBillingApprova
                   }
 
                   return Card(
-                    margin: const EdgeInsets.only(bottom: 16),
+                    margin: EdgeInsets.only(bottom: 16),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                     elevation: 1,
                     child: Padding(
-                      padding: const EdgeInsets.all(16.0),
+                      padding: EdgeInsets.all(16.0),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -260,10 +260,10 @@ class _DeveloperBillingApprovalScreenState extends State<DeveloperBillingApprova
                             children: [
                               Text(
                                 monthName,
-                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppTheme.darkBlueText),
+                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppTheme.darkBlueText),
                               ),
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                padding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                 decoration: BoxDecoration(
                                   color: statusColor.withOpacity(0.08),
                                   borderRadius: BorderRadius.circular(20),
@@ -275,88 +275,88 @@ class _DeveloperBillingApprovalScreenState extends State<DeveloperBillingApprova
                               ),
                             ],
                           ),
-                          const SizedBox(height: 12),
+                          SizedBox(height: 12),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              const Text('Jumlah Tagihan:', style: TextStyle(fontSize: 12, color: AppTheme.textGray)),
+                              Text('Jumlah Tagihan:', style: TextStyle(fontSize: 12, color: AppTheme.textGray)),
                               Text(
                                 'Rp $amountFormatted',
-                                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppTheme.darkBlueText),
+                                style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppTheme.darkBlueText),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 6),
+                          SizedBox(height: 6),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              const Text('Durasi Langganan:', style: TextStyle(fontSize: 12, color: AppTheme.textGray)),
+                              Text('Durasi Langganan:', style: TextStyle(fontSize: 12, color: AppTheme.textGray)),
                               Text(
                                 durationMonths == 12 ? '1 Tahun' : '$durationMonths Bulan',
-                                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.primaryBlue),
+                                style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.primaryBlue),
                               ),
                             ],
                           ),
                           if (dueDate != null) ...[
-                             const SizedBox(height: 6),
+                             SizedBox(height: 6),
                              Row(
                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                children: [
-                                 const Text('Jatuh Tempo:', style: TextStyle(fontSize: 12, color: AppTheme.textGray)),
+                                 Text('Jatuh Tempo:', style: TextStyle(fontSize: 12, color: AppTheme.textGray)),
                                  Text(
                                    DateFormat('dd/MM/yyyy').format(dueDate),
-                                   style: const TextStyle(fontSize: 12, color: AppTheme.darkBlueText),
+                                   style: TextStyle(fontSize: 12, color: AppTheme.darkBlueText),
                                  ),
                                ],
                              ),
                            ],
                            if (ownerName.isNotEmpty) ...[
-                             const SizedBox(height: 6),
+                             SizedBox(height: 6),
                              Row(
                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                children: [
-                                 const Text('Dibayar Oleh:', style: TextStyle(fontSize: 12, color: AppTheme.textGray)),
+                                 Text('Dibayar Oleh:', style: TextStyle(fontSize: 12, color: AppTheme.textGray)),
                                  Text(
                                    '$ownerName${ownerPhone.isNotEmpty ? " ($ownerPhone)" : ""}',
-                                   style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.darkBlueText),
+                                   style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.darkBlueText),
                                  ),
                                ],
                              ),
                            ],
                           if (status == 'lunas' && paidAt != null) ...[
-                            const SizedBox(height: 6),
+                            SizedBox(height: 6),
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                const Text('Disetujui Tanggal:', style: TextStyle(fontSize: 12, color: AppTheme.textGray)),
+                                Text('Disetujui Tanggal:', style: TextStyle(fontSize: 12, color: AppTheme.textGray)),
                                 Text(
                                   DateFormat('dd/MM/yyyy HH:mm').format(paidAt),
-                                  style: const TextStyle(fontSize: 12, color: AppTheme.darkBlueText),
+                                  style: TextStyle(fontSize: 12, color: AppTheme.darkBlueText),
                                 ),
                               ],
                             ),
                           ],
                           if (paymentProof.isNotEmpty) ...[
-                            const SizedBox(height: 12),
-                            const Divider(),
-                            const SizedBox(height: 6),
+                            SizedBox(height: 12),
+                            Divider(),
+                            SizedBox(height: 6),
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                const Text('Bukti Pembayaran:', style: TextStyle(fontSize: 12, color: AppTheme.textGray)),
+                                Text('Bukti Pembayaran:', style: TextStyle(fontSize: 12, color: AppTheme.textGray)),
                                 TextButton.icon(
                                   onPressed: () => _showImageDialog(context, paymentProof, monthName),
-                                  icon: const Icon(Icons.image_outlined, size: 16),
-                                  label: const Text('Lihat Foto Bukti', style: TextStyle(fontSize: 12)),
+                                  icon: Icon(Icons.image_outlined, size: 16),
+                                  label: Text('Lihat Foto Bukti', style: TextStyle(fontSize: 12)),
                                   style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: Size.zero),
                                 ),
                               ],
                             ),
                           ],
                           if (status == 'menunggu_konfirmasi') ...[
-                            const SizedBox(height: 12),
-                            const Divider(),
-                            const SizedBox(height: 12),
+                            SizedBox(height: 12),
+                            Divider(),
+                            SizedBox(height: 12),
                             Row(
                               mainAxisAlignment: MainAxisAlignment.end,
                               children: [
@@ -366,13 +366,13 @@ class _DeveloperBillingApprovalScreenState extends State<DeveloperBillingApprova
                                         : () => _showRejectConfirmation(docId, monthCode),
                                     style: OutlinedButton.styleFrom(
                                       foregroundColor: Colors.red,
-                                      side: const BorderSide(color: Colors.red),
+                                      side: BorderSide(color: Colors.red),
                                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                                     ),
-                                    child: const Text('Tolak', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                                    child: Text('Tolak', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                                   ),
-                                  const SizedBox(width: 12),
+                                  SizedBox(width: 12),
                                   ElevatedButton(
                                     onPressed: _isProcessing
                                         ? null
@@ -381,9 +381,9 @@ class _DeveloperBillingApprovalScreenState extends State<DeveloperBillingApprova
                                     backgroundColor: Colors.green,
                                     foregroundColor: Colors.white,
                                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                                   ),
-                                  child: const Text('Setujui', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                                  child: Text('Setujui', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                                 ),
                               ],
                             ),
@@ -399,7 +399,7 @@ class _DeveloperBillingApprovalScreenState extends State<DeveloperBillingApprova
           if (_isProcessing)
             Container(
               color: Colors.black26,
-              child: const Center(child: CircularProgressIndicator()),
+              child: Center(child: CircularProgressIndicator()),
             ),
         ],
       ),
@@ -410,12 +410,12 @@ class _DeveloperBillingApprovalScreenState extends State<DeveloperBillingApprova
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Setujui Pembayaran?'),
+        title: Text('Setujui Pembayaran?'),
         content: Text('Apakah Anda yakin bukti transfer untuk billing bulan $monthCode sudah valid dan dana telah diterima?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Batal'),
+            child: Text('Batal'),
           ),
           ElevatedButton(
             onPressed: () {
@@ -423,7 +423,7 @@ class _DeveloperBillingApprovalScreenState extends State<DeveloperBillingApprova
               _approvePayment(docId, monthCode, amount);
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-            child: const Text('Setujui'),
+            child: Text('Setujui'),
           ),
         ],
       ),
@@ -434,12 +434,12 @@ class _DeveloperBillingApprovalScreenState extends State<DeveloperBillingApprova
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Tolak Pembayaran?'),
+        title: Text('Tolak Pembayaran?'),
         content: Text('Apakah Anda yakin ingin menolak bukti transfer untuk billing bulan $monthCode ini?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Batal'),
+            child: Text('Batal'),
           ),
           ElevatedButton(
             onPressed: () {
@@ -447,7 +447,7 @@ class _DeveloperBillingApprovalScreenState extends State<DeveloperBillingApprova
               _rejectPayment(docId, monthCode);
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Tolak'),
+            child: Text('Tolak'),
           ),
         ],
       ),

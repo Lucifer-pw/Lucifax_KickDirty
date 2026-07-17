@@ -14,7 +14,7 @@ import '../../utils/error_helper.dart';
 
 class HistoryOrdersScreen extends StatefulWidget {
   final bool isTab;
-  const HistoryOrdersScreen({Key? key, this.isTab = false}) : super(key: key);
+  HistoryOrdersScreen({Key? key, this.isTab = false}) : super(key: key);
 
   @override
   State<HistoryOrdersScreen> createState() => _HistoryOrdersScreenState();
@@ -230,7 +230,7 @@ class _HistoryOrdersScreenState extends State<HistoryOrdersScreen> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => const Center(
+      builder: (context) => Center(
         child: Card(
           child: Padding(
             padding: EdgeInsets.all(20.0),
@@ -278,7 +278,7 @@ class _HistoryOrdersScreenState extends State<HistoryOrdersScreen> {
         if (success) {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Invoice PDF berhasil dikirim otomatis ke WhatsApp pelanggan sebagai berkas dokumen asli!')),
+              SnackBar(content: Text('Invoice PDF berhasil dikirim otomatis ke WhatsApp pelanggan sebagai berkas dokumen asli!')),
             );
           }
           return;
@@ -349,14 +349,14 @@ class _HistoryOrdersScreenState extends State<HistoryOrdersScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Riwayat Transaksi'),
+        title: Text('Riwayat Transaksi'),
         automaticallyImplyLeading: !widget.isTab,
       ),
       body: Column(
         children: [
           // Filter & Search Header
           Padding(
-            padding: const EdgeInsets.all(16.0),
+            padding: EdgeInsets.all(16.0),
             child: Column(
               children: [
                 // Search field
@@ -368,12 +368,12 @@ class _HistoryOrdersScreenState extends State<HistoryOrdersScreen> {
                   },
                   decoration: InputDecoration(
                     hintText: 'Cari nama atau nomor WA...',
-                    prefixIcon: const Icon(Icons.search),
+                    prefixIcon: Icon(Icons.search),
                     filled: true,
                     fillColor: AppTheme.lightBlueBackground.withOpacity(0.5),
                   ),
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: 12),
                 
                 // Status Filter Chips
                 SingleChildScrollView(
@@ -381,13 +381,13 @@ class _HistoryOrdersScreenState extends State<HistoryOrdersScreen> {
                   child: Row(
                     children: [
                       _buildFilterChip('semua', 'Semua'),
-                      const SizedBox(width: 8),
+                      SizedBox(width: 8),
                       _buildFilterChip('diterima', 'Diterima'),
-                      const SizedBox(width: 8),
+                      SizedBox(width: 8),
                       _buildFilterChip('sedang_diproses', 'Diproses'),
-                      const SizedBox(width: 8),
+                      SizedBox(width: 8),
                       _buildFilterChip('selesai', 'Selesai'),
-                      const SizedBox(width: 8),
+                      SizedBox(width: 8),
                       _buildFilterChip('diambil', 'Diambil'),
                     ],
                   ),
@@ -402,7 +402,7 @@ class _HistoryOrdersScreenState extends State<HistoryOrdersScreen> {
               stream: dbService.getOrders(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
+                  return Center(child: CircularProgressIndicator());
                 }
                 if (snapshot.hasError) {
                   return Center(child: Text(getCleanErrorMessage(snapshot.error)));
@@ -429,8 +429,8 @@ class _HistoryOrdersScreenState extends State<HistoryOrdersScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.history_toggle_off, size: 64, color: AppTheme.textGray),
-                        const SizedBox(height: 16),
+                        Icon(Icons.history_toggle_off, size: 64, color: AppTheme.textGray),
+                        SizedBox(height: 16),
                         Text(
                           'Tidak ada riwayat pesanan',
                           style: Theme.of(context).textTheme.titleMedium?.copyWith(color: AppTheme.textGray),
@@ -441,7 +441,7 @@ class _HistoryOrdersScreenState extends State<HistoryOrdersScreen> {
                 }
 
                 return ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  padding: EdgeInsets.symmetric(horizontal: 16),
                   itemCount: orders.length,
                   itemBuilder: (context, index) {
                     final order = orders[index];
@@ -460,12 +460,12 @@ class _HistoryOrdersScreenState extends State<HistoryOrdersScreen> {
                     if (order.status == 'diambil') statusColor = Colors.green;
 
                     return Card(
-                      margin: const EdgeInsets.only(bottom: 12),
+                      margin: EdgeInsets.only(bottom: 12),
                       child: InkWell(
                         onTap: () => InvoiceDetailModal.show(context, order),
                         borderRadius: BorderRadius.circular(12),
                         child: Padding(
-                          padding: const EdgeInsets.all(16),
+                          padding: EdgeInsets.all(16),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -474,10 +474,10 @@ class _HistoryOrdersScreenState extends State<HistoryOrdersScreen> {
                                 children: [
                                   Text(
                                     order.id,
-                                    style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primaryBlue),
+                                    style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primaryBlue),
                                   ),
                                   Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                     decoration: BoxDecoration(
                                       color: statusColor.withOpacity(0.12),
                                       borderRadius: BorderRadius.circular(6),
@@ -493,14 +493,14 @@ class _HistoryOrdersScreenState extends State<HistoryOrdersScreen> {
                                   ),
                                 ],
                               ),
-                              const Divider(height: 20, color: AppTheme.lightGray),
+                              Divider(height: 20, color: AppTheme.lightGray),
                               
                               Text(
                                 'Pelanggan: ${order.customerName}',
-                                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
                               ),
-                              Text('Tanggal: $formattedDate', style: const TextStyle(color: AppTheme.textGray, fontSize: 11)),
-                              const SizedBox(height: 8),
+                              Text('Tanggal: $formattedDate', style: TextStyle(color: AppTheme.textGray, fontSize: 11)),
+                              SizedBox(height: 8),
 
                               // Items count and price
                               Row(
@@ -508,16 +508,16 @@ class _HistoryOrdersScreenState extends State<HistoryOrdersScreen> {
                                 children: [
                                   Text(
                                     '${order.items.length} Pasang Sepatu',
-                                    style: const TextStyle(fontSize: 12, color: AppTheme.textGray),
+                                    style: TextStyle(fontSize: 12, color: AppTheme.textGray),
                                   ),
                                   Text(
                                     'Rp ${order.totalAmount.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}',
-                                    style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.darkBlueText),
+                                    style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.darkBlueText),
                                   ),
                                 ],
                               ),
                               
-                              const Divider(height: 24, color: AppTheme.lightGray),
+                              Divider(height: 24, color: AppTheme.lightGray),
 
                               // Action buttons (PDF, WA Notification)
                               Row(
@@ -526,24 +526,24 @@ class _HistoryOrdersScreenState extends State<HistoryOrdersScreen> {
                                   // WA Notification
                                   TextButton.icon(
                                     onPressed: () => _sendWhatsAppMessage(order),
-                                    icon: const Icon(Icons.chat_bubble_outline, color: Colors.green, size: 14),
-                                    label: const Text('WA Notif', style: TextStyle(color: Colors.green, fontSize: 11)),
+                                    icon: Icon(Icons.chat_bubble_outline, color: Colors.green, size: 14),
+                                    label: Text('WA Notif', style: TextStyle(color: Colors.green, fontSize: 11)),
                                   ),
-                                  const SizedBox(width: 4),
+                                  SizedBox(width: 4),
 
                                   // Kirim PDF via native share (WhatsApp)
                                   TextButton.icon(
                                     onPressed: () => _sharePdfInvoice(order),
-                                    icon: const Icon(Icons.share, color: Colors.blue, size: 14),
-                                    label: const Text('Kirim PDF', style: TextStyle(color: Colors.blue, fontSize: 11)),
+                                    icon: Icon(Icons.share, color: Colors.blue, size: 14),
+                                    label: Text('Kirim PDF', style: TextStyle(color: Colors.blue, fontSize: 11)),
                                   ),
-                                  const SizedBox(width: 4),
+                                  SizedBox(width: 4),
 
                                   // PDF Invoice Print
                                   TextButton.icon(
                                     onPressed: () => _generatePdfInvoice(order),
-                                    icon: const Icon(Icons.print_outlined, color: AppTheme.textGray, size: 14),
-                                    label: const Text('Cetak', style: TextStyle(color: AppTheme.textGray, fontSize: 11)),
+                                    icon: Icon(Icons.print_outlined, color: AppTheme.textGray, size: 14),
+                                    label: Text('Cetak', style: TextStyle(color: AppTheme.textGray, fontSize: 11)),
                                   ),
                                 ],
                               ),

@@ -7,7 +7,7 @@ import '../theme.dart';
 
 class InvoiceDetailModal extends StatelessWidget {
   final OrderModel order;
-  const InvoiceDetailModal({Key? key, required this.order}) : super(key: key);
+  InvoiceDetailModal({Key? key, required this.order}) : super(key: key);
 
   static void show(BuildContext context, OrderModel order) {
     showModalBottomSheet(
@@ -38,7 +38,7 @@ class InvoiceDetailModal extends StatelessWidget {
         : 'Drop-Off & Ambil Sendiri';
 
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.only(
           topLeft: Radius.circular(24),
@@ -48,7 +48,7 @@ class InvoiceDetailModal extends StatelessWidget {
       constraints: BoxConstraints(
         maxHeight: MediaQuery.of(context).size.height * 0.85,
       ),
-      padding: const EdgeInsets.only(top: 16, left: 20, right: 20, bottom: 24),
+      padding: EdgeInsets.only(top: 16, left: 20, right: 20, bottom: 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -63,7 +63,7 @@ class InvoiceDetailModal extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           
           // Header
           Row(
@@ -77,17 +77,17 @@ class InvoiceDetailModal extends StatelessWidget {
                 ),
               ),
               IconButton(
-                icon: const Icon(Icons.close, color: AppTheme.textGray),
+                icon: Icon(Icons.close, color: AppTheme.textGray),
                 onPressed: () => Navigator.pop(context),
               )
             ],
           ),
-          const Divider(height: 16, color: AppTheme.lightGray),
+          Divider(height: 16, color: AppTheme.lightGray),
           
           // Scrollable body
           Expanded(
             child: SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
+              physics: BouncingScrollPhysics(),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -97,7 +97,7 @@ class InvoiceDetailModal extends StatelessWidget {
                     children: [
                       Text(
                         order.id,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 16, 
                           fontWeight: FontWeight.bold, 
                           color: AppTheme.darkBlueText
@@ -106,7 +106,7 @@ class InvoiceDetailModal extends StatelessWidget {
                       Row(
                         children: [
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                             decoration: BoxDecoration(
                               color: statusColor.withOpacity(0.12),
                               borderRadius: BorderRadius.circular(6),
@@ -120,9 +120,9 @@ class InvoiceDetailModal extends StatelessWidget {
                               ),
                             ),
                           ),
-                          const SizedBox(width: 6),
+                          SizedBox(width: 6),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                             decoration: BoxDecoration(
                               color: order.paymentStatus == 'sudah_bayar'
                                   ? Colors.green.withOpacity(0.12)
@@ -142,7 +142,7 @@ class InvoiceDetailModal extends StatelessWidget {
                       )
                     ],
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12),
                   
                   // Metadata
                   _buildInfoRow('Pelanggan:', order.customerName),
@@ -151,13 +151,13 @@ class InvoiceDetailModal extends StatelessWidget {
                   if (order.estimatedCompletion.isNotEmpty)
                     _buildInfoRow('Estimasi Selesai:', order.estimatedCompletion, valueColor: Colors.orange),
                   
-                  const SizedBox(height: 16),
-                  const Text('Daftar Layanan', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.darkBlueText)),
-                  const SizedBox(height: 6),
+                  SizedBox(height: 16),
+                  Text('Daftar Layanan', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.darkBlueText)),
+                  SizedBox(height: 6),
                   
                   // Items Table
                   ...order.items.map((item) => Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    padding: EdgeInsets.symmetric(vertical: 4),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -169,46 +169,46 @@ class InvoiceDetailModal extends StatelessWidget {
                                 item.categoryName.isNotEmpty
                                     ? '${item.itemName} (${item.categoryName})'
                                     : item.itemName,
-                                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
+                                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
                               ),
-                              Text(item.serviceName, style: const TextStyle(color: AppTheme.textGray, fontSize: 10)),
+                              Text(item.serviceName, style: TextStyle(color: AppTheme.textGray, fontSize: 10)),
                             ],
                           ),
                         ),
                         Text(
                           'Rp ${item.price.toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")}',
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
                         ),
                       ],
                     ),
                   )),
                   
-                  const Divider(height: 20, color: AppTheme.lightGray),
+                  Divider(height: 20, color: AppTheme.lightGray),
                   
                   // Logistics / Delivery details
-                  const Text('Rincian Logistik & Pengiriman', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.darkBlueText)),
-                  const SizedBox(height: 6),
+                  Text('Rincian Logistik & Pengiriman', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.darkBlueText)),
+                  SizedBox(height: 6),
                   _buildInfoRow('Metode Logistik:', deliveryText),
                   if (order.deliveryType == 'pickup_delivery') ...[
                     _buildInfoRow('Ongkos Kirim:', 'Rp ${order.deliveryFee.toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")}'),
                     Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 2.0),
+                      padding: EdgeInsets.symmetric(vertical: 2.0),
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const SizedBox(
+                          SizedBox(
                             width: 120,
                             child: Text('Alamat Pengiriman:', style: TextStyle(color: AppTheme.textGray, fontSize: 11)),
                           ),
                           Expanded(
                             child: Text(
                               order.deliveryAddress,
-                              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.darkBlueText),
+                              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.darkBlueText),
                             ),
                           ),
                           if (order.mapsLink.isNotEmpty)
                             IconButton(
-                              icon: const Icon(Icons.map, size: 16, color: AppTheme.primaryBlue),
+                              icon: Icon(Icons.map, size: 16, color: AppTheme.primaryBlue),
                               onPressed: () async {
                                 final uri = Uri.parse(order.mapsLink);
                                 try {
@@ -216,25 +216,25 @@ class InvoiceDetailModal extends StatelessWidget {
                                 } catch (_) {}
                               },
                               padding: EdgeInsets.zero,
-                              constraints: const BoxConstraints(),
+                              constraints: BoxConstraints(),
                             ),
                         ],
                       ),
                     ),
                   ],
                   
-                  const Divider(height: 20, color: AppTheme.lightGray),
+                  Divider(height: 20, color: AppTheme.lightGray),
                   
                   // Timeline Status Updates
-                  const Text('Linimasa Pembaruan Status', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.darkBlueText)),
-                  const SizedBox(height: 8),
+                  Text('Linimasa Pembaruan Status', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.darkBlueText)),
+                  SizedBox(height: 8),
                   _buildTimelineItem('Dibayar / Lunas', order.statusTimeline['sudah_bayar'], dateFormat),
                   _buildTimelineItem('Diterima', order.statusTimeline['diterima'], dateFormat),
                   _buildTimelineItem('Sedang Diproses', order.statusTimeline['sedang_diproses'], dateFormat),
                   _buildTimelineItem('Selesai Di-servis', order.statusTimeline['selesai'], dateFormat),
                   _buildTimelineItem('Diserahkan ke Pelanggan', order.statusTimeline['diambil'], dateFormat),
                   
-                  const Divider(height: 20, color: AppTheme.lightGray),
+                  Divider(height: 20, color: AppTheme.lightGray),
 
                   // Pricing Summary Details
                   _buildPriceSummaryRow(
@@ -258,43 +258,43 @@ class InvoiceDetailModal extends StatelessWidget {
                       '-Rp ${pointsDiscount.toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")}',
                       color: Colors.green,
                     ),
-                  const Divider(height: 16, color: AppTheme.lightGray),
+                  Divider(height: 16, color: AppTheme.lightGray),
 
                   // Pricing Summary Total
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text('Total Pembayaran', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppTheme.darkBlueText)),
+                      Text('Total Pembayaran', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppTheme.darkBlueText)),
                       Text(
                         'Rp ${order.totalAmount.toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")}',
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppTheme.primaryBlue),
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppTheme.primaryBlue),
                       ),
                     ],
                   ),
                   if (order.pointsEarned > 0) ...[
-                    const SizedBox(height: 4),
+                    SizedBox(height: 4),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text('Poin Didapatkan:', style: TextStyle(color: Colors.orange, fontSize: 11)),
-                        Text('+${order.pointsEarned} Poin', style: const TextStyle(color: Colors.orange, fontSize: 11, fontWeight: FontWeight.bold)),
+                        Text('Poin Didapatkan:', style: TextStyle(color: Colors.orange, fontSize: 11)),
+                        Text('+${order.pointsEarned} Poin', style: TextStyle(color: Colors.orange, fontSize: 11, fontWeight: FontWeight.bold)),
                       ],
                     ),
                   ],
                   
                   if (order.notes.isNotEmpty) ...[
-                    const SizedBox(height: 12),
+                    SizedBox(height: 12),
                     Text(
                       'Catatan: "${order.notes}"',
-                      style: const TextStyle(fontStyle: FontStyle.italic, color: Colors.orange, fontSize: 11),
+                      style: TextStyle(fontStyle: FontStyle.italic, color: Colors.orange, fontSize: 11),
                     ),
                   ],
 
                   // Photo payment proof
                   if (order.paymentProof.isNotEmpty) ...[
-                    const Divider(height: 24, color: AppTheme.lightGray),
-                    const Text('Bukti Pembayaran', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.darkBlueText)),
-                    const SizedBox(height: 8),
+                    Divider(height: 24, color: AppTheme.lightGray),
+                    Text('Bukti Pembayaran', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.darkBlueText)),
+                    SizedBox(height: 8),
                     SizedBox(
                       width: 140,
                       child: _buildImageThumbnail(context, order.paymentProof, 'Bukti Pembayaran'),
@@ -303,27 +303,27 @@ class InvoiceDetailModal extends StatelessWidget {
 
                   // Photos before-after
                   if (order.photoBefore.isNotEmpty || order.photoAfter.isNotEmpty) ...[
-                    const Divider(height: 24, color: AppTheme.lightGray),
-                    const Text('Dokumentasi Foto Cucian', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.darkBlueText)),
-                    const SizedBox(height: 8),
+                    Divider(height: 24, color: AppTheme.lightGray),
+                    Text('Dokumentasi Foto Cucian', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.darkBlueText)),
+                    SizedBox(height: 8),
                     Row(
                       children: [
                         if (order.photoBefore.isNotEmpty)
                           Expanded(
                             child: Padding(
-                              padding: const EdgeInsets.only(right: 6.0),
+                              padding: EdgeInsets.only(right: 6.0),
                               child: _buildImageThumbnail(context, order.photoBefore.first, 'Kondisi Awal (Before)'),
                             ),
                           ),
                         if (order.photoAfter.isNotEmpty)
                           Expanded(
                             child: Padding(
-                              padding: const EdgeInsets.only(left: 6.0),
+                              padding: EdgeInsets.only(left: 6.0),
                               child: _buildImageThumbnail(context, order.photoAfter.first, 'Hasil Cuci (After)'),
                             ),
                           )
                         else if (order.photoBefore.isNotEmpty)
-                          const Expanded(child: SizedBox()),
+                          Expanded(child: SizedBox()),
                       ],
                     ),
                   ],
@@ -338,13 +338,13 @@ class InvoiceDetailModal extends StatelessWidget {
 
   Widget _buildInfoRow(String label, String value, {Color? valueColor}) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2.0),
+      padding: EdgeInsets.symmetric(vertical: 2.0),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
             width: 120,
-            child: Text(label, style: const TextStyle(color: AppTheme.textGray, fontSize: 11)),
+            child: Text(label, style: TextStyle(color: AppTheme.textGray, fontSize: 11)),
           ),
           Expanded(
             child: Text(
@@ -363,7 +363,7 @@ class InvoiceDetailModal extends StatelessWidget {
 
   Widget _buildPriceSummaryRow(String label, String value, {bool isBold = false, Color? color}) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 3.0),
+      padding: EdgeInsets.symmetric(vertical: 3.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -391,7 +391,7 @@ class InvoiceDetailModal extends StatelessWidget {
   Widget _buildTimelineItem(String label, DateTime? timestamp, DateFormat format) {
     final bool isDone = timestamp != null;
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      padding: EdgeInsets.symmetric(vertical: 4.0),
       child: Row(
         children: [
           Icon(
@@ -399,7 +399,7 @@ class InvoiceDetailModal extends StatelessWidget {
             size: 16,
             color: isDone ? Colors.green : AppTheme.textGray.withOpacity(0.5),
           ),
-          const SizedBox(width: 8),
+          SizedBox(width: 8),
           Expanded(
             child: Text(
               label,
@@ -413,10 +413,10 @@ class InvoiceDetailModal extends StatelessWidget {
           if (isDone)
             Text(
               format.format(timestamp),
-              style: const TextStyle(fontSize: 10, color: AppTheme.textGray),
+              style: TextStyle(fontSize: 10, color: AppTheme.textGray),
             )
           else
-            const Text(
+            Text(
               'Belum',
               style: TextStyle(fontSize: 10, color: AppTheme.textGray, fontStyle: FontStyle.italic),
             ),
@@ -439,7 +439,7 @@ class InvoiceDetailModal extends StatelessWidget {
             context: context,
             builder: (context) => Dialog(
               backgroundColor: Colors.transparent,
-              insetPadding: const EdgeInsets.all(12),
+              insetPadding: EdgeInsets.all(12),
               child: Stack(
                 alignment: Alignment.topRight,
                 children: [
@@ -458,7 +458,7 @@ class InvoiceDetailModal extends StatelessWidget {
                     child: CircleAvatar(
                       backgroundColor: Colors.black.withOpacity(0.6),
                       child: IconButton(
-                        icon: const Icon(Icons.close, color: Colors.white),
+                        icon: Icon(Icons.close, color: Colors.white),
                         onPressed: () => Navigator.pop(context),
                       ),
                     ),
@@ -482,8 +482,8 @@ class InvoiceDetailModal extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(height: 4),
-            Text(label, style: const TextStyle(fontSize: 10, color: AppTheme.textGray, fontWeight: FontWeight.w500)),
+            SizedBox(height: 4),
+            Text(label, style: TextStyle(fontSize: 10, color: AppTheme.textGray, fontWeight: FontWeight.w500)),
           ],
         ),
       );
@@ -491,7 +491,7 @@ class InvoiceDetailModal extends StatelessWidget {
       return Container(
         height: 100,
         color: AppTheme.lightGray,
-        child: const Center(child: Icon(Icons.broken_image, color: AppTheme.textGray)),
+        child: Center(child: Icon(Icons.broken_image, color: AppTheme.textGray)),
       );
     }
   }

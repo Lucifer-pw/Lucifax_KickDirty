@@ -7,7 +7,7 @@ import 'admin/admin_dashboard.dart';
 import 'customer/customer_portal_screen.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({Key? key}) : super(key: key);
+  LoginScreen({Key? key}) : super(key: key);
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -79,11 +79,11 @@ class _LoginScreenState extends State<LoginScreen> {
         final role = authService.currentUserModel?.role;
         if (role == 'owner' || role == 'staff' || role == 'developer') {
           Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (_) => const AdminDashboard()),
+            MaterialPageRoute(builder: (_) => AdminDashboard()),
           );
         } else {
           Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (_) => const CustomerPortalScreen()),
+            MaterialPageRoute(builder: (_) => CustomerPortalScreen()),
           );
         }
       }
@@ -116,11 +116,11 @@ class _LoginScreenState extends State<LoginScreen> {
         final role = authService.currentUserModel?.role;
         if (role == 'owner' || role == 'staff' || role == 'developer') {
           Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (_) => const AdminDashboard()),
+            MaterialPageRoute(builder: (_) => AdminDashboard()),
           );
         } else {
           Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (_) => const CustomerPortalScreen()),
+            MaterialPageRoute(builder: (_) => CustomerPortalScreen()),
           );
         }
       }
@@ -144,15 +144,15 @@ class _LoginScreenState extends State<LoginScreen> {
 
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: AppTheme.whiteBlueGradient,
         ),
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24.0),
+            padding: EdgeInsets.all(24.0),
             child: Container(
               width: isWeb ? 450 : double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+              padding: EdgeInsets.symmetric(horizontal: 24, vertical: 32),
               decoration: BoxDecoration(
                 color: AppTheme.white,
                 borderRadius: BorderRadius.circular(24),
@@ -170,8 +170,8 @@ class _LoginScreenState extends State<LoginScreen> {
                       fit: BoxFit.contain,
                       errorBuilder: (context, error, stackTrace) {
                         return Container(
-                          padding: const EdgeInsets.symmetric(vertical: 20),
-                          child: const Icon(
+                          padding: EdgeInsets.symmetric(vertical: 20),
+                          child: Icon(
                             Icons.local_laundry_service,
                             size: 60,
                             color: AppTheme.primaryBlue,
@@ -179,7 +179,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         );
                       },
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16),
                     Text(
                       _isRegistering
                           ? "Buat Akun Pelanggan"
@@ -191,7 +191,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                                       ),
                       textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: 8),
                     Text(
                       _isRegistering
                           ? "Daftar untuk memantau cucian sepatu Anda secara real-time"
@@ -201,11 +201,11 @@ class _LoginScreenState extends State<LoginScreen> {
                       style: Theme.of(context).textTheme.bodyMedium,
                       textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 24),
+                    SizedBox(height: 24),
 
                     if (_errorMessage.isNotEmpty) ...[
                       Container(
-                        padding: const EdgeInsets.symmetric(
+                        padding: EdgeInsets.symmetric(
                             vertical: 12, horizontal: 16),
                         decoration: BoxDecoration(
                           color: Colors.red.shade50,
@@ -214,20 +214,20 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         child: Row(
                           children: [
-                            const Icon(Icons.error_outline,
+                            Icon(Icons.error_outline,
                                 color: Colors.redAccent),
-                            const SizedBox(width: 12),
+                            SizedBox(width: 12),
                             Expanded(
                               child: Text(
                                 _errorMessage,
-                                style: const TextStyle(
+                                style: TextStyle(
                                     color: Colors.redAccent, fontSize: 13),
                               ),
                             ),
                           ],
                         ),
                       ),
-                      const SizedBox(height: 16),
+                      SizedBox(height: 16),
                     ],
 
                     // Switch between Email and Phone Login (only when not registering)
@@ -241,7 +241,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           children: [
                             Expanded(
                               child: ChoiceChip(
-                                label: const Center(child: Text("Email")),
+                                label: Center(child: Text("Email")),
                                 selected: !_isPhoneLogin,
                                 onSelected: (val) {
                                   setState(() {
@@ -264,7 +264,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                             Expanded(
                               child: ChoiceChip(
-                                label: const Center(child: Text("Nomor WA")),
+                                label: Center(child: Text("Nomor WA")),
                                 selected: _isPhoneLogin,
                                 onSelected: (val) {
                                   setState(() {
@@ -288,14 +288,14 @@ class _LoginScreenState extends State<LoginScreen> {
                           ],
                         ),
                       ),
-                      const SizedBox(height: 16),
+                      SizedBox(height: 16),
                     ],
 
                     if (_isRegistering) ...[
                       // Name field
                       TextFormField(
                         controller: _nameController,
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           hintText: 'Nama Lengkap',
                           prefixIcon: Icon(Icons.person_outline,
                               color: AppTheme.textGray),
@@ -304,13 +304,13 @@ class _LoginScreenState extends State<LoginScreen> {
                             ? 'Nama tidak boleh kosong'
                             : null,
                       ),
-                      const SizedBox(height: 16),
+                      SizedBox(height: 16),
 
                       // Phone field (Registration)
                       TextFormField(
                         controller: _phoneController,
                         keyboardType: TextInputType.phone,
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           hintText: 'Nomor WhatsApp (Contoh: 08123456789 atau 628123456789)',
                           prefixIcon: Icon(Icons.phone_outlined,
                               color: AppTheme.textGray),
@@ -325,7 +325,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           return null;
                         },
                       ),
-                      const SizedBox(height: 16),
+                      SizedBox(height: 16),
                     ],
 
                     // Email / Phone field for Login
@@ -334,7 +334,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       TextFormField(
                         controller: _phoneLoginController,
                         keyboardType: TextInputType.phone,
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           hintText: 'Nomor WhatsApp (Contoh: 08132... atau 628132...)',
                           prefixIcon: Icon(Icons.phone_outlined,
                               color: AppTheme.textGray),
@@ -349,13 +349,13 @@ class _LoginScreenState extends State<LoginScreen> {
                           return null;
                         },
                       ),
-                      const SizedBox(height: 16),
+                      SizedBox(height: 16),
                     ] else ...[
                       // Email Field
                       TextFormField(
                         controller: _emailController,
                         keyboardType: TextInputType.emailAddress,
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           hintText: 'Email',
                           prefixIcon: Icon(Icons.email_outlined,
                               color: AppTheme.textGray),
@@ -371,7 +371,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           return null;
                         },
                       ),
-                      const SizedBox(height: 16),
+                      SizedBox(height: 16),
                     ],
 
                     // Password Field
@@ -380,7 +380,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       obscureText: _obscurePassword,
                       decoration: InputDecoration(
                         hintText: 'Password',
-                        prefixIcon: const Icon(Icons.lock_outline,
+                        prefixIcon: Icon(Icons.lock_outline,
                             color: AppTheme.textGray),
                         suffixIcon: IconButton(
                           icon: Icon(
@@ -406,7 +406,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         return null;
                       },
                     ),
-                    const SizedBox(height: 24),
+                    SizedBox(height: 24),
 
                     // Submit Button
                     SizedBox(
@@ -415,10 +415,10 @@ class _LoginScreenState extends State<LoginScreen> {
                         onPressed: _isLoading ? null : _handleSubmit,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppTheme.primaryBlue,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          padding: EdgeInsets.symmetric(vertical: 16),
                         ),
                         child: _isLoading
-                            ? const SizedBox(
+                            ? SizedBox(
                                 height: 20,
                                 width: 20,
                                 child: CircularProgressIndicator(
@@ -428,7 +428,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 _isRegistering ? 'Daftar Sekarang' : 'Masuk'),
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16),
 
                     // Google Sign-In Button
                     SizedBox(
@@ -440,10 +440,10 @@ class _LoginScreenState extends State<LoginScreen> {
                           'https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg',
                           height: 18,
                           errorBuilder: (context, error, stackTrace) {
-                            return const Icon(Icons.g_mobiledata, size: 24);
+                            return Icon(Icons.g_mobiledata, size: 24);
                           },
                         ),
-                        label: const Text(
+                        label: Text(
                           'Masuk dengan Google',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
@@ -458,7 +458,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16),
 
                     // Toggle Register/Login Option
                     TextButton(
@@ -472,24 +472,24 @@ class _LoginScreenState extends State<LoginScreen> {
                         _isRegistering
                             ? 'Sudah punya akun? Masuk di sini'
                             : 'Belum punya akun? Daftar sebagai Pelanggan',
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: AppTheme.primaryBlue,
                           fontWeight: FontWeight.w600,
                           fontSize: 13,
                         ),
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: 8),
 
                     // Guest Option Link
                     TextButton(
                       onPressed: () {
                         Navigator.pushReplacement(
                           context,
-                          MaterialPageRoute(builder: (_) => const CustomerPortalScreen()),
+                          MaterialPageRoute(builder: (_) => CustomerPortalScreen()),
                         );
                       },
-                      child: const Text(
+                      child: Text(
                         'Lihat Layanan Jasa (Kembali)',
                         style: TextStyle(
                           color: AppTheme.textGray,
@@ -500,10 +500,10 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
 
-                    const Divider(height: 32, color: AppTheme.lightGray),
+                    Divider(height: 32, color: AppTheme.lightGray),
 
                     // Watermark
-                    const Watermark(),
+                    Watermark(),
                   ],
                 ),
               ),

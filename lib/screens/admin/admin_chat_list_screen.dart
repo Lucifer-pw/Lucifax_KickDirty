@@ -10,7 +10,7 @@ import '../../utils/error_helper.dart';
 
 class AdminChatListScreen extends StatelessWidget {
   final bool isTab;
-  const AdminChatListScreen({Key? key, this.isTab = false}) : super(key: key);
+  AdminChatListScreen({Key? key, this.isTab = false}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -20,16 +20,16 @@ class AdminChatListScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Pesan Masuk Pelanggan'),
+        title: Text('Pesan Masuk Pelanggan'),
         automaticallyImplyLeading: !isTab,
       ),
       body: currentUser == null
-          ? const Center(child: CircularProgressIndicator())
+          ? Center(child: CircularProgressIndicator())
           : StreamBuilder<List<Map<String, dynamic>>>(
               stream: dbService.getChatRooms(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
+                  return Center(child: CircularProgressIndicator());
                 }
                 if (snapshot.hasError) {
                   return Center(child: Text(getCleanErrorMessage(snapshot.error)));
@@ -40,13 +40,13 @@ class AdminChatListScreen extends StatelessWidget {
                 if (rooms.isEmpty) {
                   return Center(
                     child: Padding(
-                      padding: const EdgeInsets.all(24.0),
+                      padding: EdgeInsets.all(24.0),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(Icons.chat_bubble_outline, size: 64, color: AppTheme.textGray.withOpacity(0.5)),
-                          const SizedBox(height: 16),
-                          const Text(
+                          SizedBox(height: 16),
+                          Text(
                             'Belum ada pesan masuk dari pelanggan.',
                             textAlign: TextAlign.center,
                             style: TextStyle(color: AppTheme.textGray, fontSize: 13),
@@ -58,7 +58,7 @@ class AdminChatListScreen extends StatelessWidget {
                 }
 
                 return ListView.builder(
-                  padding: const EdgeInsets.all(16),
+                  padding: EdgeInsets.all(16),
                   itemCount: rooms.length,
                   itemBuilder: (context, index) {
                     final room = rooms[index];
@@ -84,7 +84,7 @@ class AdminChatListScreen extends StatelessWidget {
                     }
 
                     return Card(
-                      margin: const EdgeInsets.only(bottom: 12),
+                      margin: EdgeInsets.only(bottom: 12),
                       child: ListTile(
                         onTap: () {
                           Navigator.push(
@@ -103,7 +103,7 @@ class AdminChatListScreen extends StatelessWidget {
                         },
                         leading: CircleAvatar(
                           backgroundColor: AppTheme.primaryBlue.withOpacity(0.1),
-                          child: const Icon(Icons.person, color: AppTheme.primaryBlue),
+                          child: Icon(Icons.person, color: AppTheme.primaryBlue),
                         ),
                         title: Text(
                           customerName,
@@ -129,19 +129,19 @@ class AdminChatListScreen extends StatelessWidget {
                             if (timeText.isNotEmpty)
                               Text(
                                 timeText,
-                                style: const TextStyle(fontSize: 10, color: AppTheme.textGray),
+                                style: TextStyle(fontSize: 10, color: AppTheme.textGray),
                               ),
                             if (unreadCount > 0) ...[
-                              const SizedBox(height: 4),
+                              SizedBox(height: 4),
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                decoration: const BoxDecoration(
+                                padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
                                   color: Colors.red,
                                   shape: BoxShape.circle,
                                 ),
                                 child: Text(
                                   '$unreadCount',
-                                  style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                                  style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
                                 ),
                               ),
                             ],

@@ -6,7 +6,7 @@ import '../../widgets/watermark.dart';
 /// Screen for Owner to manage Staff feature permissions.
 /// All changes are saved to Firestore in real-time (auto-save per toggle).
 class StaffPermissionsScreen extends StatelessWidget {
-  const StaffPermissionsScreen({Key? key}) : super(key: key);
+  StaffPermissionsScreen({Key? key}) : super(key: key);
 
   static const String _collection = 'app_config';
   static const String _docId = 'staff_permissions';
@@ -82,9 +82,9 @@ class StaffPermissionsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Hak Akses Staff'),
+        title: Text('Hak Akses Staff'),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, size: 20),
+          icon: Icon(Icons.arrow_back_ios_new, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -100,14 +100,14 @@ class StaffPermissionsScreen extends StatelessWidget {
           }
 
           return SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Info banner
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.all(16),
+                  padding: EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
@@ -120,23 +120,23 @@ class StaffPermissionsScreen extends StatelessWidget {
                       BoxShadow(
                         color: AppTheme.primaryBlue.withOpacity(0.3),
                         blurRadius: 12,
-                        offset: const Offset(0, 4),
+                        offset: Offset(0, 4),
                       ),
                     ],
                   ),
                   child: Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.all(10),
+                        padding: EdgeInsets.all(10),
                         decoration: BoxDecoration(
                           color: Colors.white.withOpacity(0.2),
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: const Icon(Icons.admin_panel_settings,
+                        child: Icon(Icons.admin_panel_settings,
                             color: Colors.white, size: 28),
                       ),
-                      const SizedBox(width: 14),
-                      const Expanded(
+                      SizedBox(width: 14),
+                      Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -160,18 +160,18 @@ class StaffPermissionsScreen extends StatelessWidget {
                     ],
                   ),
                 ),
-                const SizedBox(height: 20),
+                SizedBox(height: 20),
 
                 // Always-on info
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.all(14),
+                  padding: EdgeInsets.all(14),
                   decoration: BoxDecoration(
                     color: Colors.green.withOpacity(0.08),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: Colors.green.withOpacity(0.3)),
                   ),
-                  child: const Row(
+                  child: Row(
                     children: [
                       Icon(Icons.check_circle, color: Colors.green, size: 20),
                       SizedBox(width: 10),
@@ -187,10 +187,10 @@ class StaffPermissionsScreen extends StatelessWidget {
                     ],
                   ),
                 ),
-                const SizedBox(height: 20),
+                SizedBox(height: 20),
 
                 // Permission toggles
-                const Text(
+                Text(
                   'Fitur yang Dapat Diatur',
                   style: TextStyle(
                     fontSize: 16,
@@ -198,7 +198,7 @@ class StaffPermissionsScreen extends StatelessWidget {
                     color: AppTheme.darkBlueText,
                   ),
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: 12),
 
                 ..._permissionItems.map((item) {
                   final key = item['key'] as String;
@@ -206,7 +206,7 @@ class StaffPermissionsScreen extends StatelessWidget {
                   final color = item['color'] as Color;
 
                   return Container(
-                    margin: const EdgeInsets.only(bottom: 10),
+                    margin: EdgeInsets.only(bottom: 10),
                     decoration: BoxDecoration(
                       color: AppTheme.white,
                       borderRadius: BorderRadius.circular(14),
@@ -221,10 +221,10 @@ class StaffPermissionsScreen extends StatelessWidget {
                       value: isEnabled,
                       onChanged: (val) => _togglePermission(key, val),
                       activeColor: color,
-                      contentPadding: const EdgeInsets.symmetric(
+                      contentPadding: EdgeInsets.symmetric(
                           horizontal: 16, vertical: 4),
                       secondary: Container(
-                        padding: const EdgeInsets.all(8),
+                        padding: EdgeInsets.all(8),
                         decoration: BoxDecoration(
                           color: isEnabled
                               ? color.withOpacity(0.1)
@@ -249,14 +249,14 @@ class StaffPermissionsScreen extends StatelessWidget {
                       ),
                       subtitle: Text(
                         item['subtitle'] as String,
-                        style: const TextStyle(fontSize: 11, color: AppTheme.textGray),
+                        style: TextStyle(fontSize: 11, color: AppTheme.textGray),
                       ),
                     ),
                   );
                 }),
 
-                const SizedBox(height: 24),
-                const Center(child: Watermark()),
+                SizedBox(height: 24),
+                Center(child: Watermark()),
               ],
             ),
           );

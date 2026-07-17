@@ -14,7 +14,7 @@ class BillingBlockScreen extends StatefulWidget {
   final DateTime dueDate;
   final String qrImage;
 
-  const BillingBlockScreen({
+  BillingBlockScreen({
     Key? key,
     required this.amount,
     required this.dueDate,
@@ -39,7 +39,7 @@ class _BillingBlockScreenState extends State<BillingBlockScreen> {
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: Colors.grey[300]!),
         ),
-        child: const Center(
+        child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -70,7 +70,7 @@ class _BillingBlockScreenState extends State<BillingBlockScreen> {
               height: height,
               width: double.infinity,
               color: Colors.grey[200],
-              child: const Icon(Icons.broken_image, size: 64, color: Colors.red),
+              child: Icon(Icons.broken_image, size: 64, color: Colors.red),
             );
           },
         ),
@@ -80,7 +80,7 @@ class _BillingBlockScreenState extends State<BillingBlockScreen> {
         height: height,
         width: height,
         color: Colors.grey[200],
-        child: const Icon(Icons.broken_image, size: 64, color: Colors.red),
+        child: Icon(Icons.broken_image, size: 64, color: Colors.red),
       );
     }
   }
@@ -93,16 +93,16 @@ class _BillingBlockScreenState extends State<BillingBlockScreen> {
           child: Wrap(
             children: [
               ListTile(
-                leading: const Icon(Icons.camera_alt, color: AppTheme.primaryBlue),
-                title: const Text('Kamera (Ambil Foto Bukti)'),
+                leading: Icon(Icons.camera_alt, color: AppTheme.primaryBlue),
+                title: Text('Kamera (Ambil Foto Bukti)'),
                 onTap: () async {
                   final img = await ImageService.pickImageFromCamera();
                   if (context.mounted) Navigator.pop(context, img);
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.photo_library, color: AppTheme.primaryBlue),
-                title: const Text('Galeri (Pilih Foto Bukti)'),
+                leading: Icon(Icons.photo_library, color: AppTheme.primaryBlue),
+                title: Text('Galeri (Pilih Foto Bukti)'),
                 onTap: () async {
                   final img = await ImageService.pickImageFromGallery();
                   if (context.mounted) Navigator.pop(context, img);
@@ -159,7 +159,7 @@ class _BillingBlockScreenState extends State<BillingBlockScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Bukti pembayaran berhasil diunggah! Menunggu konfirmasi developer.')),
+          SnackBar(content: Text('Bukti pembayaran berhasil diunggah! Menunggu konfirmasi developer.')),
         );
       }
     } catch (e) {
@@ -216,7 +216,7 @@ class _BillingBlockScreenState extends State<BillingBlockScreen> {
 
           // If somehow the status becomes lunas under a race condition, show a success loader
           if (status == 'lunas') {
-            return const Scaffold(
+            return Scaffold(
               body: Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -232,7 +232,7 @@ class _BillingBlockScreenState extends State<BillingBlockScreen> {
 
           return SafeArea(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+              padding: EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
               child: Center(
                 child: SingleChildScrollView(
                   child: Column(
@@ -245,19 +245,19 @@ class _BillingBlockScreenState extends State<BillingBlockScreen> {
                         size: 80,
                         color: status == 'menunggu_konfirmasi' ? Colors.orange : Colors.redAccent,
                       ),
-                      const SizedBox(height: 20),
+                      SizedBox(height: 20),
                       Text(
                         status == 'menunggu_konfirmasi'
                             ? 'Menunggu Konfirmasi'
                             : 'Layanan Ditangguhkan',
                         textAlign: TextAlign.center,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
                           color: AppTheme.darkBlueText,
                         ),
                       ),
-                      const SizedBox(height: 12),
+                      SizedBox(height: 12),
                       Text(
                         status == 'menunggu_konfirmasi'
                             ? (isOwner
@@ -267,15 +267,15 @@ class _BillingBlockScreenState extends State<BillingBlockScreen> {
                                 ? 'Masa aktif aplikasi Anda telah habis untuk bulan $monthName. Harap lakukan pembayaran biaya pemeliharaan bulanan (maintenance billing) untuk mengaktifkan kembali layanan.'
                                 : 'Masa aktif aplikasi telah habis untuk bulan $monthName. Harap hubungi Owner toko untuk melakukan pembayaran maintenance agar aplikasi aktif kembali.'),
                         textAlign: TextAlign.center,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 14,
                           color: AppTheme.textGray,
                           height: 1.5,
                         ),
                       ),
-                      const SizedBox(height: 24),
+                      SizedBox(height: 24),
                       Container(
-                        padding: const EdgeInsets.all(16),
+                        padding: EdgeInsets.all(16),
                         decoration: BoxDecoration(
                           color: status == 'menunggu_konfirmasi' ? Colors.orange.shade50 : Colors.red.shade50,
                           borderRadius: BorderRadius.circular(12),
@@ -288,7 +288,7 @@ class _BillingBlockScreenState extends State<BillingBlockScreen> {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                const Text('Biaya Maintenance:', style: TextStyle(fontSize: 13, color: AppTheme.darkBlueText)),
+                                Text('Biaya Maintenance:', style: TextStyle(fontSize: 13, color: AppTheme.darkBlueText)),
                                 Text(
                                   'Rp $formattedAmount',
                                   style: TextStyle(
@@ -299,27 +299,27 @@ class _BillingBlockScreenState extends State<BillingBlockScreen> {
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 8),
+                            SizedBox(height: 8),
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                const Text('Jatuh Tempo:', style: TextStyle(fontSize: 13, color: AppTheme.darkBlueText)),
+                                Text('Jatuh Tempo:', style: TextStyle(fontSize: 13, color: AppTheme.darkBlueText)),
                                 Text(
                                   formattedDate,
-                                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppTheme.darkBlueText),
+                                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppTheme.darkBlueText),
                                 ),
                               ],
                             ),
                           ],
                         ),
                       ),
-                      const SizedBox(height: 24),
+                      SizedBox(height: 24),
 
                       // Restrict billing actions based on role
                       if (!isOwner) ...[
                         if (status == 'menunggu_konfirmasi')
                           Container(
-                            padding: const EdgeInsets.all(16),
+                            padding: EdgeInsets.all(16),
                             decoration: BoxDecoration(
                               color: Colors.amber.shade50,
                               borderRadius: BorderRadius.circular(12),
@@ -328,8 +328,8 @@ class _BillingBlockScreenState extends State<BillingBlockScreen> {
                             child: Row(
                               children: [
                                 Icon(Icons.hourglass_empty, color: Colors.orange[800]),
-                                const SizedBox(width: 12),
-                                const Expanded(
+                                SizedBox(width: 12),
+                                Expanded(
                                   child: Text(
                                     'Owner sudah mengunggah bukti pembayaran. Sedang menunggu persetujuan Developer.',
                                     style: TextStyle(fontSize: 13, color: AppTheme.darkBlueText, fontWeight: FontWeight.w600),
@@ -340,7 +340,7 @@ class _BillingBlockScreenState extends State<BillingBlockScreen> {
                           )
                         else
                           Container(
-                            padding: const EdgeInsets.all(16),
+                            padding: EdgeInsets.all(16),
                             decoration: BoxDecoration(
                               color: Colors.red.shade50,
                               borderRadius: BorderRadius.circular(12),
@@ -349,8 +349,8 @@ class _BillingBlockScreenState extends State<BillingBlockScreen> {
                             child: Row(
                               children: [
                                 Icon(Icons.warning_amber_rounded, color: Colors.red[800]),
-                                const SizedBox(width: 12),
-                                const Expanded(
+                                SizedBox(width: 12),
+                                Expanded(
                                   child: Text(
                                     'Pembayaran belum diselesaikan. Hanya Owner yang dapat melakukan pembayaran dan mengunggah bukti bayar.',
                                     style: TextStyle(fontSize: 13, color: AppTheme.darkBlueText, fontWeight: FontWeight.w600),
@@ -362,13 +362,13 @@ class _BillingBlockScreenState extends State<BillingBlockScreen> {
                       ] else ...[
                         // Owner/Developer layout: Show QRIS and upload button
                         if (status == 'menunggu_konfirmasi') ...[
-                          const Text(
+                          Text(
                             'Bukti Transfer yang Anda Unggah:',
                             style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppTheme.darkBlueText),
                           ),
-                          const SizedBox(height: 12),
+                          SizedBox(height: 12),
                           _buildBase64Image(paymentProof, height: 220),
-                          const SizedBox(height: 20),
+                          SizedBox(height: 20),
                           SizedBox(
                             width: double.infinity,
                             height: 50,
@@ -377,10 +377,10 @@ class _BillingBlockScreenState extends State<BillingBlockScreen> {
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: AppTheme.primaryBlue,
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                                padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                               ),
-                              icon: const Icon(Icons.change_circle_outlined, color: Colors.white),
-                              label: const Text(
+                              icon: Icon(Icons.change_circle_outlined, color: Colors.white),
+                              label: Text(
                                 'Ubah/Unggah Ulang Bukti',
                                 style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
                               ),
@@ -388,11 +388,11 @@ class _BillingBlockScreenState extends State<BillingBlockScreen> {
                           ),
                         ] else ...[
                           // Show Duration selector
-                          const Text(
+                          Text(
                             'Pilih Durasi Berlangganan:',
                             style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppTheme.darkBlueText),
                           ),
-                          const SizedBox(height: 8),
+                          SizedBox(height: 8),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [1, 3, 6, 12].map((months) {
@@ -406,8 +406,8 @@ class _BillingBlockScreenState extends State<BillingBlockScreen> {
                                     });
                                   },
                                   child: Container(
-                                    margin: const EdgeInsets.symmetric(horizontal: 4),
-                                    padding: const EdgeInsets.symmetric(vertical: 10),
+                                    margin: EdgeInsets.symmetric(horizontal: 4),
+                                    padding: EdgeInsets.symmetric(vertical: 10),
                                     decoration: BoxDecoration(
                                       color: isSel ? AppTheme.primaryBlue : Colors.grey[100],
                                       borderRadius: BorderRadius.circular(10),
@@ -430,7 +430,7 @@ class _BillingBlockScreenState extends State<BillingBlockScreen> {
                               );
                             }).toList(),
                           ),
-                          const SizedBox(height: 16),
+                          SizedBox(height: 16),
                           
                           // Calculate total amount based on duration and base price
                           () {
@@ -455,8 +455,8 @@ class _BillingBlockScreenState extends State<BillingBlockScreen> {
                               children: [
                                 if (_durationMonths == 12) ...[
                                   Container(
-                                    margin: const EdgeInsets.only(bottom: 12),
-                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                    margin: EdgeInsets.only(bottom: 12),
+                                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                                     decoration: BoxDecoration(
                                       color: Colors.green[50],
                                       borderRadius: BorderRadius.circular(8),
@@ -464,12 +464,12 @@ class _BillingBlockScreenState extends State<BillingBlockScreen> {
                                     ),
                                     child: Row(
                                       children: [
-                                        const Icon(Icons.star, color: Colors.green, size: 16),
-                                        const SizedBox(width: 6),
+                                        Icon(Icons.star, color: Colors.green, size: 16),
+                                        SizedBox(width: 6),
                                         Expanded(
                                           child: Text(
                                             'Promo Tahunan Aktif! Hemat Rp ${(baseAmount * 12 - calculatedAmount).toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")} (Gratis 2 Bulan)',
-                                            style: const TextStyle(color: Colors.green, fontSize: 11, fontWeight: FontWeight.bold),
+                                            style: TextStyle(color: Colors.green, fontSize: 11, fontWeight: FontWeight.bold),
                                           ),
                                         ),
                                       ],
@@ -477,7 +477,7 @@ class _BillingBlockScreenState extends State<BillingBlockScreen> {
                                   ),
                                 ],
                                 Container(
-                                  padding: const EdgeInsets.all(12),
+                                  padding: EdgeInsets.all(12),
                                   decoration: BoxDecoration(
                                     color: AppTheme.lightGray,
                                     borderRadius: BorderRadius.circular(12),
@@ -485,19 +485,19 @@ class _BillingBlockScreenState extends State<BillingBlockScreen> {
                                   child: Row(
                                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
-                                      const Text('Total Tagihan Baru:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                                      Text('Rp $formattedCalculatedAmount', style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primaryBlue, fontSize: 14)),
+                                      Text('Total Tagihan Baru:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                                      Text('Rp $formattedCalculatedAmount', style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primaryBlue, fontSize: 14)),
                                     ],
                                   ),
                                 ),
-                                const SizedBox(height: 20),
-                                const Text(
+                                SizedBox(height: 20),
+                                Text(
                                   'Scan QRIS di bawah ini untuk membayar:',
                                   style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.darkBlueText),
                                 ),
-                                const SizedBox(height: 12),
+                                SizedBox(height: 12),
                                 _buildBase64Image(widget.qrImage, height: 240),
-                                const SizedBox(height: 20),
+                                SizedBox(height: 20),
                                 SizedBox(
                                   width: double.infinity,
                                   height: 50,
@@ -506,18 +506,18 @@ class _BillingBlockScreenState extends State<BillingBlockScreen> {
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: Colors.green,
                                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                                      padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                                     ),
                                     icon: _isUploading
-                                        ? const SizedBox(
+                                        ? SizedBox(
                                             height: 18,
                                             width: 18,
                                             child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                                           )
-                                        : const Icon(Icons.upload_file_outlined, color: Colors.white),
+                                        : Icon(Icons.upload_file_outlined, color: Colors.white),
                                     label: Text(
                                       _isUploading ? 'Mengunggah...' : 'Unggah Bukti Pembayaran',
-                                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
                                     ),
                                   ),
                                 ),
@@ -526,7 +526,7 @@ class _BillingBlockScreenState extends State<BillingBlockScreen> {
                           }(),
                         ],
                       ],
-                      const SizedBox(height: 24),
+                      SizedBox(height: 24),
                       SizedBox(
                         width: double.infinity,
                         height: 48,
@@ -536,15 +536,15 @@ class _BillingBlockScreenState extends State<BillingBlockScreen> {
                             await Provider.of<AuthService>(context, listen: false).signOut();
                             if (context.mounted) {
                               Navigator.of(context).pushReplacement(
-                                MaterialPageRoute(builder: (_) => const LoginScreen()),
+                                MaterialPageRoute(builder: (_) => LoginScreen()),
                               );
                             }
                           },
-                          icon: const Icon(Icons.logout, size: 18),
-                          label: const Text('Keluar dari Akun'),
+                          icon: Icon(Icons.logout, size: 18),
+                          label: Text('Keluar dari Akun'),
                           style: OutlinedButton.styleFrom(
                             foregroundColor: Colors.redAccent,
-                            side: const BorderSide(color: Colors.redAccent),
+                            side: BorderSide(color: Colors.redAccent),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           ),
                         ),

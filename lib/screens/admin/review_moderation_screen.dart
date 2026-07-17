@@ -6,7 +6,7 @@ import '../../theme.dart';
 import '../../utils/error_helper.dart';
 
 class ReviewModerationScreen extends StatefulWidget {
-  const ReviewModerationScreen({Key? key}) : super(key: key);
+  ReviewModerationScreen({Key? key}) : super(key: key);
 
   @override
   State<ReviewModerationScreen> createState() => _ReviewModerationScreenState();
@@ -46,7 +46,7 @@ class _ReviewModerationScreenState extends State<ReviewModerationScreen> {
           borderRadius: BorderRadius.circular(8),
           border: Border.all(color: Colors.grey[300]!),
         ),
-        child: const Center(
+        child: Center(
           child: Icon(Icons.image_not_supported_outlined, size: 24, color: Colors.grey),
         ),
       );
@@ -69,7 +69,7 @@ class _ReviewModerationScreenState extends State<ReviewModerationScreen> {
             height: height,
             width: height,
             color: Colors.grey[200],
-            child: const Icon(Icons.broken_image, size: 20, color: Colors.grey),
+            child: Icon(Icons.broken_image, size: 20, color: Colors.grey),
           ),
         ),
       );
@@ -78,7 +78,7 @@ class _ReviewModerationScreenState extends State<ReviewModerationScreen> {
         height: height,
         width: height,
         color: Colors.grey[200],
-        child: const Icon(Icons.broken_image, size: 20, color: Colors.grey),
+        child: Icon(Icons.broken_image, size: 20, color: Colors.grey),
       );
     }
   }
@@ -87,7 +87,7 @@ class _ReviewModerationScreenState extends State<ReviewModerationScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Moderasi Ulasan Web'),
+        title: Text('Moderasi Ulasan Web'),
         backgroundColor: AppTheme.white,
         foregroundColor: AppTheme.darkBlueText,
         elevation: 0.5,
@@ -96,16 +96,16 @@ class _ReviewModerationScreenState extends State<ReviewModerationScreen> {
         stream: _reviewsStream,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return Center(child: CircularProgressIndicator());
           }
           if (snapshot.hasError) {
             return Center(
               child: Padding(
-                padding: const EdgeInsets.all(24.0),
+                padding: EdgeInsets.all(24.0),
                 child: Text(
                   getCleanErrorMessage(snapshot.error),
                   textAlign: TextAlign.center,
-                  style: const TextStyle(color: AppTheme.textGray),
+                  style: TextStyle(color: AppTheme.textGray),
                 ),
               ),
             );
@@ -118,8 +118,8 @@ class _ReviewModerationScreenState extends State<ReviewModerationScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(Icons.rate_review_outlined, size: 64, color: Colors.grey[300]),
-                  const SizedBox(height: 16),
-                  const Text(
+                  SizedBox(height: 16),
+                  Text(
                     'Belum ada ulasan masuk dari pelanggan.',
                     style: TextStyle(color: AppTheme.textGray, fontSize: 13),
                   ),
@@ -129,7 +129,7 @@ class _ReviewModerationScreenState extends State<ReviewModerationScreen> {
           }
 
           return ListView.builder(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(16),
             itemCount: reviews.length,
             itemBuilder: (context, index) {
               final review = reviews[index];
@@ -137,11 +137,11 @@ class _ReviewModerationScreenState extends State<ReviewModerationScreen> {
               final formattedDate = "${date.day.toString().padLeft(2, '0')}-${date.month.toString().padLeft(2, '0')}-${date.year}";
 
               return Card(
-                margin: const EdgeInsets.only(bottom: 16),
+                margin: EdgeInsets.only(bottom: 16),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 elevation: 2,
                 child: Padding(
-                  padding: const EdgeInsets.all(16),
+                  padding: EdgeInsets.all(16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -155,17 +155,17 @@ class _ReviewModerationScreenState extends State<ReviewModerationScreen> {
                               children: [
                                 Text(
                                   review.customerName.isEmpty ? 'Pelanggan Anonim' : review.customerName,
-                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppTheme.darkBlueText),
+                                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppTheme.darkBlueText),
                                 ),
-                                const SizedBox(height: 2),
+                                SizedBox(height: 2),
                                 Text(
                                   review.customerPhone,
-                                  style: const TextStyle(fontSize: 11, color: AppTheme.textGray),
+                                  style: TextStyle(fontSize: 11, color: AppTheme.textGray),
                                 ),
-                                const SizedBox(height: 4),
+                                SizedBox(height: 4),
                                 Text(
                                   'Order: ${review.id}',
-                                  style: const TextStyle(fontSize: 10, color: AppTheme.primaryBlue, fontWeight: FontWeight.w600),
+                                  style: TextStyle(fontSize: 10, color: AppTheme.primaryBlue, fontWeight: FontWeight.w600),
                                 ),
                               ],
                             ),
@@ -182,11 +182,11 @@ class _ReviewModerationScreenState extends State<ReviewModerationScreen> {
                           ),
                         ],
                       ),
-                      const Divider(height: 24),
+                      Divider(height: 24),
 
                       // Layanan Info
                       ...review.items.map((item) => Padding(
-                        padding: const EdgeInsets.only(bottom: 4),
+                        padding: EdgeInsets.only(bottom: 4),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -194,25 +194,25 @@ class _ReviewModerationScreenState extends State<ReviewModerationScreen> {
                               item.categoryName.isNotEmpty
                                   ? '${item.itemName} (${item.categoryName})'
                                   : item.itemName,
-                              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.darkBlueText),
+                              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.darkBlueText),
                             ),
-                            const SizedBox(height: 2),
+                            SizedBox(height: 2),
                             Text(
                               item.serviceName,
-                              style: const TextStyle(fontSize: 10, color: AppTheme.textGray, fontWeight: FontWeight.w500),
+                              style: TextStyle(fontSize: 10, color: AppTheme.textGray, fontWeight: FontWeight.w500),
                             ),
                           ],
                         ),
                       )),
-                      const SizedBox(height: 8),
+                      SizedBox(height: 8),
 
                       // Review Text
                       if (review.reviewText != null && review.reviewText!.isNotEmpty) ...[
                         Text(
                           '"${review.reviewText}"',
-                          style: const TextStyle(fontSize: 12, fontStyle: FontStyle.italic, color: AppTheme.darkBlueText),
+                          style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic, color: AppTheme.darkBlueText),
                         ),
-                        const SizedBox(height: 12),
+                        SizedBox(height: 12),
                       ],
 
                       // Before-After Preview (If available)
@@ -223,26 +223,26 @@ class _ReviewModerationScreenState extends State<ReviewModerationScreen> {
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const Text('Before', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: AppTheme.textGray)),
-                                  const SizedBox(height: 4),
+                                  Text('Before', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: AppTheme.textGray)),
+                                  SizedBox(height: 4),
                                   _buildBase64Image(review.photoBefore.first, 'Before', height: 80),
                                 ],
                               ),
-                              const SizedBox(width: 12),
+                              SizedBox(width: 12),
                             ],
                             if (review.photoAfter.isNotEmpty) ...[
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const Text('After', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: AppTheme.textGray)),
-                                  const SizedBox(height: 4),
+                                  Text('After', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: AppTheme.textGray)),
+                                  SizedBox(height: 4),
                                   _buildBase64Image(review.photoAfter.first, 'After', height: 80),
                                 ],
                               ),
                             ],
                           ],
                         ),
-                        const SizedBox(height: 16),
+                        SizedBox(height: 16),
                       ],
 
                       // Footer & Moderation Action
@@ -251,7 +251,7 @@ class _ReviewModerationScreenState extends State<ReviewModerationScreen> {
                         children: [
                           Text(
                             formattedDate,
-                            style: const TextStyle(fontSize: 10, color: AppTheme.textGray),
+                            style: TextStyle(fontSize: 10, color: AppTheme.textGray),
                           ),
                           Row(
                             children: [
@@ -263,7 +263,7 @@ class _ReviewModerationScreenState extends State<ReviewModerationScreen> {
                                   color: review.showOnWeb ? Colors.green : Colors.grey,
                                 ),
                               ),
-                              const SizedBox(width: 8),
+                              SizedBox(width: 8),
                               Switch(
                                 value: review.showOnWeb,
                                 activeColor: Colors.green,

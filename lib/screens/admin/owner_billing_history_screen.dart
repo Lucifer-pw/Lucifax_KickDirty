@@ -5,10 +5,10 @@ import 'package:intl/intl.dart';
 import '../../theme.dart';
 
 class OwnerBillingHistoryScreen extends StatelessWidget {
-  const OwnerBillingHistoryScreen({Key? key}) : super(key: key);
+  OwnerBillingHistoryScreen({Key? key}) : super(key: key);
 
   Widget _buildBase64Image(String base64Str, {double height = 200}) {
-    if (base64Str.isEmpty) return const SizedBox();
+    if (base64Str.isEmpty) return SizedBox();
     String cleanBase64 = base64Str;
     if (base64Str.contains(',')) {
       cleanBase64 = base64Str.split(',')[1];
@@ -24,7 +24,7 @@ class OwnerBillingHistoryScreen extends StatelessWidget {
         ),
       );
     } catch (_) {
-      return const Icon(Icons.broken_image, size: 48, color: Colors.red);
+      return Icon(Icons.broken_image, size: 48, color: Colors.red);
     }
   }
 
@@ -35,7 +35,7 @@ class OwnerBillingHistoryScreen extends StatelessWidget {
         return Dialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           child: Padding(
-            padding: const EdgeInsets.all(16.0),
+            padding: EdgeInsets.all(16.0),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -44,15 +44,15 @@ class OwnerBillingHistoryScreen extends StatelessWidget {
                   children: [
                     Text(
                       'Bukti Bayar - $monthName',
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.close),
+                      icon: Icon(Icons.close),
                       onPressed: () => Navigator.pop(context),
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: 12),
                 _buildBase64Image(base64Str, height: 350),
               ],
             ),
@@ -66,9 +66,9 @@ class OwnerBillingHistoryScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Riwayat Billing Aplikasi'),
+        title: Text('Riwayat Billing Aplikasi'),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, size: 20),
+          icon: Icon(Icons.arrow_back_ios_new, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -79,7 +79,7 @@ class OwnerBillingHistoryScreen extends StatelessWidget {
             .snapshots(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return Center(child: CircularProgressIndicator());
           }
 
           final docs = snapshot.data?.docs ?? [];
@@ -89,7 +89,7 @@ class OwnerBillingHistoryScreen extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(Icons.receipt_long_outlined, size: 64, color: Colors.grey[400]),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16),
                   Text(
                     'Belum ada riwayat pembayaran billing.',
                     style: TextStyle(fontSize: 14, color: Colors.grey[600]),
@@ -100,7 +100,7 @@ class OwnerBillingHistoryScreen extends StatelessWidget {
           }
 
           return ListView.builder(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(16),
             itemCount: docs.length,
             itemBuilder: (context, index) {
               final data = docs[index].data() as Map<String, dynamic>;
@@ -135,11 +135,11 @@ class OwnerBillingHistoryScreen extends StatelessWidget {
               }
 
               return Card(
-                margin: const EdgeInsets.only(bottom: 12),
+                margin: EdgeInsets.only(bottom: 12),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 elevation: 1,
                 child: Padding(
-                  padding: const EdgeInsets.all(16.0),
+                  padding: EdgeInsets.all(16.0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -148,10 +148,10 @@ class OwnerBillingHistoryScreen extends StatelessWidget {
                         children: [
                           Text(
                             monthName,
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppTheme.darkBlueText),
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppTheme.darkBlueText),
                           ),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            padding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                             decoration: BoxDecoration(
                               color: statusColor.withOpacity(0.08),
                               borderRadius: BorderRadius.circular(20),
@@ -163,55 +163,55 @@ class OwnerBillingHistoryScreen extends StatelessWidget {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 12),
+                      SizedBox(height: 12),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text('Biaya Maintenance:', style: TextStyle(fontSize: 12, color: AppTheme.textGray)),
+                          Text('Biaya Maintenance:', style: TextStyle(fontSize: 12, color: AppTheme.textGray)),
                           Text(
                             'Rp $amountFormatted',
-                            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppTheme.darkBlueText),
+                            style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppTheme.darkBlueText),
                           ),
                         ],
                       ),
                       if (dueDate != null) ...[
-                        const SizedBox(height: 6),
+                        SizedBox(height: 6),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text('Jatuh Tempo:', style: TextStyle(fontSize: 12, color: AppTheme.textGray)),
+                            Text('Jatuh Tempo:', style: TextStyle(fontSize: 12, color: AppTheme.textGray)),
                             Text(
                               DateFormat('dd/MM/yyyy').format(dueDate),
-                              style: const TextStyle(fontSize: 12, color: AppTheme.darkBlueText),
+                              style: TextStyle(fontSize: 12, color: AppTheme.darkBlueText),
                             ),
                           ],
                         ),
                       ],
                       if (status == 'lunas' && paidAt != null) ...[
-                        const SizedBox(height: 6),
+                        SizedBox(height: 6),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text('Tanggal Lunas:', style: TextStyle(fontSize: 12, color: AppTheme.textGray)),
+                            Text('Tanggal Lunas:', style: TextStyle(fontSize: 12, color: AppTheme.textGray)),
                             Text(
                               DateFormat('dd/MM/yyyy HH:mm').format(paidAt),
-                              style: const TextStyle(fontSize: 12, color: AppTheme.darkBlueText),
+                              style: TextStyle(fontSize: 12, color: AppTheme.darkBlueText),
                             ),
                           ],
                         ),
                       ],
                       if (paymentProof.isNotEmpty) ...[
-                        const SizedBox(height: 12),
-                        const Divider(),
-                        const SizedBox(height: 6),
+                        SizedBox(height: 12),
+                        Divider(),
+                        SizedBox(height: 6),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text('Bukti Pembayaran:', style: TextStyle(fontSize: 12, color: AppTheme.textGray)),
+                            Text('Bukti Pembayaran:', style: TextStyle(fontSize: 12, color: AppTheme.textGray)),
                             TextButton.icon(
                               onPressed: () => _showImageDialog(context, paymentProof, monthName),
-                              icon: const Icon(Icons.image_outlined, size: 16),
-                              label: const Text('Lihat Foto', style: TextStyle(fontSize: 12)),
+                              icon: Icon(Icons.image_outlined, size: 16),
+                              label: Text('Lihat Foto', style: TextStyle(fontSize: 12)),
                               style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: Size.zero),
                             ),
                           ],

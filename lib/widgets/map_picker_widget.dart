@@ -11,7 +11,7 @@ import '../utils/error_helper.dart';
 class MapPickerScreen extends StatefulWidget {
   final String initialMapsLink;
   
-  const MapPickerScreen({
+  MapPickerScreen({
     Key? key,
     this.initialMapsLink = '',
   }) : super(key: key);
@@ -22,7 +22,7 @@ class MapPickerScreen extends StatefulWidget {
 
 class _MapPickerScreenState extends State<MapPickerScreen> {
   final MapController _mapController = MapController();
-  LatLng _currentCenter = const LatLng(-7.556, 110.825); // Default: Solo, Indonesia
+  LatLng _currentCenter = LatLng(-7.556, 110.825); // Default: Solo, Indonesia
   String _address = 'Mencari alamat...';
   bool _isLoadingAddress = false;
   Timer? _debounceTimer;
@@ -164,7 +164,7 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
     
     // Debounce geocoding requests to prevent rate limit
     _debounceTimer?.cancel();
-    _debounceTimer = Timer(const Duration(milliseconds: 600), () {
+    _debounceTimer = Timer(Duration(milliseconds: 600), () {
       _reverseGeocode(_currentCenter);
     });
   }
@@ -173,7 +173,7 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Ubah Alamat / Titik Koordinat'),
+        title: Text('Ubah Alamat / Titik Koordinat'),
         backgroundColor: Colors.grey[900],
         foregroundColor: Colors.white,
         elevation: 0,
@@ -199,8 +199,8 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
           // 2. Fixed Center Pin
           Center(
             child: Container(
-              margin: const EdgeInsets.only(bottom: 40), // Offset to put bottom tip of marker at center
-              child: const Icon(
+              margin: EdgeInsets.only(bottom: 40), // Offset to put bottom tip of marker at center
+              child: Icon(
                 Icons.location_on,
                 color: Colors.red,
                 size: 48,
@@ -227,12 +227,12 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Padding(
-                padding: const EdgeInsets.all(16.0),
+                padding: EdgeInsets.all(16.0),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Alamat yang Dipilih',
                       style: TextStyle(
                         fontSize: 10,
@@ -240,9 +240,9 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
                         color: Colors.grey,
                       ),
                     ),
-                    const SizedBox(height: 6),
+                    SizedBox(height: 6),
                     if (_isLoadingAddress)
-                      const Row(
+                      Row(
                         children: [
                           SizedBox(
                             width: 14,
@@ -264,7 +264,7 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
                     else
                       Text(
                         _address,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
                           color: Colors.white,
@@ -289,7 +289,7 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
               foregroundColor: Colors.black,
               mini: true,
               elevation: 4,
-              child: const Icon(Icons.my_location),
+              child: Icon(Icons.my_location),
             ),
           ),
 
@@ -321,7 +321,7 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
                   ),
                   elevation: 4,
                 ),
-                child: const Text(
+                child: Text(
                   'Konfirmasi Lokasi',
                   style: TextStyle(
                     fontSize: 15,

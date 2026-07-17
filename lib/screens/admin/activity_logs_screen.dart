@@ -7,7 +7,7 @@ import '../../theme.dart';
 import '../../widgets/watermark.dart';
 
 class ActivityLogsScreen extends StatefulWidget {
-  const ActivityLogsScreen({Key? key}) : super(key: key);
+  ActivityLogsScreen({Key? key}) : super(key: key);
 
   @override
   State<ActivityLogsScreen> createState() => _ActivityLogsScreenState();
@@ -76,7 +76,7 @@ class _ActivityLogsScreenState extends State<ActivityLogsScreen> {
       stream: FirebaseFirestore.instance.collection('app_config').doc('version_info').snapshots(),
       builder: (context, configSnapshot) {
         if (configSnapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(body: Center(child: CircularProgressIndicator()));
+          return Scaffold(body: Center(child: CircularProgressIndicator()));
         }
 
         final bool enableOwnerLogs = configSnapshot.hasData &&
@@ -88,7 +88,7 @@ class _ActivityLogsScreenState extends State<ActivityLogsScreen> {
             (user.role == 'developer' || (user.role == 'owner' && enableOwnerLogs));
 
         if (!hasAccess) {
-          return const Scaffold(
+          return Scaffold(
             body: Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -114,17 +114,17 @@ class _ActivityLogsScreenState extends State<ActivityLogsScreen> {
         return Scaffold(
           backgroundColor: AppTheme.lightBlueBackground,
           appBar: AppBar(
-            title: const Text('Log Aktivitas Karyawan'),
+            title: Text('Log Aktivitas Karyawan'),
             centerTitle: true,
           ),
           body: Stack(
             children: [
-          const Watermark(),
+          Watermark(),
           Column(
             children: [
               // Search input box
               Padding(
-                padding: const EdgeInsets.all(16.0),
+                padding: EdgeInsets.all(16.0),
                 child: Container(
                   decoration: BoxDecoration(
                     color: Colors.white,
@@ -135,10 +135,10 @@ class _ActivityLogsScreenState extends State<ActivityLogsScreen> {
                     controller: _searchController,
                     decoration: InputDecoration(
                       hintText: 'Cari berdasarkan nama staff atau aksi...',
-                      prefixIcon: const Icon(Icons.search, color: AppTheme.textGray),
+                      prefixIcon: Icon(Icons.search, color: AppTheme.textGray),
                       suffixIcon: _searchQuery.isNotEmpty
                           ? IconButton(
-                              icon: const Icon(Icons.clear, color: AppTheme.textGray),
+                              icon: Icon(Icons.clear, color: AppTheme.textGray),
                               onPressed: () {
                                 setState(() {
                                   _searchController.clear();
@@ -170,10 +170,10 @@ class _ActivityLogsScreenState extends State<ActivityLogsScreen> {
                       .snapshots(),
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const Center(child: CircularProgressIndicator());
+                      return Center(child: CircularProgressIndicator());
                     }
                     if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                      return const Center(
+                      return Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
@@ -197,7 +197,7 @@ class _ActivityLogsScreenState extends State<ActivityLogsScreen> {
                     }).toList();
 
                     if (docs.isEmpty) {
-                      return const Center(
+                      return Center(
                         child: Text(
                           'Aktivitas tidak ditemukan.',
                           style: TextStyle(color: AppTheme.textGray),
@@ -206,7 +206,7 @@ class _ActivityLogsScreenState extends State<ActivityLogsScreen> {
                     }
 
                     return ListView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                       itemCount: docs.length,
                       itemBuilder: (context, index) {
                         final data = docs[index].data() as Map<String, dynamic>;
@@ -224,8 +224,8 @@ class _ActivityLogsScreenState extends State<ActivityLogsScreen> {
                         final String formattedTime = DateFormat('dd MMM yyyy, HH:mm').format(time);
 
                         return Container(
-                          margin: const EdgeInsets.only(bottom: 12),
-                          padding: const EdgeInsets.all(16),
+                          margin: EdgeInsets.only(bottom: 12),
+                          padding: EdgeInsets.all(16),
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(20),
@@ -245,7 +245,7 @@ class _ActivityLogsScreenState extends State<ActivityLogsScreen> {
                                   size: 22,
                                 ),
                               ),
-                              const SizedBox(width: 14),
+                              SizedBox(width: 14),
                               
                               // Log details text
                               Expanded(
@@ -257,15 +257,15 @@ class _ActivityLogsScreenState extends State<ActivityLogsScreen> {
                                       children: [
                                         Text(
                                           userName,
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             fontWeight: FontWeight.bold,
                                             fontSize: 14,
                                             color: AppTheme.darkBlueText,
                                           ),
                                         ),
-                                        const SizedBox(width: 8),
+                                        SizedBox(width: 8),
                                         Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                          padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                                           decoration: BoxDecoration(
                                             color: _getRoleBadgeColor(role).withOpacity(0.1),
                                             borderRadius: BorderRadius.circular(12),
@@ -281,12 +281,12 @@ class _ActivityLogsScreenState extends State<ActivityLogsScreen> {
                                         ),
                                       ],
                                     ),
-                                    const SizedBox(height: 6),
+                                    SizedBox(height: 6),
                                     
                                     // Action Text
                                     Text(
                                       action,
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 13,
                                         fontWeight: FontWeight.w600,
                                         color: AppTheme.darkBlueText,
@@ -295,29 +295,29 @@ class _ActivityLogsScreenState extends State<ActivityLogsScreen> {
                                     
                                     // Details (if not empty)
                                     if (details.isNotEmpty) ...[
-                                      const SizedBox(height: 6),
+                                      SizedBox(height: 6),
                                       Container(
                                         width: double.infinity,
-                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                        padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                                         decoration: BoxDecoration(
                                           color: AppTheme.lightBlueBackground,
                                           borderRadius: BorderRadius.circular(10),
                                         ),
                                         child: Text(
                                           details,
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             fontSize: 11,
                                             color: AppTheme.textGray,
                                           ),
                                         ),
                                       ),
                                     ],
-                                    const SizedBox(height: 8),
+                                    SizedBox(height: 8),
                                     
                                     // Time
                                     Text(
                                       formattedTime,
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 11,
                                         color: AppTheme.textGray,
                                       ),

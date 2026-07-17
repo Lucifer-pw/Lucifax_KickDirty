@@ -13,7 +13,7 @@ class SalesDetailScreen extends StatefulWidget {
   final List<OrderModel> allOrders;
   final Color themeColor;
 
-  const SalesDetailScreen({
+  SalesDetailScreen({
     Key? key,
     required this.periodTitle,
     required this.periodKey,
@@ -180,18 +180,18 @@ class _SalesDetailScreenState extends State<SalesDetailScreen> {
       appBar: AppBar(
         title: Text('Rincian $currentTitle'),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, size: 20),
+          icon: Icon(Icons.arrow_back_ios_new, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.calendar_month),
+            icon: Icon(Icons.calendar_month),
             onPressed: () => _selectSearchDate(context),
             tooltip: 'Cari berdasarkan tanggal',
           ),
           if (_selectedSearchDate != null)
             IconButton(
-              icon: const Icon(Icons.refresh),
+              icon: Icon(Icons.refresh),
               onPressed: () {
                 setState(() {
                   _selectedSearchDate = null;
@@ -207,56 +207,56 @@ class _SalesDetailScreenState extends State<SalesDetailScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(Icons.receipt_long_outlined, size: 64, color: widget.themeColor.withOpacity(0.3)),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16),
                   Text(
                     'Belum ada transaksi pada $currentTitle',
-                    style: const TextStyle(color: AppTheme.textGray, fontSize: 14),
+                    style: TextStyle(color: AppTheme.textGray, fontSize: 14),
                   ),
                   if (_selectedSearchDate != null) ...[
-                    const SizedBox(height: 12),
+                    SizedBox(height: 12),
                     TextButton(
                       onPressed: () {
                         setState(() {
                           _selectedSearchDate = null;
                         });
                       },
-                      child: const Text('Kembali ke filter awal'),
+                      child: Text('Kembali ke filter awal'),
                     ),
                   ],
                 ],
               ),
             )
           : SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // ========== SUMMARY HEADER ==========
                   _buildSummaryHeader(filteredOrders, filteredTotal),
-                  const SizedBox(height: 20),
+                  SizedBox(height: 20),
 
                   // ========== SERVICE REVENUE CHART ==========
                   if (sortedServices.isNotEmpty) ...[
                     _buildSectionTitle('Pendapatan per Layanan', Icons.pie_chart_outline),
-                    const SizedBox(height: 12),
+                    SizedBox(height: 12),
                     _buildServiceChart(sortedServices, maxServiceRevenue),
-                    const SizedBox(height: 24),
+                    SizedBox(height: 24),
                   ],
 
                   // ========== SHOE BRAND POPULARITY ==========
                   if (sortedBrands.isNotEmpty) ...[
                     _buildSectionTitle('Sepatu Paling Sering Dicuci', Icons.trending_up),
-                    const SizedBox(height: 12),
+                    SizedBox(height: 12),
                     _buildBrandChart(sortedBrands, maxBrandCount),
-                    const SizedBox(height: 24),
+                    SizedBox(height: 24),
                   ],
 
                   // ========== ORDER LIST ==========
                   _buildSectionTitle('Daftar Transaksi (${filteredOrders.length})', Icons.list_alt),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12),
                   ...filteredOrders.map((order) => _buildOrderCard(order)),
-                  const SizedBox(height: 32),
-                  const Center(child: Watermark()),
+                  SizedBox(height: 32),
+                  Center(child: Watermark()),
                 ],
               ),
             ),
@@ -269,7 +269,7 @@ class _SalesDetailScreenState extends State<SalesDetailScreen> {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [widget.themeColor, widget.themeColor.withOpacity(0.7)],
@@ -281,26 +281,26 @@ class _SalesDetailScreenState extends State<SalesDetailScreen> {
           BoxShadow(
             color: widget.themeColor.withOpacity(0.3),
             blurRadius: 12,
-            offset: const Offset(0, 6),
+            offset: Offset(0, 6),
           ),
         ],
       ),
       child: Column(
         children: [
-          const Text(
+          Text(
             'Total Pendapatan',
             style: TextStyle(color: Colors.white70, fontSize: 13),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           Text(
             'Rp ${_formatCurrency(totalAmt)}',
-            style: const TextStyle(
+            style: TextStyle(
               color: Colors.white,
               fontSize: 28,
               fontWeight: FontWeight.bold,
             ),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
@@ -320,14 +320,14 @@ class _SalesDetailScreenState extends State<SalesDetailScreen> {
     return Column(
       children: [
         Icon(icon, color: Colors.white70, size: 18),
-        const SizedBox(height: 4),
+        SizedBox(height: 4),
         Text(
           value,
-          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
         ),
         Text(
           label,
-          style: const TextStyle(color: Colors.white60, fontSize: 10),
+          style: TextStyle(color: Colors.white60, fontSize: 10),
         ),
       ],
     );
@@ -337,10 +337,10 @@ class _SalesDetailScreenState extends State<SalesDetailScreen> {
     return Row(
       children: [
         Icon(icon, size: 20, color: widget.themeColor),
-        const SizedBox(width: 8),
+        SizedBox(width: 8),
         Text(
           title,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
             color: AppTheme.darkBlueText,
@@ -363,7 +363,7 @@ class _SalesDetailScreenState extends State<SalesDetailScreen> {
     ];
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppTheme.white,
         borderRadius: BorderRadius.circular(16),
@@ -391,7 +391,7 @@ class _SalesDetailScreenState extends State<SalesDetailScreen> {
                     Expanded(
                       child: Text(
                         name,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
                           color: AppTheme.darkBlueText,
@@ -401,11 +401,11 @@ class _SalesDetailScreenState extends State<SalesDetailScreen> {
                     ),
                     Text(
                       '$count pesanan',
-                      style: const TextStyle(fontSize: 11, color: AppTheme.textGray),
+                      style: TextStyle(fontSize: 11, color: AppTheme.textGray),
                     ),
                   ],
                 ),
-                const SizedBox(height: 6),
+                SizedBox(height: 6),
                 Row(
                   children: [
                     Expanded(
@@ -419,7 +419,7 @@ class _SalesDetailScreenState extends State<SalesDetailScreen> {
                         ),
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    SizedBox(width: 12),
                     SizedBox(
                       width: 100,
                       child: Text(
@@ -446,7 +446,7 @@ class _SalesDetailScreenState extends State<SalesDetailScreen> {
     final topBrands = brands.take(10).toList();
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppTheme.white,
         borderRadius: BorderRadius.circular(16),
@@ -476,10 +476,10 @@ class _SalesDetailScreenState extends State<SalesDetailScreen> {
                   ),
                 ),
                 if (isTop)
-                  const Icon(Icons.emoji_events, color: Colors.amber, size: 16)
+                  Icon(Icons.emoji_events, color: Colors.amber, size: 16)
                 else
-                  const SizedBox(width: 16),
-                const SizedBox(width: 8),
+                  SizedBox(width: 16),
+                SizedBox(width: 8),
                 Expanded(
                   flex: 3,
                   child: Text(
@@ -492,7 +492,7 @@ class _SalesDetailScreenState extends State<SalesDetailScreen> {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                const SizedBox(width: 8),
+                SizedBox(width: 8),
                 Expanded(
                   flex: 2,
                   child: ClipRRect(
@@ -507,7 +507,7 @@ class _SalesDetailScreenState extends State<SalesDetailScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(width: 8),
+                SizedBox(width: 8),
                 SizedBox(
                   width: 40,
                   child: Text(
@@ -533,8 +533,8 @@ class _SalesDetailScreenState extends State<SalesDetailScreen> {
     final formattedDate = dateFormat.format(order.createdAt);
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(14),
+      margin: EdgeInsets.only(bottom: 10),
+      padding: EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: AppTheme.white,
         borderRadius: BorderRadius.circular(14),
@@ -550,7 +550,7 @@ class _SalesDetailScreenState extends State<SalesDetailScreen> {
               Row(
                 children: [
                   Icon(Icons.receipt_outlined, size: 16, color: widget.themeColor),
-                  const SizedBox(width: 6),
+                  SizedBox(width: 6),
                   Text(
                     order.id,
                     style: TextStyle(
@@ -563,7 +563,7 @@ class _SalesDetailScreenState extends State<SalesDetailScreen> {
               ),
               Text(
                 'Rp ${_formatCurrency(order.totalAmount)}',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
                   color: AppTheme.darkBlueText,
@@ -571,33 +571,33 @@ class _SalesDetailScreenState extends State<SalesDetailScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           Row(
             children: [
-              const Icon(Icons.person_outline, size: 14, color: AppTheme.textGray),
-              const SizedBox(width: 4),
+              Icon(Icons.person_outline, size: 14, color: AppTheme.textGray),
+              SizedBox(width: 4),
               Expanded(
                 child: Text(
                   order.customerName,
-                  style: const TextStyle(fontSize: 12, color: AppTheme.darkBlueText),
+                  style: TextStyle(fontSize: 12, color: AppTheme.darkBlueText),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              const Icon(Icons.access_time, size: 14, color: AppTheme.textGray),
-              const SizedBox(width: 4),
+              Icon(Icons.access_time, size: 14, color: AppTheme.textGray),
+              SizedBox(width: 4),
               Text(
                 formattedDate,
-                style: const TextStyle(fontSize: 11, color: AppTheme.textGray),
+                style: TextStyle(fontSize: 11, color: AppTheme.textGray),
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           Wrap(
             spacing: 6,
             runSpacing: 4,
             children: order.items.map((item) {
               return Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
                   color: widget.themeColor.withOpacity(0.08),
                   borderRadius: BorderRadius.circular(8),

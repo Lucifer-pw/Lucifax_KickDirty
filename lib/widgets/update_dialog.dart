@@ -13,7 +13,7 @@ class UpdateDialog extends StatefulWidget {
   final UpdateInfo updateInfo;
   final bool isForceUpdate;
 
-  const UpdateDialog({
+  UpdateDialog({
     Key? key,
     required this.updateInfo,
     required this.isForceUpdate,
@@ -75,7 +75,7 @@ class _UpdateDialogState extends State<UpdateDialog> {
 
       // Download file using HttpClient (follows redirects by default)
       final httpClient = HttpClient();
-      httpClient.connectionTimeout = const Duration(seconds: 15);
+      httpClient.connectionTimeout = Duration(seconds: 15);
       
       final request = await httpClient.getUrl(Uri.parse(url));
       request.headers.set('User-Agent', 'lucifax-kickdirty-app');
@@ -142,7 +142,7 @@ class _UpdateDialogState extends State<UpdateDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Update Aplikasi Tersedia!'),
+      title: Text('Update Aplikasi Tersedia!'),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -152,26 +152,26 @@ class _UpdateDialogState extends State<UpdateDialog> {
               textAlign: TextAlign.center,
             ),
           if (_isDownloading) ...[
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
             LinearProgressIndicator(
               value: _downloadProgress > 0 ? _downloadProgress : null,
               backgroundColor: AppTheme.lightGray,
-              valueColor: const AlwaysStoppedAnimation<Color>(AppTheme.primaryBlue),
+              valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryBlue),
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             Text(
               _statusText,
-              style: const TextStyle(fontSize: 12, color: AppTheme.textGray),
+              style: TextStyle(fontSize: 12, color: AppTheme.textGray),
               textAlign: TextAlign.center,
             ),
           ],
           if (_downloadFailed) ...[
-            const SizedBox(height: 8),
-            const Icon(Icons.error_outline, color: Colors.red, size: 32),
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
+            Icon(Icons.error_outline, color: Colors.red, size: 32),
+            SizedBox(height: 8),
             Text(
               _statusText,
-              style: const TextStyle(fontSize: 12, color: Colors.red),
+              style: TextStyle(fontSize: 12, color: Colors.red),
               textAlign: TextAlign.center,
             ),
           ],
@@ -182,7 +182,7 @@ class _UpdateDialogState extends State<UpdateDialog> {
           if (!widget.isForceUpdate)
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Nanti', style: TextStyle(color: AppTheme.textGray)),
+              child: Text('Nanti', style: TextStyle(color: AppTheme.textGray)),
             ),
           ElevatedButton.icon(
             onPressed: _downloadAndInstall,

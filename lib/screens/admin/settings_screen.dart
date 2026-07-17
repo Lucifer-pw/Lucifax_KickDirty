@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../services/auth_service.dart';
+import '../../services/theme_provider.dart';
 import '../../theme.dart';
 import '../../widgets/watermark.dart';
 import 'staff_permissions_screen.dart';
@@ -14,7 +15,7 @@ import 'voucher_crud_screen.dart';
 import 'review_moderation_screen.dart';
 
 class AdminSettingsScreen extends StatefulWidget {
-  const AdminSettingsScreen({Key? key}) : super(key: key);
+  AdminSettingsScreen({Key? key}) : super(key: key);
 
   @override
   State<AdminSettingsScreen> createState() => _AdminSettingsScreenState();
@@ -67,7 +68,7 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
 
     if (name.isEmpty || phone.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Nama Toko dan No. HP/WA Toko tidak boleh kosong!')),
+        SnackBar(content: Text('Nama Toko dan No. HP/WA Toko tidak boleh kosong!')),
       );
       return;
     }
@@ -82,7 +83,7 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Profil Toko berhasil disimpan!')),
+          SnackBar(content: Text('Profil Toko berhasil disimpan!')),
         );
       }
     } catch (e) {
@@ -121,24 +122,70 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
 
         return Scaffold(
           appBar: AppBar(
-            title: const Text('Pengaturan'),
+            title: Text('Pengaturan'),
             leading: IconButton(
-              icon: const Icon(Icons.arrow_back_ios_new, size: 20),
+              icon: Icon(Icons.arrow_back_ios_new, size: 20),
               onPressed: () => Navigator.pop(context),
             ),
           ),
           body: _isLoading
-              ? const Center(child: CircularProgressIndicator())
+              ? Center(child: CircularProgressIndicator())
               : SingleChildScrollView(
-                  padding: const EdgeInsets.all(16),
+                  padding: EdgeInsets.all(16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // Section: Mode Tema
+                      _buildSectionTitle('Mode Tema Tampilan'),
+                      SizedBox(height: 12),
+                      Container(
+                        padding: EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: AppTheme.white,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: AppTheme.cardShadow,
+                          border: Border.all(color: AppTheme.lightGray),
+                        ),
+                        child: Consumer<ThemeProvider>(
+                          builder: (context, themeProvider, child) {
+                            return Column(
+                              children: [
+                                RadioListTile<ThemeMode>(
+                                  title: Text('Mode Terang'),
+                                  secondary: Icon(Icons.wb_sunny_outlined, color: Colors.orange),
+                                  value: ThemeMode.light,
+                                  groupValue: themeProvider.themeMode,
+                                  onChanged: (val) => themeProvider.setThemeMode(val!),
+                                  activeColor: AppTheme.primaryBlue,
+                                ),
+                                RadioListTile<ThemeMode>(
+                                  title: Text('Mode Gelap'),
+                                  secondary: Icon(Icons.nightlight_round_outlined, color: Colors.blue),
+                                  value: ThemeMode.dark,
+                                  groupValue: themeProvider.themeMode,
+                                  onChanged: (val) => themeProvider.setThemeMode(val!),
+                                  activeColor: AppTheme.primaryBlue,
+                                ),
+                                RadioListTile<ThemeMode>(
+                                  title: Text('Default Perangkat'),
+                                  secondary: Icon(Icons.settings_brightness_outlined, color: Colors.grey),
+                                  value: ThemeMode.system,
+                                  groupValue: themeProvider.themeMode,
+                                  onChanged: (val) => themeProvider.setThemeMode(val!),
+                                  activeColor: AppTheme.primaryBlue,
+                                ),
+                              ],
+                            );
+                          },
+                        ),
+                      ),
+                      SizedBox(height: 24),
+
                       // Section: Profil Toko
                       _buildSectionTitle('Profil Toko'),
-                      const SizedBox(height: 12),
+                      SizedBox(height: 12),
                       Container(
-                        padding: const EdgeInsets.all(16),
+                        padding: EdgeInsets.all(16),
                         decoration: BoxDecoration(
                           color: AppTheme.white,
                           borderRadius: BorderRadius.circular(16),
@@ -149,53 +196,53 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
                           children: [
                             TextField(
                               controller: _shopNameController,
-                              decoration: const InputDecoration(
+                              decoration: InputDecoration(
                                 labelText: 'Nama Toko',
                                 hintText: 'Contoh: KickDirty',
                                 prefixIcon: Icon(Icons.store, color: AppTheme.primaryBlue),
                               ),
                             ),
-                            const SizedBox(height: 16),
+                            SizedBox(height: 16),
                             TextField(
                               controller: _shopPhoneController,
                               keyboardType: TextInputType.phone,
-                              decoration: const InputDecoration(
+                              decoration: InputDecoration(
                                 labelText: 'No. HP/WA Toko',
                                 hintText: 'Contoh: 6281328580511',
                                 helperText: 'Gunakan kode negara (62...) tanpa tanda + atau spasi',
                                 prefixIcon: Icon(Icons.phone, color: AppTheme.primaryBlue),
                               ),
                             ),
-                            const SizedBox(height: 16),
+                            SizedBox(height: 16),
                             TextField(
                               controller: _shopMapsController,
-                              decoration: const InputDecoration(
+                              decoration: InputDecoration(
                                 labelText: 'Link Google Maps Toko',
                                 hintText: 'Contoh: https://maps.google.com/?q=...',
                                 helperText: 'Masukkan link share lokasi Google Maps resmi toko Anda',
                                 prefixIcon: Icon(Icons.map, color: AppTheme.primaryBlue),
                               ),
                             ),
-                            const SizedBox(height: 16),
+                            SizedBox(height: 16),
                             SizedBox(
                               width: double.infinity,
                               child: ElevatedButton(
                                 onPressed: _saveShopConfig,
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: AppTheme.primaryBlue,
-                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                  padding: EdgeInsets.symmetric(vertical: 12),
                                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                                 ),
-                                child: const Text('Simpan Profil Toko', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                                child: Text('Simpan Profil Toko', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                               ),
                             ),
                           ],
                         ),
                       ),
                       
-                      const SizedBox(height: 24),
+                      SizedBox(height: 24),
                       _buildSectionTitle('Konfigurasi & Sistem'),
-                      const SizedBox(height: 12),
+                      SizedBox(height: 12),
 
                       // Section: Config List
                       Container(
@@ -215,7 +262,7 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
                                 color: Colors.deepOrange,
                                 onTap: () => _showBusinessSettingsDialog(context),
                               ),
-                              const Divider(height: 1, indent: 56),
+                              Divider(height: 1, indent: 56),
                               _buildSettingTile(
                                 title: 'Kelola Kategori & Layanan',
                                 subtitle: 'CRUD kategori & harga cuci jasa',
@@ -224,11 +271,11 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
                                 onTap: () {
                                   Navigator.push(
                                     context,
-                                    MaterialPageRoute(builder: (_) => const CategoryCrudScreen()),
+                                    MaterialPageRoute(builder: (_) => CategoryCrudScreen()),
                                   );
                                 },
                               ),
-                              const Divider(height: 1, indent: 56),
+                              Divider(height: 1, indent: 56),
                               _buildSettingTile(
                                 title: 'Kelola Voucher Diskon',
                                 subtitle: 'CRUD voucher & potongan belanja',
@@ -237,11 +284,11 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
                                 onTap: () {
                                   Navigator.push(
                                     context,
-                                    MaterialPageRoute(builder: (_) => const VoucherCrudScreen()),
+                                    MaterialPageRoute(builder: (_) => VoucherCrudScreen()),
                                   );
                                 },
                               ),
-                              const Divider(height: 1, indent: 56),
+                              Divider(height: 1, indent: 56),
                               _buildSettingTile(
                                 title: 'Kelola Metode Logistik',
                                 subtitle: 'CRUD pilihan & tarif pengiriman',
@@ -250,11 +297,11 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
                                 onTap: () {
                                   Navigator.push(
                                     context,
-                                    MaterialPageRoute(builder: (_) => const LogisticsCrudScreen()),
+                                    MaterialPageRoute(builder: (_) => LogisticsCrudScreen()),
                                   );
                                 },
                               ),
-                              const Divider(height: 1, indent: 56),
+                              Divider(height: 1, indent: 56),
                             ],
                             if (showWA) ...[
                               _buildSettingTile(
@@ -264,7 +311,7 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
                                 color: Colors.teal,
                                 onTap: () => _showWhatsAppSettingsDialog(context),
                               ),
-                              const Divider(height: 1, indent: 56),
+                              Divider(height: 1, indent: 56),
                             ],
                             if (showBot) ...[
                               _buildSettingTile(
@@ -274,7 +321,7 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
                                 color: Colors.amber.shade700,
                                 onTap: () => _showChatBotSettingsDialog(context),
                               ),
-                              if (showStaffPerms) const Divider(height: 1, indent: 56),
+                              if (showStaffPerms) Divider(height: 1, indent: 56),
                             ],
                             if (showStaffPerms) ...[
                               _buildSettingTile(
@@ -285,11 +332,11 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
                                 onTap: () {
                                   Navigator.push(
                                     context,
-                                    MaterialPageRoute(builder: (_) => const StaffPermissionsScreen()),
+                                    MaterialPageRoute(builder: (_) => StaffPermissionsScreen()),
                                   );
                                 },
                               ),
-                              const Divider(height: 1, indent: 56),
+                              Divider(height: 1, indent: 56),
                               _buildSettingTile(
                                 title: 'Status & Paket Layanan',
                                 subtitle: 'Pilih paket bulanan & cek sisa billing',
@@ -298,11 +345,11 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
                                 onTap: () {
                                   Navigator.push(
                                     context,
-                                    MaterialPageRoute(builder: (_) => const OwnerBillingPackageScreen()),
+                                    MaterialPageRoute(builder: (_) => OwnerBillingPackageScreen()),
                                   );
                                 },
                               ),
-                              const Divider(height: 1, indent: 56),
+                              Divider(height: 1, indent: 56),
                               _buildSettingTile(
                                 title: 'Riwayat Billing Aplikasi',
                                 subtitle: 'Riwayat pembayaran & bukti transfer bulanan',
@@ -311,11 +358,11 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
                                 onTap: () {
                                   Navigator.push(
                                     context,
-                                    MaterialPageRoute(builder: (_) => const OwnerBillingHistoryScreen()),
+                                    MaterialPageRoute(builder: (_) => OwnerBillingHistoryScreen()),
                                   );
                                 },
                               ),
-                              const Divider(height: 1, indent: 56),
+                              Divider(height: 1, indent: 56),
                               _buildSettingTile(
                                 title: 'Moderasi Ulasan Pelanggan',
                                 subtitle: 'Saring testimoni terverifikasi untuk website',
@@ -324,12 +371,12 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
                                 onTap: () {
                                   Navigator.push(
                                     context,
-                                    MaterialPageRoute(builder: (_) => const ReviewModerationScreen()),
+                                    MaterialPageRoute(builder: (_) => ReviewModerationScreen()),
                                   );
                                 },
                               ),
                               if (role == 'developer') ...[
-                                const Divider(height: 1, indent: 56),
+                                Divider(height: 1, indent: 56),
                                 _buildSettingTile(
                                   title: 'Konfirmasi Billing Owner',
                                   subtitle: 'Verifikasi & setujui bukti transfer bulanan owner',
@@ -338,7 +385,7 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
                                   onTap: () {
                                     Navigator.push(
                                       context,
-                                      MaterialPageRoute(builder: (_) => const DeveloperBillingApprovalScreen()),
+                                      MaterialPageRoute(builder: (_) => DeveloperBillingApprovalScreen()),
                                     );
                                   },
                                 ),
@@ -348,8 +395,8 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
                         ),
                       ),
                       
-                      const SizedBox(height: 32),
-                      const Center(child: Watermark()),
+                      SizedBox(height: 32),
+                      Center(child: Watermark()),
                     ],
                   ),
                 ),
@@ -360,10 +407,10 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
 
   Widget _buildSectionTitle(String title) {
     return Padding(
-      padding: const EdgeInsets.only(left: 4),
+      padding: EdgeInsets.only(left: 4),
       child: Text(
         title,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 15,
           fontWeight: FontWeight.bold,
           color: AppTheme.darkBlueText,
@@ -381,9 +428,9 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
     required VoidCallback onTap,
   }) {
     return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       leading: Container(
-        padding: const EdgeInsets.all(8),
+        padding: EdgeInsets.all(8),
         decoration: BoxDecoration(
           color: color.withOpacity(0.1),
           borderRadius: BorderRadius.circular(10),
@@ -392,13 +439,13 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
       ),
       title: Text(
         title,
-        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppTheme.darkBlueText),
+        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppTheme.darkBlueText),
       ),
       subtitle: Text(
         subtitle,
-        style: const TextStyle(fontSize: 11, color: AppTheme.textGray),
+        style: TextStyle(fontSize: 11, color: AppTheme.textGray),
       ),
-      trailing: const Icon(Icons.chevron_right, color: AppTheme.textGray, size: 18),
+      trailing: Icon(Icons.chevron_right, color: AppTheme.textGray, size: 18),
       onTap: onTap,
     );
   }
@@ -408,7 +455,7 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => const Center(child: CircularProgressIndicator()),
+      builder: (context) => Center(child: CircularProgressIndicator()),
     );
 
     Map<String, dynamic> data = {};
@@ -434,14 +481,14 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
         return StatefulBuilder(
           builder: (context, setStateDialog) {
             return AlertDialog(
-              title: const Text('Pengaturan WA Gateway'),
+              title: Text('Pengaturan WA Gateway'),
               content: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     SwitchListTile(
-                      title: const Text('Aktifkan Otomasi WA', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
-                      subtitle: const Text('Kirim notifikasi & file PDF otomatis', style: TextStyle(fontSize: 11)),
+                      title: Text('Aktifkan Otomasi WA', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                      subtitle: Text('Kirim notifikasi & file PDF otomatis', style: TextStyle(fontSize: 11)),
                       value: useAutomation,
                       activeColor: AppTheme.primaryBlue,
                       contentPadding: EdgeInsets.zero,
@@ -451,11 +498,11 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
                         });
                       },
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: 8),
                     DropdownButtonFormField<String>(
                       value: provider,
-                      decoration: const InputDecoration(labelText: 'Penyedia Gateway (Provider)'),
-                      items: const [
+                      decoration: InputDecoration(labelText: 'Penyedia Gateway (Provider)'),
+                      items: [
                         DropdownMenuItem(value: 'manual', child: Text('Manual (Tautan WA)')),
                         DropdownMenuItem(value: 'fonnte', child: Text('Fonnte (Otomatis)')),
                         DropdownMenuItem(value: 'wablas', child: Text('Wablas (Otomatis)')),
@@ -467,20 +514,20 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
                       },
                     ),
                     if (provider != 'manual') ...[
-                      const SizedBox(height: 12),
+                      SizedBox(height: 12),
                       TextField(
                         controller: tokenController,
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           labelText: 'API Key / Token Otorisasi',
                           hintText: 'Masukkan token API gateway Anda',
                         ),
                       ),
                     ],
                     if (provider == 'wablas') ...[
-                      const SizedBox(height: 12),
+                      SizedBox(height: 12),
                       TextField(
                         controller: urlController,
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           labelText: 'Wablas Domain URL',
                           hintText: 'https://api.wablas.com',
                         ),
@@ -492,7 +539,7 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const Text('Batal'),
+                  child: Text('Batal'),
                 ),
                 ElevatedButton(
                   onPressed: () async {
@@ -505,12 +552,12 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
                     if (context.mounted) Navigator.pop(context);
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Konfigurasi WhatsApp Gateway berhasil disimpan!')),
+                        SnackBar(content: Text('Konfigurasi WhatsApp Gateway berhasil disimpan!')),
                       );
                     }
                   },
                   style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryBlue),
-                  child: const Text('Simpan', style: TextStyle(color: Colors.white)),
+                  child: Text('Simpan', style: TextStyle(color: Colors.white)),
                 ),
               ],
             );
@@ -524,7 +571,7 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => const Center(child: CircularProgressIndicator()),
+      builder: (context) => Center(child: CircularProgressIndicator()),
     );
 
     Map<String, dynamic> data = {};
@@ -551,14 +598,14 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
         return StatefulBuilder(
           builder: (context, setStateDialog) {
             return AlertDialog(
-              title: const Text('Pengaturan Auto-Reply Chat'),
+              title: Text('Pengaturan Auto-Reply Chat'),
               content: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     SwitchListTile(
-                      title: const Text('Aktifkan Pesan Otomatis', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
-                      subtitle: const Text('Kirim salam otomatis ke pelanggan baru', style: TextStyle(fontSize: 11)),
+                      title: Text('Aktifkan Pesan Otomatis', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                      subtitle: Text('Kirim salam otomatis ke pelanggan baru', style: TextStyle(fontSize: 11)),
                       value: autoReplyEnabled,
                       activeColor: AppTheme.primaryBlue,
                       contentPadding: EdgeInsets.zero,
@@ -568,11 +615,11 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
                         });
                       },
                     ),
-                    const SizedBox(height: 12),
+                    SizedBox(height: 12),
                     TextField(
                       controller: textController,
                       maxLines: 4,
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         labelText: 'Isi Pesan Otomatis',
                         hintText: 'Tulis pesan balasan otomatis...',
                       ),
@@ -583,7 +630,7 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const Text('Batal'),
+                  child: Text('Batal'),
                 ),
                 ElevatedButton(
                   onPressed: () async {
@@ -594,12 +641,12 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
                     if (context.mounted) Navigator.pop(context);
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Pengaturan Auto-Reply Chat berhasil disimpan!')),
+                        SnackBar(content: Text('Pengaturan Auto-Reply Chat berhasil disimpan!')),
                       );
                     }
                   },
                   style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryBlue),
-                  child: const Text('Simpan', style: TextStyle(color: Colors.white)),
+                  child: Text('Simpan', style: TextStyle(color: Colors.white)),
                 ),
               ],
             );
@@ -613,7 +660,7 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => const Center(child: CircularProgressIndicator()),
+      builder: (context) => Center(child: CircularProgressIndicator()),
     );
 
     Map<String, dynamic> data = {};
@@ -637,7 +684,7 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Pengaturan Poin & Ongkir'),
+          title: Text('Pengaturan Poin & Ongkir'),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -645,36 +692,36 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
                 TextField(
                   controller: deliveryFeeController,
                   keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Biaya Ongkir Kurir Flat (Rp)',
                     hintText: 'Contoh: 15000',
                   ),
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: 12),
                 TextField(
                   controller: rupiahPerPointController,
                   keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Minimal Belanja per 1 Poin (Rp)',
                     hintText: 'Contoh: 10000',
                     helperText: 'Layanan jasa cuci saja, ongkir tidak dihitung poin',
                     helperMaxLines: 2,
                   ),
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: 12),
                 TextField(
                   controller: pointsNeededController,
                   keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Poin untuk Klaim Diskon',
                     hintText: 'Contoh: 10',
                   ),
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: 12),
                 TextField(
                   controller: discountValueController,
                   keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Nilai Diskon Potongan (Rp)',
                     hintText: 'Contoh: 25000',
                   ),
@@ -685,7 +732,7 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Batal'),
+              child: Text('Batal'),
             ),
             ElevatedButton(
               onPressed: () async {
@@ -704,12 +751,12 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
                 if (context.mounted) Navigator.pop(context);
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Konfigurasi Tarif & Poin berhasil disimpan!')),
+                    SnackBar(content: Text('Konfigurasi Tarif & Poin berhasil disimpan!')),
                   );
                 }
               },
               style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryBlue),
-              child: const Text('Simpan', style: TextStyle(color: Colors.white)),
+              child: Text('Simpan', style: TextStyle(color: Colors.white)),
             ),
           ],
         );

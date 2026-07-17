@@ -7,7 +7,7 @@ import '../../theme.dart';
 import '../../utils/error_helper.dart';
 
 class VoucherCrudScreen extends StatefulWidget {
-  const VoucherCrudScreen({Key? key}) : super(key: key);
+  VoucherCrudScreen({Key? key}) : super(key: key);
 
   @override
   State<VoucherCrudScreen> createState() => _VoucherCrudScreenState();
@@ -79,21 +79,21 @@ class _VoucherCrudScreenState extends State<VoucherCrudScreen> {
                     children: [
                       TextFormField(
                         controller: _codeController,
-                        decoration: const InputDecoration(hintText: 'Kode Voucher (Contoh: HEMAT10K)'),
+                        decoration: InputDecoration(hintText: 'Kode Voucher (Contoh: HEMAT10K)'),
                         textCapitalization: TextCapitalization.characters,
                         validator: (v) => v == null || v.isEmpty ? 'Kode wajib diisi' : null,
                       ),
-                      const SizedBox(height: 12),
+                      SizedBox(height: 12),
                       TextFormField(
                         controller: _nameController,
-                        decoration: const InputDecoration(hintText: 'Nama Voucher (Contoh: Diskon Grand Opening)'),
+                        decoration: InputDecoration(hintText: 'Nama Voucher (Contoh: Diskon Grand Opening)'),
                         validator: (v) => v == null || v.isEmpty ? 'Nama wajib diisi' : null,
                       ),
-                      const SizedBox(height: 12),
+                      SizedBox(height: 12),
                       DropdownButtonFormField<String>(
                         value: _discountType,
-                        decoration: const InputDecoration(labelText: 'Tipe Diskon'),
-                        items: const [
+                        decoration: InputDecoration(labelText: 'Tipe Diskon'),
+                        items: [
                           DropdownMenuItem(value: 'fixed', child: Text('Nominal Tetap (Rp)')),
                           DropdownMenuItem(value: 'percentage', child: Text('Persentase (%)')),
                         ],
@@ -105,7 +105,7 @@ class _VoucherCrudScreenState extends State<VoucherCrudScreen> {
                           }
                         },
                       ),
-                      const SizedBox(height: 12),
+                      SizedBox(height: 12),
                       TextFormField(
                         controller: _valueController,
                         keyboardType: TextInputType.number,
@@ -118,27 +118,27 @@ class _VoucherCrudScreenState extends State<VoucherCrudScreen> {
                           return null;
                         },
                       ),
-                      const SizedBox(height: 12),
+                      SizedBox(height: 12),
                       TextFormField(
                         controller: _minOrderController,
                         keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(hintText: 'Minimal Belanja (Rp) - Opsional'),
+                        decoration: InputDecoration(hintText: 'Minimal Belanja (Rp) - Opsional'),
                       ),
-                      const SizedBox(height: 12),
+                      SizedBox(height: 12),
                       TextFormField(
                         controller: _minQtyController,
                         keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(hintText: 'Minimal Jumlah Sepatu (Pasang) - Opsional'),
+                        decoration: InputDecoration(hintText: 'Minimal Jumlah Sepatu (Pasang) - Opsional'),
                       ),
                       if (_discountType == 'percentage') ...[
-                        const SizedBox(height: 12),
+                        SizedBox(height: 12),
                         TextFormField(
                           controller: _maxDiscountController,
                           keyboardType: TextInputType.number,
-                          decoration: const InputDecoration(hintText: 'Maksimal Diskon (Rp) - Opsional'),
+                          decoration: InputDecoration(hintText: 'Maksimal Diskon (Rp) - Opsional'),
                         ),
                       ],
-                      const SizedBox(height: 16),
+                      SizedBox(height: 16),
                       // Date range selectors
                       Row(
                         children: [
@@ -162,13 +162,13 @@ class _VoucherCrudScreenState extends State<VoucherCrudScreen> {
                                   : DateFormat('dd/MM/yy').format(_validFrom!)),
                             ),
                           ),
-                          const SizedBox(width: 8),
+                          SizedBox(width: 8),
                           Expanded(
                             child: OutlinedButton(
                               onPressed: () async {
                                 final d = await showDatePicker(
                                   context: context,
-                                  initialDate: _validTo ?? DateTime.now().add(const Duration(days: 7)),
+                                  initialDate: _validTo ?? DateTime.now().add(Duration(days: 7)),
                                   firstDate: DateTime(2025),
                                   lastDate: DateTime(2030),
                                 );
@@ -192,7 +192,7 @@ class _VoucherCrudScreenState extends State<VoucherCrudScreen> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const Text('Batal', style: TextStyle(color: AppTheme.textGray)),
+                  child: Text('Batal', style: TextStyle(color: AppTheme.textGray)),
                 ),
                 ElevatedButton(
                   onPressed: () async {
@@ -247,7 +247,7 @@ class _VoucherCrudScreenState extends State<VoucherCrudScreen> {
 
                     if (mounted) Navigator.pop(context);
                   },
-                  child: const Text('Simpan'),
+                  child: Text('Simpan'),
                 ),
               ],
             );
@@ -261,12 +261,12 @@ class _VoucherCrudScreenState extends State<VoucherCrudScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Hapus Voucher?'),
-        content: const Text('Apakah Anda yakin ingin menghapus voucher ini?'),
+        title: Text('Hapus Voucher?'),
+        content: Text('Apakah Anda yakin ingin menghapus voucher ini?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Batal', style: TextStyle(color: AppTheme.textGray)),
+            child: Text('Batal', style: TextStyle(color: AppTheme.textGray)),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -274,7 +274,7 @@ class _VoucherCrudScreenState extends State<VoucherCrudScreen> {
               if (mounted) Navigator.pop(context);
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Hapus'),
+            child: Text('Hapus'),
           ),
         ],
       ),
@@ -287,18 +287,18 @@ class _VoucherCrudScreenState extends State<VoucherCrudScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Kelola Voucher'),
+        title: Text('Kelola Voucher'),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showVoucherDialog(),
         backgroundColor: AppTheme.primaryBlue,
-        child: const Icon(Icons.add, color: Colors.white),
+        child: Icon(Icons.add, color: Colors.white),
       ),
       body: StreamBuilder<List<VoucherModel>>(
         stream: dbService.getVouchers(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return Center(child: CircularProgressIndicator());
           }
           if (snapshot.hasError) {
             return Center(child: Text(getCleanErrorMessage(snapshot.error)));
@@ -310,18 +310,18 @@ class _VoucherCrudScreenState extends State<VoucherCrudScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.confirmation_num_outlined, size: 64, color: AppTheme.textGray),
-                  const SizedBox(height: 16),
+                  Icon(Icons.confirmation_num_outlined, size: 64, color: AppTheme.textGray),
+                  SizedBox(height: 16),
                   Text('Belum ada voucher dibuat', style: Theme.of(context).textTheme.titleMedium),
-                  const SizedBox(height: 8),
-                  const Text('Klik + untuk membuat voucher diskon baru', style: TextStyle(color: AppTheme.textGray)),
+                  SizedBox(height: 8),
+                  Text('Klik + untuk membuat voucher diskon baru', style: TextStyle(color: AppTheme.textGray)),
                 ],
               ),
             );
           }
 
           return ListView.builder(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(16),
             itemCount: vouchers.length,
             itemBuilder: (context, index) {
               final v = vouchers[index];
@@ -330,13 +330,13 @@ class _VoucherCrudScreenState extends State<VoucherCrudScreen> {
                   : 'Berlaku Selamanya';
 
               return Card(
-                margin: const EdgeInsets.only(bottom: 12),
+                margin: EdgeInsets.only(bottom: 12),
                 child: Padding(
-                  padding: const EdgeInsets.all(16.0),
+                  padding: EdgeInsets.all(16.0),
                   child: Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.all(12),
+                        padding: EdgeInsets.all(12),
                         decoration: BoxDecoration(
                           color: (v.isActive ? AppTheme.primaryBlue : Colors.grey).withOpacity(0.08),
                           shape: BoxShape.circle,
@@ -347,7 +347,7 @@ class _VoucherCrudScreenState extends State<VoucherCrudScreen> {
                           size: 24,
                         ),
                       ),
-                      const SizedBox(width: 16),
+                      SizedBox(width: 16),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -355,7 +355,7 @@ class _VoucherCrudScreenState extends State<VoucherCrudScreen> {
                             Row(
                               children: [
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                   decoration: BoxDecoration(
                                     color: (v.isActive ? AppTheme.primaryBlue : Colors.grey).withOpacity(0.12),
                                     borderRadius: BorderRadius.circular(6),
@@ -369,7 +369,7 @@ class _VoucherCrudScreenState extends State<VoucherCrudScreen> {
                                     ),
                                   ),
                                 ),
-                                const SizedBox(width: 8),
+                                SizedBox(width: 8),
                                 Expanded(
                                   child: Text(
                                     v.name,
@@ -383,7 +383,7 @@ class _VoucherCrudScreenState extends State<VoucherCrudScreen> {
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 6),
+                            SizedBox(height: 6),
                             Text(
                               v.discountType == 'percentage'
                                   ? 'Diskon ${v.discountValue.toStringAsFixed(0)}%'
@@ -395,28 +395,28 @@ class _VoucherCrudScreenState extends State<VoucherCrudScreen> {
                               ),
                             ),
                             if (v.minOrder > 0) ...[
-                              const SizedBox(height: 4),
+                              SizedBox(height: 4),
                               Text(
                                 'Min. belanja Rp ${v.minOrder.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}',
-                                style: const TextStyle(fontSize: 11, color: AppTheme.textGray),
+                                style: TextStyle(fontSize: 11, color: AppTheme.textGray),
                               ),
                             ],
                             if (v.minQty > 0) ...[
-                              const SizedBox(height: 4),
+                              SizedBox(height: 4),
                               Text(
                                 'Min. jumlah: ${v.minQty} pasang sepatu',
-                                style: const TextStyle(fontSize: 11, color: AppTheme.textGray),
+                                style: TextStyle(fontSize: 11, color: AppTheme.textGray),
                               ),
                             ],
-                            const SizedBox(height: 4),
+                            SizedBox(height: 4),
                             Text(
                               'Periode: $dateStr',
-                              style: const TextStyle(fontSize: 11, color: AppTheme.textGray),
+                              style: TextStyle(fontSize: 11, color: AppTheme.textGray),
                             ),
                           ],
                         ),
                       ),
-                      const SizedBox(width: 8),
+                      SizedBox(width: 8),
                       Column(
                         children: [
                           Switch(
@@ -430,11 +430,11 @@ class _VoucherCrudScreenState extends State<VoucherCrudScreen> {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               IconButton(
-                                icon: const Icon(Icons.edit_outlined, color: AppTheme.primaryBlue, size: 20),
+                                icon: Icon(Icons.edit_outlined, color: AppTheme.primaryBlue, size: 20),
                                 onPressed: () => _showVoucherDialog(v),
                               ),
                               IconButton(
-                                icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 20),
+                                icon: Icon(Icons.delete_outline, color: Colors.redAccent, size: 20),
                                 onPressed: () => _confirmDelete(v.id),
                               ),
                             ],

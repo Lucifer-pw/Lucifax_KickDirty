@@ -14,7 +14,7 @@ class ChatScreen extends StatefulWidget {
   final String senderName;
   final bool isAdmin;
 
-  const ChatScreen({
+  ChatScreen({
     Key? key,
     required this.customerId,
     required this.customerName,
@@ -98,11 +98,11 @@ class _ChatScreenState extends State<ChatScreen> {
     );
 
     // Scroll to bottom
-    Future.delayed(const Duration(milliseconds: 100), () {
+    Future.delayed(Duration(milliseconds: 100), () {
       if (_scrollController.hasClients) {
         _scrollController.animateTo(
           _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
+          duration: Duration(milliseconds: 300),
           curve: Curves.easeOut,
         );
       }
@@ -122,13 +122,13 @@ class _ChatScreenState extends State<ChatScreen> {
               widget.customerId == 'dev_support'
                   ? (widget.isAdmin ? 'Hubungi Developer (Dukungan)' : 'Dukungan Developer (Owner & Staff)')
                   : (widget.isAdmin ? widget.customerName : 'Hubungi Owner (KickDirty)'),
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             Text(
               widget.customerId == 'dev_support'
                   ? (widget.isAdmin ? 'Tanya seputar kendala aplikasi' : 'Chat bantuan kendala aplikasi')
                   : (widget.isAdmin ? 'WhatsApp: ${widget.customerPhone}' : 'Tanya seputar cucian sepatu Anda'),
-              style: const TextStyle(fontSize: 11, color: AppTheme.textGray),
+              style: TextStyle(fontSize: 11, color: AppTheme.textGray),
             ),
           ],
         ),
@@ -140,7 +140,7 @@ class _ChatScreenState extends State<ChatScreen> {
               stream: dbService.getChatMessages(widget.customerId),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
+                  return Center(child: CircularProgressIndicator());
                 }
                 if (snapshot.hasError) {
                   return Center(child: Text(getCleanErrorMessage(snapshot.error)));
@@ -151,13 +151,13 @@ class _ChatScreenState extends State<ChatScreen> {
                 if (messages.isEmpty) {
                   return Center(
                     child: Padding(
-                      padding: const EdgeInsets.all(24.0),
+                      padding: EdgeInsets.all(24.0),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(Icons.chat_bubble_outline, size: 64, color: AppTheme.textGray.withOpacity(0.5)),
-                          const SizedBox(height: 16),
-                          const Text(
+                          SizedBox(height: 16),
+                          Text(
                             'Belum ada pesan. Mulai obrolan sekarang!',
                             textAlign: TextAlign.center,
                             style: TextStyle(color: AppTheme.textGray, fontSize: 13),
@@ -177,7 +177,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
                 return ListView.builder(
                   controller: _scrollController,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   itemCount: messages.length,
                   itemBuilder: (context, index) {
                     final msg = messages[index];
@@ -204,16 +204,16 @@ class _ChatScreenState extends State<ChatScreen> {
                     return Align(
                       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
                       child: Container(
-                        margin: const EdgeInsets.symmetric(vertical: 4),
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        margin: EdgeInsets.symmetric(vertical: 4),
+                        padding: EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                         constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
                         decoration: BoxDecoration(
                           color: isMe ? AppTheme.primaryBlue : Colors.grey[200],
                           borderRadius: BorderRadius.only(
-                            topLeft: const Radius.circular(16),
-                            topRight: const Radius.circular(16),
-                            bottomLeft: isMe ? const Radius.circular(16) : Radius.zero,
-                            bottomRight: isMe ? Radius.zero : const Radius.circular(16),
+                            topLeft: Radius.circular(16),
+                            topRight: Radius.circular(16),
+                            bottomLeft: isMe ? Radius.circular(16) : Radius.zero,
+                            bottomRight: isMe ? Radius.zero : Radius.circular(16),
                           ),
                         ),
                         child: Column(
@@ -222,9 +222,9 @@ class _ChatScreenState extends State<ChatScreen> {
                             if (!isMe && widget.isAdmin) ...[
                               Text(
                                 msg['senderName'] ?? '',
-                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 10, color: AppTheme.darkBlueText),
+                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 10, color: AppTheme.darkBlueText),
                               ),
-                              const SizedBox(height: 2),
+                              SizedBox(height: 2),
                             ],
                             Text(
                               msg['message'] ?? '',
@@ -233,7 +233,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                 color: isMe ? Colors.white : AppTheme.darkBlueText,
                               ),
                             ),
-                            const SizedBox(height: 4),
+                            SizedBox(height: 4),
                             Text(
                               timeText,
                               style: TextStyle(
@@ -258,12 +258,12 @@ class _ChatScreenState extends State<ChatScreen> {
               color: Colors.grey[50],
               child: ListView(
                 scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 children: [
                   ..._quickReplies.map((reply) => Padding(
-                    padding: const EdgeInsets.only(right: 8.0),
+                    padding: EdgeInsets.only(right: 8.0),
                     child: ActionChip(
-                      label: Text(reply, style: const TextStyle(fontSize: 12)),
+                      label: Text(reply, style: TextStyle(fontSize: 12)),
                       backgroundColor: Colors.white,
                       side: BorderSide(color: Colors.grey[300]!),
                       onPressed: () {
@@ -273,10 +273,10 @@ class _ChatScreenState extends State<ChatScreen> {
                     ),
                   )),
                   IconButton(
-                    icon: const Icon(Icons.edit_note, size: 20, color: AppTheme.primaryBlue),
+                    icon: Icon(Icons.edit_note, size: 20, color: AppTheme.primaryBlue),
                     onPressed: _manageQuickReplies,
                     padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
+                    constraints: BoxConstraints(),
                     tooltip: 'Kelola Pesan Cepat',
                   ),
                 ],
@@ -286,14 +286,14 @@ class _ChatScreenState extends State<ChatScreen> {
           // Input row
           SafeArea(
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
                 color: Colors.white,
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.05),
                     blurRadius: 5,
-                    offset: const Offset(0, -2),
+                    offset: Offset(0, -2),
                   )
                 ],
               ),
@@ -302,7 +302,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   Expanded(
                     child: TextField(
                       controller: _messageController,
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         hintText: 'Tulis pesan...',
                         border: InputBorder.none,
                         contentPadding: EdgeInsets.symmetric(horizontal: 8),
@@ -314,7 +314,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   CircleAvatar(
                     backgroundColor: AppTheme.primaryBlue,
                     child: IconButton(
-                      icon: const Icon(Icons.send, color: Colors.white, size: 18),
+                      icon: Icon(Icons.send, color: Colors.white, size: 18),
                       onPressed: _sendMessage,
                     ),
                   ),
@@ -337,7 +337,7 @@ class _ChatScreenState extends State<ChatScreen> {
         return StatefulBuilder(
           builder: (context, setStateSheet) {
             return Container(
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.only(
                   topLeft: Radius.circular(24),
@@ -357,29 +357,29 @@ class _ChatScreenState extends State<ChatScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
+                      Text(
                         'Kelola Pesan Cepat',
                         style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.darkBlueText),
                       ),
                       IconButton(
-                        icon: const Icon(Icons.close),
+                        icon: Icon(Icons.close),
                         onPressed: () => Navigator.pop(context),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12),
                   Row(
                     children: [
                       Expanded(
                         child: TextField(
                           controller: newReplyController,
-                          decoration: const InputDecoration(
+                          decoration: InputDecoration(
                             hintText: 'Tambah template pesan...',
                             contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                           ),
                         ),
                       ),
-                      const SizedBox(width: 8),
+                      SizedBox(width: 8),
                       ElevatedButton(
                         onPressed: () {
                           final text = newReplyController.text.trim();
@@ -397,17 +397,17 @@ class _ChatScreenState extends State<ChatScreen> {
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppTheme.primaryBlue,
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                         ),
-                        child: const Text('Tambah', style: TextStyle(color: Colors.white)),
+                        child: Text('Tambah', style: TextStyle(color: Colors.white)),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16),
                   ConstrainedBox(
-                    constraints: const BoxConstraints(maxHeight: 250),
+                    constraints: BoxConstraints(maxHeight: 250),
                     child: _quickReplies.isEmpty
-                        ? const Center(
+                        ? Center(
                             child: Padding(
                               padding: EdgeInsets.symmetric(vertical: 24),
                               child: Text(
@@ -424,10 +424,10 @@ class _ChatScreenState extends State<ChatScreen> {
                                 contentPadding: EdgeInsets.zero,
                                 title: Text(
                                   _quickReplies[idx],
-                                  style: const TextStyle(fontSize: 13),
+                                  style: TextStyle(fontSize: 13),
                                 ),
                                 trailing: IconButton(
-                                  icon: const Icon(Icons.delete_outline, color: Colors.red),
+                                  icon: Icon(Icons.delete_outline, color: Colors.red),
                                   onPressed: () {
                                     setState(() {
                                       _quickReplies.removeAt(idx);

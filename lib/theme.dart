@@ -1,130 +1,213 @@
 import 'package:flutter/material.dart';
 
 class AppTheme {
-  // Brand Colors
+  // Global flag set by the ThemeProvider to toggle dynamic properties
+  static bool isDarkMode = false;
+
+  // Brand Colors (remain constant)
   static const Color primaryBlue = Color(0xFF0052CC); // Deep Sapphire Blue
   static const Color secondaryBlue = Color(0xFF00B0FF); // Sky Blue
-  static const Color lightBlueBackground = Color(0xFFF2F6FC); // Soft Ice Blue
-  static const Color darkBlueText = Color(0xFF0A2540); // Deep Navy for dark text
   static const Color accentCyan = Color(0xFF00E5FF);
-  
-  // Neutral Colors
-  static const Color white = Color(0xFFFFFFFF);
-  static const Color lightGray = Color(0xFFE2E8F0);
-  static const Color borderGray = Color(0xFFCBD5E1);
-  static const Color textGray = Color(0xFF64748B);
 
-  // Gradients
-  static const LinearGradient primaryGradient = LinearGradient(
+  // Dynamic Neutral Colors based on theme mode
+  static Color get white => isDarkMode ? Color(0xFF1E293B) : Color(0xFFFFFFFF); // Slate 800 or White
+  static Color get lightBlueBackground => isDarkMode ? Color(0xFF0F172A) : Color(0xFFF2F6FC); // Slate 900 or Soft Ice Blue
+  static Color get darkBlueText => isDarkMode ? Color(0xFFF8FAFC) : Color(0xFF0A2540); // Slate 50 or Deep Navy
+  static Color get lightGray => isDarkMode ? Color(0xFF334155) : Color(0xFFE2E8F0); // Slate 700 or Light Gray
+  static Color get borderGray => isDarkMode ? Color(0xFF475569) : Color(0xFFCBD5E1); // Slate 600 or Border Gray
+  static Color get textGray => isDarkMode ? Color(0xFF94A3B8) : Color(0xFF64748B); // Slate 400 or Text Gray
+
+  // Dynamic Gradients
+  static LinearGradient get primaryGradient => LinearGradient(
     colors: [primaryBlue, secondaryBlue],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
 
-  static const LinearGradient whiteBlueGradient = LinearGradient(
+  static LinearGradient get whiteBlueGradient => LinearGradient(
     colors: [white, lightBlueBackground],
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
   );
 
-  static const LinearGradient cardGradient = LinearGradient(
-    colors: [white, Color(0xFFF8FAFC)],
+  static LinearGradient get cardGradient => LinearGradient(
+    colors: [white, isDarkMode ? Color(0xFF0F172A) : Color(0xFFF8FAFC)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
 
-  // Shadow Styles
-  static List<BoxShadow> softShadow = [
+  // Dynamic Shadow Styles
+  static List<BoxShadow> get softShadow => [
     BoxShadow(
-      color: primaryBlue.withOpacity(0.08),
+      color: primaryBlue.withOpacity(isDarkMode ? 0.3 : 0.08),
       blurRadius: 20,
-      offset: const Offset(0, 10),
+      offset: Offset(0, 10),
     ),
   ];
 
-  static List<BoxShadow> cardShadow = [
+  static List<BoxShadow> get cardShadow => [
     BoxShadow(
-      color: Colors.black.withOpacity(0.04),
+      color: Colors.black.withOpacity(isDarkMode ? 0.3 : 0.04),
       blurRadius: 15,
-      offset: const Offset(0, 5),
+      offset: Offset(0, 5),
     ),
   ];
 
-  // Theme Data definition
+  // Light Theme Data definition
   static ThemeData get lightTheme {
     return ThemeData(
       useMaterial3: true,
+      brightness: Brightness.light,
       primaryColor: primaryBlue,
-      scaffoldBackgroundColor: white,
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: primaryBlue,
+      scaffoldBackgroundColor: Color(0xFFFFFFFF),
+      colorScheme: ColorScheme.light(
         primary: primaryBlue,
         secondary: secondaryBlue,
-        background: white,
-        surface: white,
+        background: Color(0xFFFFFFFF),
+        surface: Color(0xFFFFFFFF),
       ),
-      appBarTheme: const AppBarTheme(
+      appBarTheme: AppBarTheme(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        iconTheme: IconThemeData(color: darkBlueText),
+        iconTheme: IconThemeData(color: Color(0xFF0A2540)),
         titleTextStyle: TextStyle(
-          color: darkBlueText,
+          color: Color(0xFF0A2540),
           fontSize: 20,
           fontWeight: FontWeight.bold,
         ),
       ),
-      textTheme: const TextTheme(
-        headlineLarge: TextStyle(color: darkBlueText, fontSize: 32, fontWeight: FontWeight.bold),
-        headlineMedium: TextStyle(color: darkBlueText, fontSize: 24, fontWeight: FontWeight.bold),
-        titleLarge: TextStyle(color: darkBlueText, fontSize: 18, fontWeight: FontWeight.bold),
-        titleMedium: TextStyle(color: darkBlueText, fontSize: 16, fontWeight: FontWeight.w600),
-        bodyLarge: TextStyle(color: darkBlueText, fontSize: 16),
-        bodyMedium: TextStyle(color: textGray, fontSize: 14),
+      textTheme: TextTheme(
+        headlineLarge: TextStyle(color: Color(0xFF0A2540), fontSize: 32, fontWeight: FontWeight.bold),
+        headlineMedium: TextStyle(color: Color(0xFF0A2540), fontSize: 24, fontWeight: FontWeight.bold),
+        titleLarge: TextStyle(color: Color(0xFF0A2540), fontSize: 18, fontWeight: FontWeight.bold),
+        titleMedium: TextStyle(color: Color(0xFF0A2540), fontSize: 16, fontWeight: FontWeight.w600),
+        bodyLarge: TextStyle(color: Color(0xFF0A2540), fontSize: 16),
+        bodyMedium: TextStyle(color: Color(0xFF64748B), fontSize: 14),
         labelLarge: TextStyle(color: primaryBlue, fontSize: 14, fontWeight: FontWeight.bold),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: white,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        fillColor: Color(0xFFFFFFFF),
+        contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: borderGray),
+          borderSide: BorderSide(color: Color(0xFFCBD5E1)),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: lightGray),
+          borderSide: BorderSide(color: Color(0xFFE2E8F0)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: primaryBlue, width: 1.5),
+          borderSide: BorderSide(color: primaryBlue, width: 1.5),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
+          borderSide: BorderSide(color: Colors.redAccent, width: 1.5),
         ),
-        hintStyle: const TextStyle(color: textGray, fontSize: 14),
+        hintStyle: TextStyle(color: Color(0xFF64748B), fontSize: 14),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: primaryBlue,
-          foregroundColor: white,
-          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+          foregroundColor: Color(0xFFFFFFFF),
+          padding: EdgeInsets.symmetric(vertical: 16, horizontal: 24),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
           elevation: 0,
-          textStyle: const TextStyle(
+          textStyle: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
           ),
         ),
       ),
       cardTheme: CardTheme(
-        color: white,
+        color: Color(0xFFFFFFFF),
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
-          side: const BorderSide(color: lightGray, width: 1),
+          side: BorderSide(color: Color(0xFFE2E8F0), width: 1),
+        ),
+      ),
+    );
+  }
+
+  // Dark Theme Data definition
+  static ThemeData get darkTheme {
+    return ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.dark,
+      primaryColor: primaryBlue,
+      scaffoldBackgroundColor: Color(0xFF0F172A), // Slate 900
+      colorScheme: ColorScheme.dark(
+        primary: primaryBlue,
+        secondary: secondaryBlue,
+        background: Color(0xFF0F172A),
+        surface: Color(0xFF1E293B), // Slate 800
+      ),
+      appBarTheme: AppBarTheme(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        iconTheme: IconThemeData(color: Color(0xFFF8FAFC)),
+        titleTextStyle: TextStyle(
+          color: Color(0xFFF8FAFC),
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+      textTheme: TextTheme(
+        headlineLarge: TextStyle(color: Color(0xFFF8FAFC), fontSize: 32, fontWeight: FontWeight.bold),
+        headlineMedium: TextStyle(color: Color(0xFFF8FAFC), fontSize: 24, fontWeight: FontWeight.bold),
+        titleLarge: TextStyle(color: Color(0xFFF8FAFC), fontSize: 18, fontWeight: FontWeight.bold),
+        titleMedium: TextStyle(color: Color(0xFFF8FAFC), fontSize: 16, fontWeight: FontWeight.w600),
+        bodyLarge: TextStyle(color: Color(0xFFF8FAFC), fontSize: 16),
+        bodyMedium: TextStyle(color: Color(0xFF94A3B8), fontSize: 14), // Slate 400
+        labelLarge: TextStyle(color: secondaryBlue, fontSize: 14, fontWeight: FontWeight.bold),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: Color(0xFF1E293B), // Slate 800
+        contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: Color(0xFF475569)), // Slate 600
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: Color(0xFF334155)), // Slate 700
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: secondaryBlue, width: 1.5),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: Colors.redAccent, width: 1.5),
+        ),
+        hintStyle: TextStyle(color: Color(0xFF94A3B8), fontSize: 14),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: primaryBlue,
+          foregroundColor: Color(0xFFFFFFFF),
+          padding: EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          elevation: 0,
+          textStyle: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+      cardTheme: CardTheme(
+        color: Color(0xFF1E293B), // Slate 800
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(color: Color(0xFF334155), width: 1), // Slate 700
         ),
       ),
     );

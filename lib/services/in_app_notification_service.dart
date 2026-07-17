@@ -432,12 +432,12 @@ class _InAppNotificationBannerWidgetState extends State<_InAppNotificationBanner
   void initState() {
     super.initState();
     _controller = AnimationController(
-      duration: const Duration(milliseconds: 350),
+      duration: Duration(milliseconds: 350),
       vsync: this,
     );
 
     _offsetAnimation = Tween<Offset>(
-      begin: const Offset(0.0, -1.2),
+      begin: Offset(0.0, -1.2),
       end: Offset.zero,
     ).animate(CurvedAnimation(
       parent: _controller,
@@ -447,7 +447,7 @@ class _InAppNotificationBannerWidgetState extends State<_InAppNotificationBanner
     _controller.forward();
 
     // Auto dismiss after 4 seconds
-    _dismissTimer = Timer(const Duration(seconds: 4), () {
+    _dismissTimer = Timer(Duration(seconds: 4), () {
       _dismiss();
     });
   }
@@ -474,7 +474,7 @@ class _InAppNotificationBannerWidgetState extends State<_InAppNotificationBanner
         child: SlideTransition(
           position: _offsetAnimation,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Material(
               color: Colors.transparent,
               child: GestureDetector(
@@ -484,7 +484,7 @@ class _InAppNotificationBannerWidgetState extends State<_InAppNotificationBanner
                 },
                 child: Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(16),
@@ -492,7 +492,7 @@ class _InAppNotificationBannerWidgetState extends State<_InAppNotificationBanner
                       BoxShadow(
                         color: Colors.black.withOpacity(0.12),
                         blurRadius: 16,
-                        offset: const Offset(0, 8),
+                        offset: Offset(0, 8),
                       ),
                     ],
                     border: Border.all(
@@ -503,14 +503,14 @@ class _InAppNotificationBannerWidgetState extends State<_InAppNotificationBanner
                   child: Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.all(8),
+                        padding: EdgeInsets.all(8),
                         decoration: BoxDecoration(
                           color: widget.color.withOpacity(0.1),
                           shape: BoxShape.circle,
                         ),
                         child: Icon(widget.icon, color: widget.color, size: 24),
                       ),
-                      const SizedBox(width: 14),
+                      SizedBox(width: 14),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -518,18 +518,18 @@ class _InAppNotificationBannerWidgetState extends State<_InAppNotificationBanner
                           children: [
                             Text(
                               widget.title,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 13,
                                 color: AppTheme.darkBlueText,
                               ),
                             ),
-                            const SizedBox(height: 2),
+                            SizedBox(height: 2),
                             Text(
                               widget.message,
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 11,
                                 color: AppTheme.textGray,
                               ),
@@ -538,10 +538,10 @@ class _InAppNotificationBannerWidgetState extends State<_InAppNotificationBanner
                         ),
                       ),
                       IconButton(
-                        icon: const Icon(Icons.close, size: 18, color: AppTheme.textGray),
+                        icon: Icon(Icons.close, size: 18, color: AppTheme.textGray),
                         onPressed: _dismiss,
                         padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
+                        constraints: BoxConstraints(),
                       ),
                     ],
                   ),

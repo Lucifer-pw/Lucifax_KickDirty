@@ -30,7 +30,7 @@ import '../../services/in_app_notification_service.dart';
 import '../../services/auto_backup_service.dart';
 
 class AdminDashboard extends StatefulWidget {
-  const AdminDashboard({Key? key}) : super(key: key);
+  AdminDashboard({Key? key}) : super(key: key);
 
   @override
   State<AdminDashboard> createState() => _AdminDashboardState();
@@ -89,8 +89,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
       onTap: () => _onTabTapped(index),
       behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 250),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        duration: Duration(milliseconds: 250),
+        padding: EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
           color: isSelected ? AppTheme.primaryBlue.withOpacity(0.1) : Colors.transparent,
           borderRadius: BorderRadius.circular(24),
@@ -111,8 +111,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
                     top: -6,
                     right: -8,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                      constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                      padding: EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                      constraints: BoxConstraints(minWidth: 16, minHeight: 16),
                       decoration: BoxDecoration(
                         color: Colors.red,
                         borderRadius: BorderRadius.circular(10),
@@ -120,7 +120,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                       ),
                       child: Text(
                         badgeCount > 99 ? '99+' : '$badgeCount',
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: Colors.white,
                           fontSize: 9,
                           fontWeight: FontWeight.bold,
@@ -132,10 +132,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
               ],
             ),
             if (isSelected) ...[
-              const SizedBox(width: 8),
+              SizedBox(width: 8),
               Text(
                 label,
-                style: const TextStyle(
+                style: TextStyle(
                   color: AppTheme.primaryBlue,
                   fontWeight: FontWeight.bold,
                   fontSize: 13,
@@ -240,23 +240,23 @@ class _AdminDashboardState extends State<AdminDashboard> {
         navItems.add({'index': 1, 'icon': Icons.add_shopping_cart, 'label': 'Input'});
 
         // 3. Proses
-        screens.add(const ProcessOrderScreen(isTab: true));
+        screens.add(ProcessOrderScreen(isTab: true));
         navItems.add({'index': 2, 'icon': Icons.sync_alt, 'label': 'Proses'});
 
         // 4. Pesan
-        screens.add(const AdminChatListScreen(isTab: true));
+        screens.add(AdminChatListScreen(isTab: true));
         navItems.add({'index': 3, 'icon': Icons.chat_outlined, 'label': 'Pesan'});
 
         // 5. Layanan (Conditional)
         int indexCounter = 4;
         if (showServices) {
-          screens.add(const CategoryCrudScreen());
+          screens.add(CategoryCrudScreen());
           navItems.add({'index': indexCounter, 'icon': Icons.cleaning_services_outlined, 'label': 'Layanan'});
           indexCounter++;
         }
 
         // 6. Riwayat (Always Last!)
-        screens.add(const HistoryOrdersScreen(isTab: true));
+        screens.add(HistoryOrdersScreen(isTab: true));
         navItems.add({'index': indexCounter, 'icon': Icons.history, 'label': 'Riwayat'});
 
         // Clamp index if tab was removed
@@ -292,7 +292,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                           .collection('chats')
                           .where('participants', arrayContains: currentUser.uid)
                           .snapshots()
-                      : const Stream.empty(),
+                      : Stream.empty(),
                   builder: (context, chatSnap) {
                     int unreadChatCount = 0;
                     if (chatSnap.hasData) {
@@ -304,14 +304,14 @@ class _AdminDashboardState extends State<AdminDashboard> {
                     }
 
                     return Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+                      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 12),
                       decoration: BoxDecoration(
                         color: AppTheme.white,
                         boxShadow: [
                           BoxShadow(
                             color: Colors.black.withOpacity(0.06),
                             blurRadius: 10,
-                            offset: const Offset(0, -4),
+                            offset: Offset(0, -4),
                           ),
                         ],
                       ),
@@ -356,7 +356,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('KickDirty Dashboard'),
+        title: Text('KickDirty Dashboard'),
         actions: [
           StreamBuilder<DocumentSnapshot>(
             stream: FirebaseFirestore.instance.collection('app_config').doc('version_info').snapshots(),
@@ -368,22 +368,22 @@ class _AdminDashboardState extends State<AdminDashboard> {
               final bool showLogsMenu = role == 'developer' || (role == 'owner' && enableOwnerLogs);
 
               return PopupMenuButton<String>(
-                icon: const Icon(Icons.more_vert),
+                icon: Icon(Icons.more_vert),
                 onSelected: (value) async {
                   if (value == 'settings') {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => const AdminSettingsScreen()),
+                      MaterialPageRoute(builder: (_) => AdminSettingsScreen()),
                     );
                   } else if (value == 'developer_billing') {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => const DeveloperBillingScreen()),
+                      MaterialPageRoute(builder: (_) => DeveloperBillingScreen()),
                     );
                   } else if (value == 'activity_logs') {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => const ActivityLogsScreen()),
+                      MaterialPageRoute(builder: (_) => ActivityLogsScreen()),
                     );
                   } else if (value == 'dev_support') {
                     final user = currentUser;
@@ -407,14 +407,14 @@ class _AdminDashboardState extends State<AdminDashboard> {
                     await Provider.of<AuthService>(context, listen: false).signOut();
                     if (context.mounted) {
                       Navigator.of(context).pushReplacement(
-                        MaterialPageRoute(builder: (_) => const LoginScreen()),
+                        MaterialPageRoute(builder: (_) => LoginScreen()),
                       );
                     }
                   }
                 },
                 itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
                   if (canAccessSettings)
-                    const PopupMenuItem<String>(
+                    PopupMenuItem<String>(
                       value: 'settings',
                       child: Row(
                         children: [
@@ -425,7 +425,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                       ),
                     ),
                   if (role == 'developer')
-                    const PopupMenuItem<String>(
+                    PopupMenuItem<String>(
                       value: 'developer_billing',
                       child: Row(
                         children: [
@@ -436,7 +436,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                       ),
                     ),
                   if (showLogsMenu)
-                    const PopupMenuItem<String>(
+                    PopupMenuItem<String>(
                       value: 'activity_logs',
                       child: Row(
                         children: [
@@ -447,7 +447,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                       ),
                     ),
                   if (role == 'owner' || role == 'staff')
-                    const PopupMenuItem<String>(
+                    PopupMenuItem<String>(
                       value: 'dev_support',
                       child: Row(
                         children: [
@@ -457,7 +457,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                         ],
                       ),
                     ),
-                  const PopupMenuItem<String>(
+                  PopupMenuItem<String>(
                     value: 'logout',
                     child: Row(
                       children: [
@@ -477,7 +477,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
         stream: dbService.getOrders(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return Center(child: CircularProgressIndicator());
           }
           final orders = snapshot.data ?? [];
           final recaps = dbService.calculateSalesRecap(orders);
@@ -503,16 +503,16 @@ class _AdminDashboardState extends State<AdminDashboard> {
               final bool showSalesCards = _hasPerm('canViewSalesCards', role);
 
               return SingleChildScrollView(
-                padding: const EdgeInsets.all(16.0),
+                padding: EdgeInsets.all(16.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _buildProfileBanner(currentUser?.name ?? 'Admin', roleLabel),
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16),
                     
                     if ((role == 'owner' || role == 'developer') && billingConfig != null) ...[
                       _buildBillingDashboardBanner(context, billingConfig),
-                      const SizedBox(height: 16),
+                      SizedBox(height: 16),
                     ],
                     
                     // Notification banner for new & running orders
@@ -526,7 +526,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                         },
                         child: Container(
                           width: double.infinity,
-                          padding: const EdgeInsets.all(14),
+                          padding: EdgeInsets.all(14),
                           decoration: BoxDecoration(
                             color: AppTheme.primaryBlue.withOpacity(0.08),
                             borderRadius: BorderRadius.circular(16),
@@ -534,8 +534,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
                           ),
                           child: Row(
                             children: [
-                              const Icon(Icons.notifications_active, color: AppTheme.primaryBlue, size: 24),
-                              const SizedBox(width: 12),
+                              Icon(Icons.notifications_active, color: AppTheme.primaryBlue, size: 24),
+                              SizedBox(width: 12),
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -543,7 +543,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                     if (newOrdersCount > 0)
                                       Text(
                                         'Ada $newOrdersCount pesanan baru masuk!',
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                           fontWeight: FontWeight.bold, 
                                           color: AppTheme.primaryBlue,
                                           fontSize: 13
@@ -564,7 +564,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 16),
+                      SizedBox(height: 16),
                     ],
 
                     // Sales recap cards — conditionally shown
@@ -574,12 +574,12 @@ class _AdminDashboardState extends State<AdminDashboard> {
                         children: [
                           Text(
                             _showNetProfit ? 'Rekap Keuntungan Bersih' : 'Rekap Penjualan (Lunas)',
-                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.darkBlueText),
+                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.darkBlueText),
                           ),
                           Row(
                             children: [
-                              const Text('Laba Bersih', style: TextStyle(fontSize: 11, color: AppTheme.textGray)),
-                              const SizedBox(width: 4),
+                              Text('Laba Bersih', style: TextStyle(fontSize: 11, color: AppTheme.textGray)),
+                              SizedBox(width: 4),
                               Switch(
                                 value: _showNetProfit,
                                 activeColor: AppTheme.primaryBlue,
@@ -593,7 +593,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 12),
+                      SizedBox(height: 12),
                       LayoutBuilder(
                         builder: (context, constraints) {
                           final double cardWidth = (constraints.maxWidth - 12) / 2;
@@ -609,16 +609,16 @@ class _AdminDashboardState extends State<AdminDashboard> {
                           );
                         },
                       ),
-                      const SizedBox(height: 24),
+                      SizedBox(height: 24),
                       _buildVisualChart(displayRecaps['monthly'] ?? 0.0, displayRecaps['yearly'] ?? 0.0),
-                      const SizedBox(height: 24),
+                      SizedBox(height: 24),
                     ],
 
                     Text('Menu Navigasi', style: Theme.of(context).textTheme.titleLarge),
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16),
                     _buildMenuGrid(role, navItems),
-                    const SizedBox(height: 32),
-                    const Center(child: Watermark()),
+                    SizedBox(height: 32),
+                    Center(child: Watermark()),
                   ],
                 ),
               );
@@ -631,7 +631,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
   Widget _buildProfileBanner(String name, String role) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: AppTheme.primaryGradient,
         borderRadius: BorderRadius.circular(20),
@@ -642,27 +642,27 @@ class _AdminDashboardState extends State<AdminDashboard> {
           CircleAvatar(
             backgroundColor: Colors.white.withOpacity(0.2),
             radius: 28,
-            child: const Icon(Icons.admin_panel_settings, color: Colors.white, size: 32),
+            child: Icon(Icons.admin_panel_settings, color: Colors.white, size: 32),
           ),
-          const SizedBox(width: 16),
+          SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   'Halo, $name',
-                  style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                  style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: 4),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(
                     color: Colors.white.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
                     role,
-                    style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                    style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
                   ),
                 ),
               ],
@@ -703,7 +703,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
       },
       child: Container(
         width: width,
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: AppTheme.white,
           borderRadius: BorderRadius.circular(16),
@@ -717,7 +717,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Container(
-                  padding: const EdgeInsets.all(8),
+                  padding: EdgeInsets.all(8),
                   decoration: BoxDecoration(
                     color: isNegative ? Colors.red.withOpacity(0.1) : color.withOpacity(0.1),
                     shape: BoxShape.circle,
@@ -726,12 +726,12 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 ),
                 if (isNegative)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
                       color: Colors.red.shade100,
                       borderRadius: BorderRadius.circular(4),
                     ),
-                    child: const Text(
+                    child: Text(
                       'RUGI',
                       style: TextStyle(color: Colors.red, fontSize: 8, fontWeight: FontWeight.bold),
                     ),
@@ -740,9 +740,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   Icon(Icons.chevron_right, size: 18, color: color.withOpacity(0.5)),
               ],
             ),
-            const SizedBox(height: 12),
-            Text(title, style: const TextStyle(color: AppTheme.textGray, fontSize: 12)),
-            const SizedBox(height: 4),
+            SizedBox(height: 12),
+            Text(title, style: TextStyle(color: AppTheme.textGray, fontSize: 12)),
+            SizedBox(height: 4),
             Text(
               '${isNegative ? "-" : ""}Rp $formattedAmount',
               style: TextStyle(
@@ -762,7 +762,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
     if (ratio > 1.0) ratio = 1.0;
 
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: AppTheme.white,
         borderRadius: BorderRadius.circular(20),
@@ -771,11 +771,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Performa Bulanan vs Target Rata-Rata',
             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppTheme.darkBlueText),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           Stack(
             children: [
               Container(
@@ -795,14 +795,14 @@ class _AdminDashboardState extends State<AdminDashboard> {
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text('Penjualan Bulan ini', style: TextStyle(color: AppTheme.textGray, fontSize: 11)),
               Text(
                 '${(ratio * 100).toStringAsFixed(0)}% dari rata-rata',
-                style: const TextStyle(color: AppTheme.primaryBlue, fontWeight: FontWeight.bold, fontSize: 11),
+                style: TextStyle(color: AppTheme.primaryBlue, fontWeight: FontWeight.bold, fontSize: 11),
               ),
             ],
           ),
@@ -872,7 +872,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
         'onTap': () {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => const FinancialReportScreen()),
+            MaterialPageRoute(builder: (_) => FinancialReportScreen()),
           );
         },
         'permKey': 'canViewFinancialReport',
@@ -885,7 +885,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
         'onTap': () {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => const VoucherCrudScreen()),
+            MaterialPageRoute(builder: (_) => VoucherCrudScreen()),
           );
         },
         'permKey': 'canManageServices',
@@ -917,7 +917,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 first['onTap'] as VoidCallback,
               ),
             ),
-            const SizedBox(width: 12),
+            SizedBox(width: 12),
             hasSecond
                 ? Expanded(
                     child: _buildMenuButton(
@@ -928,12 +928,12 @@ class _AdminDashboardState extends State<AdminDashboard> {
                       visibleItems[i + 1]['onTap'] as VoidCallback,
                     ),
                   )
-                : const Expanded(child: SizedBox()),
+                : Expanded(child: SizedBox()),
           ],
         ),
       );
       if (i + 2 < visibleItems.length) {
-        rows.add(const SizedBox(height: 12));
+        rows.add(SizedBox(height: 12));
       }
     }
 
@@ -945,7 +945,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: AppTheme.white,
           borderRadius: BorderRadius.circular(16),
@@ -956,17 +956,17 @@ class _AdminDashboardState extends State<AdminDashboard> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-              padding: const EdgeInsets.all(8),
+              padding: EdgeInsets.all(8),
               decoration: BoxDecoration(
                 color: color.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(icon, color: color, size: 24),
             ),
-            const SizedBox(height: 16),
-            Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppTheme.darkBlueText)),
-            const SizedBox(height: 4),
-            Text(subtitle, style: const TextStyle(color: AppTheme.textGray, fontSize: 11)),
+            SizedBox(height: 16),
+            Text(title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppTheme.darkBlueText)),
+            SizedBox(height: 4),
+            Text(subtitle, style: TextStyle(color: AppTheme.textGray, fontSize: 11)),
           ],
         ),
       ),
@@ -975,7 +975,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
   Widget _buildBillingDashboardBanner(BuildContext context, Map<String, dynamic> billingConfig) {
     final nextDueDate = (billingConfig['nextDueDate'] as Timestamp?)?.toDate();
-    if (nextDueDate == null) return const SizedBox();
+    if (nextDueDate == null) return SizedBox();
 
     final now = DateTime.now();
     final startOfToday = DateTime(now.year, now.month, now.day);
@@ -1005,12 +1005,12 @@ class _AdminDashboardState extends State<AdminDashboard> {
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => const OwnerBillingPackageScreen()),
+          MaterialPageRoute(builder: (_) => OwnerBillingPackageScreen()),
         );
       },
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
           color: bannerColor,
           borderRadius: BorderRadius.circular(16),
@@ -1018,21 +1018,21 @@ class _AdminDashboardState extends State<AdminDashboard> {
             BoxShadow(
               color: bannerColor.withOpacity(0.3),
               blurRadius: 8,
-              offset: const Offset(0, 4),
+              offset: Offset(0, 4),
             )
           ],
         ),
         child: Row(
           children: [
             Icon(icon, color: textColor, size: 24),
-            const SizedBox(width: 12),
+            SizedBox(width: 12),
             Expanded(
               child: Text(
                 message,
                 style: TextStyle(color: textColor, fontSize: 12, fontWeight: FontWeight.bold, height: 1.4),
               ),
             ),
-            const SizedBox(width: 8),
+            SizedBox(width: 8),
             Icon(Icons.arrow_forward_ios, color: textColor, size: 14),
           ],
         ),

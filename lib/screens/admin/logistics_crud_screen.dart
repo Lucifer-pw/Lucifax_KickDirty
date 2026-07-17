@@ -6,7 +6,7 @@ import '../../widgets/watermark.dart';
 
 class LogisticsCrudScreen extends StatefulWidget {
   final bool isTab;
-  const LogisticsCrudScreen({Key? key, this.isTab = false}) : super(key: key);
+  LogisticsCrudScreen({Key? key, this.isTab = false}) : super(key: key);
 
   @override
   State<LogisticsCrudScreen> createState() => _LogisticsCrudScreenState();
@@ -51,25 +51,25 @@ class _LogisticsCrudScreenState extends State<LogisticsCrudScreen> {
                   children: [
                     TextField(
                       controller: _nameController,
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         labelText: 'Nama Metode',
                         hintText: 'Contoh: Kurir Instan / COD',
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    SizedBox(height: 12),
                     TextField(
                       controller: _feeController,
                       keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         labelText: 'Tarif Flat (Rp)',
                         hintText: 'Contoh: 15000',
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    SizedBox(height: 12),
                     SwitchListTile(
                       contentPadding: EdgeInsets.zero,
-                      title: const Text('Memerlukan Alamat', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
-                      subtitle: const Text('Tampilkan input alamat saat customer memilih ini', style: TextStyle(fontSize: 11)),
+                      title: Text('Memerlukan Alamat', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                      subtitle: Text('Tampilkan input alamat saat customer memilih ini', style: TextStyle(fontSize: 11)),
                       value: _requiresAddress,
                       activeColor: AppTheme.primaryBlue,
                       onChanged: (val) {
@@ -84,7 +84,7 @@ class _LogisticsCrudScreenState extends State<LogisticsCrudScreen> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const Text('Batal'),
+                  child: Text('Batal'),
                 ),
                 ElevatedButton(
                   onPressed: () async {
@@ -93,7 +93,7 @@ class _LogisticsCrudScreenState extends State<LogisticsCrudScreen> {
 
                     if (name.isEmpty) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Nama metode tidak boleh kosong!')),
+                        SnackBar(content: Text('Nama metode tidak boleh kosong!')),
                       );
                       return;
                     }
@@ -115,7 +115,7 @@ class _LogisticsCrudScreenState extends State<LogisticsCrudScreen> {
                     }
                   },
                   style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryBlue),
-                  child: const Text('Simpan', style: TextStyle(color: Colors.white)),
+                  child: Text('Simpan', style: TextStyle(color: Colors.white)),
                 ),
               ],
             );
@@ -130,12 +130,12 @@ class _LogisticsCrudScreenState extends State<LogisticsCrudScreen> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Hapus Metode Logistik'),
+          title: Text('Hapus Metode Logistik'),
           content: Text('Apakah Anda yakin ingin menghapus metode "$name"?'),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Batal'),
+              child: Text('Batal'),
             ),
             ElevatedButton(
               onPressed: () async {
@@ -144,7 +144,7 @@ class _LogisticsCrudScreenState extends State<LogisticsCrudScreen> {
                 if (context.mounted) Navigator.pop(context);
               },
               style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
-              child: const Text('Hapus', style: TextStyle(color: Colors.white)),
+              child: Text('Hapus', style: TextStyle(color: Colors.white)),
             ),
           ],
         );
@@ -158,11 +158,11 @@ class _LogisticsCrudScreenState extends State<LogisticsCrudScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Kelola Logistik & Tarif'),
+        title: Text('Kelola Logistik & Tarif'),
         leading: widget.isTab
             ? null
             : IconButton(
-                icon: const Icon(Icons.arrow_back_ios_new, size: 20),
+                icon: Icon(Icons.arrow_back_ios_new, size: 20),
                 onPressed: () => Navigator.pop(context),
               ),
       ),
@@ -170,22 +170,22 @@ class _LogisticsCrudScreenState extends State<LogisticsCrudScreen> {
         stream: dbService.getLogisticsMethods(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return Center(child: CircularProgressIndicator());
           }
           final methods = snapshot.data ?? [];
 
           return SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Daftar Metode Pengantaran',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.darkBlueText),
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: 12),
                 if (methods.isEmpty)
-                  const Center(
+                  Center(
                     child: Padding(
                       padding: EdgeInsets.symmetric(vertical: 40.0),
                       child: Text('Belum ada metode pengantaran.', style: TextStyle(color: AppTheme.textGray)),
@@ -199,8 +199,8 @@ class _LogisticsCrudScreenState extends State<LogisticsCrudScreen> {
                     final id = method['id'] as String;
 
                     return Container(
-                      margin: const EdgeInsets.only(bottom: 12),
-                      padding: const EdgeInsets.all(16),
+                      margin: EdgeInsets.only(bottom: 12),
+                      padding: EdgeInsets.all(16),
                       decoration: BoxDecoration(
                         color: AppTheme.white,
                         borderRadius: BorderRadius.circular(16),
@@ -210,7 +210,7 @@ class _LogisticsCrudScreenState extends State<LogisticsCrudScreen> {
                       child: Row(
                         children: [
                           Container(
-                            padding: const EdgeInsets.all(10),
+                            padding: EdgeInsets.all(10),
                             decoration: BoxDecoration(
                               color: requiresAddress ? Colors.blue.withOpacity(0.1) : Colors.green.withOpacity(0.1),
                               shape: BoxShape.circle,
@@ -221,29 +221,29 @@ class _LogisticsCrudScreenState extends State<LogisticsCrudScreen> {
                               size: 24,
                             ),
                           ),
-                          const SizedBox(width: 14),
+                          SizedBox(width: 14),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
                                   name,
-                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppTheme.darkBlueText),
+                                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppTheme.darkBlueText),
                                 ),
-                                const SizedBox(height: 4),
+                                SizedBox(height: 4),
                                 Text(
                                   'Tarif: Rp ${fee.toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")}',
-                                  style: const TextStyle(fontSize: 12, color: AppTheme.textGray),
+                                  style: TextStyle(fontSize: 12, color: AppTheme.textGray),
                                 ),
                                 if (requiresAddress)
                                   Container(
-                                    margin: const EdgeInsets.only(top: 4),
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                    margin: EdgeInsets.only(top: 4),
+                                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                                     decoration: BoxDecoration(
                                       color: Colors.blue.withOpacity(0.1),
                                       borderRadius: BorderRadius.circular(4),
                                     ),
-                                    child: const Text(
+                                    child: Text(
                                       'Butuh Alamat',
                                       style: TextStyle(fontSize: 9, color: Colors.blue, fontWeight: FontWeight.bold),
                                     ),
@@ -252,21 +252,21 @@ class _LogisticsCrudScreenState extends State<LogisticsCrudScreen> {
                             ),
                           ),
                           IconButton(
-                            icon: const Icon(Icons.edit_outlined, color: Colors.orange, size: 20),
+                            icon: Icon(Icons.edit_outlined, color: Colors.orange, size: 20),
                             onPressed: () => _showFormDialog(method: method),
                           ),
                           // Prevent deleting core built-in methods to avoid db breaking
                           if (id != 'drop_off_only' && id != 'pickup_delivery')
                             IconButton(
-                              icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 20),
+                              icon: Icon(Icons.delete_outline, color: Colors.redAccent, size: 20),
                               onPressed: () => _confirmDelete(id, name),
                             ),
                         ],
                       ),
                     );
                   }).toList(),
-                const SizedBox(height: 24),
-                const Center(child: Watermark()),
+                SizedBox(height: 24),
+                Center(child: Watermark()),
               ],
             ),
           );
@@ -275,7 +275,7 @@ class _LogisticsCrudScreenState extends State<LogisticsCrudScreen> {
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showFormDialog(),
         backgroundColor: AppTheme.primaryBlue,
-        child: const Icon(Icons.add, color: Colors.white),
+        child: Icon(Icons.add, color: Colors.white),
       ),
     );
   }

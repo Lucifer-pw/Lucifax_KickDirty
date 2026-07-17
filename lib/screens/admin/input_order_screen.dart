@@ -20,7 +20,7 @@ import 'package:url_launcher/url_launcher.dart';
 class InputOrderScreen extends StatefulWidget {
   final bool isTab;
   final VoidCallback? onOrderSubmitted;
-  const InputOrderScreen({Key? key, this.isTab = false, this.onOrderSubmitted}) : super(key: key);
+  InputOrderScreen({Key? key, this.isTab = false, this.onOrderSubmitted}) : super(key: key);
 
   @override
   State<InputOrderScreen> createState() => _InputOrderScreenState();
@@ -136,13 +136,13 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
   void _addItem() {
     if (_itemNameController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Nama Merk Sepatu wajib diisi')),
+        SnackBar(content: Text('Nama Merk Sepatu wajib diisi')),
       );
       return;
     }
     if (_selectedService == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Pilih jenis layanan terlebih dahulu')),
+        SnackBar(content: Text('Pilih jenis layanan terlebih dahulu')),
       );
       return;
     }
@@ -215,17 +215,17 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
       barrierDismissible: false,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Pembayaran QRIS', textAlign: TextAlign.center),
+          title: Text('Pembayaran QRIS', textAlign: TextAlign.center),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('Invoice: $invoiceId', style: const TextStyle(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 8),
+              Text('Invoice: $invoiceId', style: TextStyle(fontWeight: FontWeight.bold)),
+              SizedBox(height: 8),
               Text(
                 'Total: Rp ${_totalPrice.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}',
-                style: const TextStyle(fontSize: 16, color: AppTheme.primaryBlue, fontWeight: FontWeight.bold),
+                style: TextStyle(fontSize: 16, color: AppTheme.primaryBlue, fontWeight: FontWeight.bold),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16),
               // QRIS Image
               Image.asset(
                 'assets/qris_pembayaran.jpeg',
@@ -234,11 +234,11 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
                 errorBuilder: (context, error, stackTrace) => Container(
                   height: 150,
                   color: AppTheme.lightGray,
-                  child: const Center(child: Icon(Icons.qr_code, size: 80, color: AppTheme.textGray)),
+                  child: Center(child: Icon(Icons.qr_code, size: 80, color: AppTheme.textGray)),
                 ),
               ),
-              const SizedBox(height: 12),
-              const Text(
+              SizedBox(height: 12),
+              Text(
                 'Tunjukkan QRIS ini kepada pelanggan untuk discan & bayar.',
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 12, color: AppTheme.textGray),
@@ -264,7 +264,7 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
                   );
                 }
               },
-              child: const Text('Sudah Bayar / Lunas', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
+              child: Text('Sudah Bayar / Lunas', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
             ),
             TextButton(
               onPressed: () {
@@ -279,7 +279,7 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
                   SnackBar(content: Text('Pesanan $invoiceId disimpan (Belum Bayar)')),
                 );
               },
-              child: const Text('Bayar Nanti (Belum Bayar)', style: TextStyle(color: AppTheme.textGray)),
+              child: Text('Bayar Nanti (Belum Bayar)', style: TextStyle(color: AppTheme.textGray)),
             ),
           ],
         );
@@ -362,7 +362,7 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Edit Informasi Pelanggan'),
+          title: Text('Edit Informasi Pelanggan'),
           content: Form(
             key: formKey,
             child: Column(
@@ -370,13 +370,13 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
               children: [
                 TextFormField(
                   controller: nameController,
-                  decoration: const InputDecoration(labelText: 'Nama Pelanggan'),
+                  decoration: InputDecoration(labelText: 'Nama Pelanggan'),
                   validator: (v) => v == null || v.trim().isEmpty ? 'Nama wajib diisi' : null,
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: 12),
                 TextFormField(
                   controller: phoneController,
-                  decoration: const InputDecoration(labelText: 'Nomor WhatsApp'),
+                  decoration: InputDecoration(labelText: 'Nomor WhatsApp'),
                   keyboardType: TextInputType.phone,
                   validator: (v) {
                     if (v == null || v.trim().isEmpty) return 'Nomor WA wajib diisi';
@@ -389,7 +389,7 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Batal'),
+              child: Text('Batal'),
             ),
             ElevatedButton(
               onPressed: () async {
@@ -423,7 +423,7 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
                   Navigator.pop(context); // Close edit dialog
                   onUpdated();
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Informasi pelanggan berhasil diperbarui')),
+                    SnackBar(content: Text('Informasi pelanggan berhasil diperbarui')),
                   );
                 } catch (e) {
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -432,7 +432,7 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
                 }
               },
               style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryBlue),
-              child: const Text('Simpan'),
+              child: Text('Simpan'),
             ),
           ],
         );
@@ -445,17 +445,17 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Hapus Pelanggan'),
+          title: Text('Hapus Pelanggan'),
           content: Text('Apakah Anda yakin ingin menghapus pelanggan "$name" (+$phone) dari daftar?'),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('Batal'),
+              child: Text('Batal'),
             ),
             TextButton(
               onPressed: () => Navigator.pop(context, true),
               style: TextButton.styleFrom(foregroundColor: Colors.red),
-              child: const Text('Hapus'),
+              child: Text('Hapus'),
             ),
           ],
         );
@@ -475,7 +475,7 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
         onDeleted();
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Pelanggan berhasil dihapus')),
+            SnackBar(content: Text('Pelanggan berhasil dihapus')),
           );
         }
       } catch (e) {
@@ -497,14 +497,14 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
         return StatefulBuilder(
           builder: (context, setStateDialog) {
             return AlertDialog(
-              title: const Text('Cari Pelanggan Terdaftar'),
+              title: Text('Cari Pelanggan Terdaftar'),
               content: SizedBox(
                 width: double.maxFinite,
                 height: 350,
                 child: Column(
                   children: [
                     TextField(
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         hintText: 'Cari nama atau nomor WA...',
                         prefixIcon: Icon(Icons.search),
                       ),
@@ -514,16 +514,16 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
                         });
                       },
                     ),
-                    const SizedBox(height: 12),
+                    SizedBox(height: 12),
                     Expanded(
                       child: FutureBuilder<List<Map<String, String>>>(
                         future: customersFuture,
                         builder: (context, snapshot) {
                           if (snapshot.connectionState == ConnectionState.waiting) {
-                            return const Center(child: CircularProgressIndicator());
+                            return Center(child: CircularProgressIndicator());
                           }
                           if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
-                            return const Center(child: Text('Belum ada pelanggan terdaftar.'));
+                            return Center(child: Text('Belum ada pelanggan terdaftar.'));
                           }
 
                           final docs = snapshot.data!.where((item) {
@@ -533,12 +533,12 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
                           }).toList();
 
                           if (docs.isEmpty) {
-                            return const Center(child: Text('Pelanggan tidak ditemukan.'));
+                            return Center(child: Text('Pelanggan tidak ditemukan.'));
                           }
 
                           return ListView.separated(
                             itemCount: docs.length,
-                            separatorBuilder: (_, __) => const Divider(),
+                            separatorBuilder: (_, __) => Divider(),
                             itemBuilder: (context, index) {
                               final item = docs[index];
                               final name = item['name'] ?? '';
@@ -547,15 +547,15 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
                               return ListTile(
                                 leading: CircleAvatar(
                                   backgroundColor: AppTheme.primaryBlue.withOpacity(0.08),
-                                  child: const Icon(Icons.person, color: AppTheme.primaryBlue),
+                                  child: Icon(Icons.person, color: AppTheme.primaryBlue),
                                 ),
-                                title: Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
+                                title: Text(name, style: TextStyle(fontWeight: FontWeight.bold)),
                                 subtitle: Text('WA: +$phone • Poin: $points'),
                                 trailing: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     IconButton(
-                                      icon: const Icon(Icons.edit, color: Colors.blue, size: 20),
+                                      icon: Icon(Icons.edit, color: Colors.blue, size: 20),
                                       onPressed: () async {
                                         await _showEditCustomerDialog(context, name, phone, item['customerId'] ?? '', points, () {
                                           setStateDialog(() {
@@ -565,7 +565,7 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
                                       },
                                     ),
                                     IconButton(
-                                      icon: const Icon(Icons.delete, color: Colors.red, size: 20),
+                                      icon: Icon(Icons.delete, color: Colors.red, size: 20),
                                       onPressed: () async {
                                         await _showDeleteCustomerDialog(
                                           context, 
@@ -627,7 +627,7 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const Text('Batal'),
+                  child: Text('Batal'),
                 ),
               ],
             );
@@ -641,13 +641,13 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
     if (!_formKey.currentState!.validate()) return;
     if (_items.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Tambahkan minimal 1 sepatu ke dalam pesanan')),
+        SnackBar(content: Text('Tambahkan minimal 1 sepatu ke dalam pesanan')),
       );
       return;
     }
     if (_photoBeforeList.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Foto kondisi awal (Before) wajib diunggah minimal 1 foto!')),
+        SnackBar(content: Text('Foto kondisi awal (Before) wajib diunggah minimal 1 foto!')),
       );
       return;
     }
@@ -657,7 +657,7 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
       showDialog(
         context: context,
         builder: (BuildContext context) => AlertDialog(
-          title: const Row(
+          title: Row(
             children: [
               Icon(Icons.warning_amber_rounded, color: Colors.orange),
               SizedBox(width: 8),
@@ -672,7 +672,7 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('OK'),
+              child: Text('OK'),
             ),
           ],
         ),
@@ -719,7 +719,7 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
         deliveryAddress: requiresAddress ? _deliveryAddressController.text.trim() : '',
         deliveryFee: _deliveryFee,
         photoBefore: _photoBeforeList,
-        photoAfter: const [],
+        photoAfter: [],
         pointsRedeemed: _usePointsRedemption ? 10 : 0,
         mapsLink: customerMapsLink,
         voucherCode: _appliedVoucher?.code ?? '',
@@ -768,21 +768,21 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
           barrierDismissible: false,
           builder: (BuildContext context) {
             return AlertDialog(
-              title: const Row(
+              title: Row(
                 children: [
                   Icon(Icons.warning_amber_rounded, color: Colors.orange),
                   SizedBox(width: 8),
                   Text('Ukuran Foto Terlalu Besar'),
                 ],
               ),
-              content: const Text(
+              content: Text(
                 'Gagal membuat pesanan karena total ukuran foto kondisi awal (Before) yang Anda unggah terlalu besar (melebihi batas database).\n\n'
                 'Silakan kurangi jumlah foto atau gunakan foto dengan resolusi lebih rendah.',
               ),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const Text('OK'),
+                  child: Text('OK'),
                 ),
               ],
             );
@@ -808,14 +808,14 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Input Pesanan Baru'),
+        title: Text('Input Pesanan Baru'),
         automaticallyImplyLeading: !widget.isTab,
       ),
       body: StreamBuilder<List<CategoryModel>>(
         stream: _categoriesStream,
         builder: (context, catSnapshot) {
           if (catSnapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return Center(child: CircularProgressIndicator());
           }
           _availableCategories = catSnapshot.data ?? [];
 
@@ -823,12 +823,12 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
             stream: _servicesStream,
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
+                return Center(child: CircularProgressIndicator());
               }
               _availableServices = snapshot.data ?? [];
 
           return SingleChildScrollView(
-            padding: const EdgeInsets.all(16.0),
+            padding: EdgeInsets.all(16.0),
             child: Form(
               key: _formKey,
               child: Column(
@@ -837,30 +837,30 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
                   // 1. Customer details card
                   Card(
                     child: Padding(
-                      padding: const EdgeInsets.all(16.0),
+                      padding: EdgeInsets.all(16.0),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text('Informasi Pelanggan', style: Theme.of(context).textTheme.titleMedium),
-                          const SizedBox(height: 16),
+                          SizedBox(height: 16),
                           TextFormField(
                             controller: _nameController,
                             decoration: InputDecoration(
                               hintText: 'Nama Pelanggan',
-                              prefixIcon: const Icon(Icons.person_outline),
+                              prefixIcon: Icon(Icons.person_outline),
                               suffixIcon: IconButton(
-                                icon: const Icon(Icons.contact_phone_outlined, color: AppTheme.primaryBlue),
+                                icon: Icon(Icons.contact_phone_outlined, color: AppTheme.primaryBlue),
                                 tooltip: 'Cari pelanggan terdaftar',
                                 onPressed: _showCustomerSearchDialog,
                               ),
                             ),
                             validator: (v) => v == null || v.isEmpty ? 'Nama pelanggan wajib diisi' : null,
                           ),
-                          const SizedBox(height: 12),
+                          SizedBox(height: 12),
                           TextFormField(
                             controller: _phoneController,
                             keyboardType: TextInputType.phone,
-                            decoration: const InputDecoration(
+                            decoration: InputDecoration(
                               hintText: 'Nomor WhatsApp (Contoh: 628123456789)',
                               prefixIcon: Icon(Icons.phone_outlined),
                             ),
@@ -871,10 +871,10 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
                             },
                           ),
                           if (_selectedCustomerId.isNotEmpty) ...[
-                            const SizedBox(height: 8),
+                            SizedBox(height: 8),
                             Chip(
                               label: Text('Pelanggan Terhubung (Poin: $_selectedCustomerPoints)'),
-                              deleteIcon: const Icon(Icons.clear, size: 18),
+                              deleteIcon: Icon(Icons.clear, size: 18),
                               onDeleted: () {
                                 setState(() {
                                   _selectedCustomerId = '';
@@ -885,9 +885,9 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
                             ),
                           ],
                           if (_selectedCustomerPoints >= 10) ...[
-                            const SizedBox(height: 12),
+                            SizedBox(height: 12),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                               decoration: BoxDecoration(
                                 color: Colors.amber.withOpacity(0.1),
                                 borderRadius: BorderRadius.circular(12),
@@ -895,12 +895,12 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
                               ),
                               child: Row(
                                 children: [
-                                  const Icon(Icons.stars, color: Colors.amber),
-                                  const SizedBox(width: 8),
+                                  Icon(Icons.stars, color: Colors.amber),
+                                  SizedBox(width: 8),
                                   Expanded(
                                     child: Text(
                                       'Loyalty Poin: $_selectedCustomerPoints\nTukarkan 10 Poin (Diskon Rp 25.000)',
-                                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.brown),
+                                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.brown),
                                     ),
                                   ),
                                   Switch(
@@ -920,29 +920,29 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16),
 
                   // 2. Add Item Form Card (Tambah Layanan)
                   Card(
                     child: Padding(
-                      padding: const EdgeInsets.all(16.0),
+                      padding: EdgeInsets.all(16.0),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text('Tambah Layanan', style: Theme.of(context).textTheme.titleMedium),
-                          const SizedBox(height: 16),
+                          SizedBox(height: 16),
                           TextFormField(
                             controller: _itemNameController,
-                            decoration: const InputDecoration(
+                            decoration: InputDecoration(
                               hintText: 'Nama / Model Barang (Contoh: Adidas Samba, Tas Fjallraven)',
                               prefixIcon: Icon(Icons.shopping_bag_outlined),
                             ),
                           ),
-                          const SizedBox(height: 12),
+                          SizedBox(height: 12),
                           DropdownButtonFormField<CategoryModel>(
                             value: _selectedCategory,
-                            hint: const Text('Pilih Kategori Jasa'),
-                            decoration: const InputDecoration(
+                            hint: Text('Pilih Kategori Jasa'),
+                            decoration: InputDecoration(
                               prefixIcon: Icon(Icons.category_outlined),
                             ),
                             items: _availableCategories.map((cat) {
@@ -958,11 +958,11 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
                               });
                             },
                           ),
-                          const SizedBox(height: 12),
+                          SizedBox(height: 12),
                           DropdownButtonFormField<ServiceModel>(
                             value: _selectedService,
-                            hint: const Text('Pilih Layanan'),
-                            decoration: const InputDecoration(
+                            hint: Text('Pilih Layanan'),
+                            decoration: InputDecoration(
                               prefixIcon: Icon(Icons.dry_cleaning_outlined),
                             ),
                             items: _availableServices
@@ -979,16 +979,16 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
                               });
                             },
                           ),
-                          const SizedBox(height: 16),
+                          SizedBox(height: 16),
                           SizedBox(
                             width: double.infinity,
                             child: OutlinedButton.icon(
                               onPressed: _addItem,
-                              icon: const Icon(Icons.add, color: AppTheme.primaryBlue),
-                              label: const Text('Tambahkan Produk', style: TextStyle(color: AppTheme.primaryBlue)),
+                              icon: Icon(Icons.add, color: AppTheme.primaryBlue),
+                              label: Text('Tambahkan Produk', style: TextStyle(color: AppTheme.primaryBlue)),
                               style: OutlinedButton.styleFrom(
-                                side: const BorderSide(color: AppTheme.primaryBlue),
-                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                side: BorderSide(color: AppTheme.primaryBlue),
+                                padding: EdgeInsets.symmetric(vertical: 14),
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                               ),
                             ),
@@ -997,37 +997,37 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16),
 
                   // 3. List of added items
                   if (_items.isNotEmpty) ...[
                     Text('Daftar Sepatu di Keranjang', style: Theme.of(context).textTheme.titleMedium),
-                    const SizedBox(height: 8),
+                    SizedBox(height: 8),
                     ListView.builder(
                       shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
+                      physics: NeverScrollableScrollPhysics(),
                       itemCount: _items.length,
                       itemBuilder: (context, idx) {
                         final item = _items[idx];
                         return Card(
-                          margin: const EdgeInsets.only(bottom: 8),
+                          margin: EdgeInsets.only(bottom: 8),
                           child: ListTile(
                             leading: Container(
-                              padding: const EdgeInsets.all(8),
+                              padding: EdgeInsets.all(8),
                               decoration: BoxDecoration(
                                 color: AppTheme.primaryBlue.withOpacity(0.08),
                                 shape: BoxShape.circle,
                               ),
-                              child: const Icon(Icons.check, color: AppTheme.primaryBlue),
+                              child: Icon(Icons.check, color: AppTheme.primaryBlue),
                             ),
-                            title: Text(item.itemName, style: const TextStyle(fontWeight: FontWeight.bold)),
+                            title: Text(item.itemName, style: TextStyle(fontWeight: FontWeight.bold)),
                             subtitle: Text('${item.categoryName} - ${item.serviceName}'),
                             trailing: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                  Text('Rp ${item.price.toStringAsFixed(0)}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                                  Text('Rp ${item.price.toStringAsFixed(0)}', style: TextStyle(fontWeight: FontWeight.bold)),
                                   IconButton(
-                                    icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                                    icon: Icon(Icons.delete_outline, color: Colors.redAccent),
                                     onPressed: () => _removeItem(idx),
                                   ),
                               ],
@@ -1036,23 +1036,23 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
                         );
                       },
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16),
                   ],
 
                   // 4. Photo Documentation Card (foto kondisi awal Before)
                   Card(
                     child: Padding(
-                      padding: const EdgeInsets.all(16.0),
+                      padding: EdgeInsets.all(16.0),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text('Foto Kondisi Awal (Before)', style: Theme.of(context).textTheme.titleMedium),
-                          const SizedBox(height: 8),
-                          const Text(
+                          SizedBox(height: 8),
+                          Text(
                             'Ambil foto kondisi sepatu saat diserahkan (misal noda, robek, pudar) sebagai bukti.',
                             style: TextStyle(color: AppTheme.textGray, fontSize: 11),
                           ),
-                          const SizedBox(height: 16),
+                          SizedBox(height: 16),
                           if (_photoBeforeList.isNotEmpty) ...[
                             SizedBox(
                               height: 100,
@@ -1067,7 +1067,7 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
                                       Container(
                                         width: 100,
                                         height: 100,
-                                        margin: const EdgeInsets.only(right: 8),
+                                        margin: EdgeInsets.only(right: 8),
                                         decoration: BoxDecoration(
                                           borderRadius: BorderRadius.circular(8),
                                           image: DecorationImage(
@@ -1090,7 +1090,7 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
                                           child: CircleAvatar(
                                             radius: 12,
                                             backgroundColor: Colors.black.withOpacity(0.5),
-                                            child: const Icon(Icons.close, size: 14, color: Colors.white),
+                                            child: Icon(Icons.close, size: 14, color: Colors.white),
                                           ),
                                         ),
                                       ),
@@ -1099,7 +1099,7 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
                                 },
                               ),
                             ),
-                            const SizedBox(height: 16),
+                            SizedBox(height: 16),
                           ],
                           Row(
                             children: [
@@ -1113,15 +1113,15 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
                                       });
                                     }
                                   },
-                                  icon: const Icon(Icons.camera_alt_outlined, color: AppTheme.primaryBlue),
-                                  label: const Text('Kamera', style: TextStyle(color: AppTheme.primaryBlue)),
+                                  icon: Icon(Icons.camera_alt_outlined, color: AppTheme.primaryBlue),
+                                  label: Text('Kamera', style: TextStyle(color: AppTheme.primaryBlue)),
                                   style: OutlinedButton.styleFrom(
-                                    side: const BorderSide(color: AppTheme.primaryBlue),
+                                    side: BorderSide(color: AppTheme.primaryBlue),
                                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                                   ),
                                 ),
                               ),
-                              const SizedBox(width: 12),
+                              SizedBox(width: 12),
                               Expanded(
                                 child: OutlinedButton.icon(
                                   onPressed: () async {
@@ -1132,10 +1132,10 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
                                       });
                                     }
                                   },
-                                  icon: const Icon(Icons.photo_outlined, color: AppTheme.primaryBlue),
-                                  label: const Text('Galeri', style: TextStyle(color: AppTheme.primaryBlue)),
+                                  icon: Icon(Icons.photo_outlined, color: AppTheme.primaryBlue),
+                                  label: Text('Galeri', style: TextStyle(color: AppTheme.primaryBlue)),
                                   style: OutlinedButton.styleFrom(
-                                    side: const BorderSide(color: AppTheme.primaryBlue),
+                                    side: BorderSide(color: AppTheme.primaryBlue),
                                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                                   ),
                                 ),
@@ -1146,12 +1146,12 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16),
 
                   // 5. Delivery & Logistics Card (Logistik & pengantaran)
                   Card(
                     child: Padding(
-                      padding: const EdgeInsets.all(16.0),
+                      padding: EdgeInsets.all(16.0),
                       child: StreamBuilder<List<Map<String, dynamic>>>(
                         stream: _logisticsStream,
                         builder: (context, logSnapshot) {
@@ -1171,11 +1171,11 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text('Logistik & Pengantaran', style: Theme.of(context).textTheme.titleMedium),
-                              const SizedBox(height: 16),
+                              SizedBox(height: 16),
                               DropdownButtonFormField<String>(
                                 isExpanded: true,
                                 value: _deliveryType.isEmpty && methods.isNotEmpty ? methods.first['id'] : _deliveryType,
-                                decoration: const InputDecoration(
+                                decoration: InputDecoration(
                                   prefixIcon: Icon(Icons.local_shipping_outlined),
                                 ),
                                 items: methods.map((m) {
@@ -1201,11 +1201,11 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
                                 },
                               ),
                               if (requiresAddress) ...[
-                                const SizedBox(height: 12),
+                                SizedBox(height: 12),
                                 TextFormField(
                                   controller: _deliveryAddressController,
                                   maxLines: 2,
-                                  decoration: const InputDecoration(
+                                  decoration: InputDecoration(
                                     labelText: 'Detail Alamat',
                                     hintText: 'Alamat lengkap penjemputan/pengantaran',
                                     prefixIcon: Icon(Icons.location_on_outlined),
@@ -1214,15 +1214,15 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
                                       ? 'Alamat wajib diisi untuk metode ini'
                                       : null,
                                 ),
-                                const SizedBox(height: 12),
+                                SizedBox(height: 12),
                                 TextFormField(
                                   controller: _mapsLinkController,
                                   decoration: InputDecoration(
                                     labelText: 'Link / Koordinat Google Maps',
                                     hintText: 'https://maps.google.com/... atau -7.556,110.825',
-                                    prefixIcon: const Icon(Icons.map_outlined),
+                                    prefixIcon: Icon(Icons.map_outlined),
                                     suffixIcon: IconButton(
-                                      icon: const Icon(Icons.pin_drop, color: AppTheme.primaryBlue),
+                                      icon: Icon(Icons.pin_drop, color: AppTheme.primaryBlue),
                                       tooltip: 'Pilih di Peta secara Manual',
                                       onPressed: () async {
                                         final result = await Navigator.push<Map<String, String>>(
@@ -1250,7 +1250,7 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
                                     setState(() {});
                                   },
                                 ),
-                                const SizedBox(height: 8),
+                                SizedBox(height: 8),
 
                                 // Minimap preview
                                 Builder(
@@ -1258,7 +1258,7 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
                                     final coords = _parseLatLng(_mapsLinkController.text);
                                     if (coords == null) {
                                       return Container(
-                                        padding: const EdgeInsets.all(12),
+                                        padding: EdgeInsets.all(12),
                                         decoration: BoxDecoration(
                                           color: Colors.amber.withOpacity(0.05),
                                           borderRadius: BorderRadius.circular(16),
@@ -1267,7 +1267,7 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
                                         child: Row(
                                           children: [
                                             Icon(Icons.info_outline, color: Colors.amber[700], size: 20),
-                                            const SizedBox(width: 8),
+                                            SizedBox(width: 8),
                                             Expanded(
                                               child: Text(
                                                 'Lokasi GPS belum dikunci/dimasukkan (disarankan agar kurir tidak tersesat)',
@@ -1286,11 +1286,11 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
                                     return Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        const Text(
+                                        Text(
                                           'Pratinjau Peta Lokasi Pengiriman:',
                                           style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppTheme.darkBlueText),
                                         ),
-                                        const SizedBox(height: 4),
+                                        SizedBox(height: 4),
                                         GestureDetector(
                                           onTap: () async {
                                             final currentLink = _mapsLinkController.text.trim();
@@ -1319,7 +1319,7 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
                                                     errorBuilder: (context, error, stackTrace) {
                                                       return Container(
                                                         color: Colors.grey[300],
-                                                        child: const Center(
+                                                        child: Center(
                                                           child: Column(
                                                             mainAxisAlignment: MainAxisAlignment.center,
                                                             children: [
@@ -1339,12 +1339,12 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
                                                     bottom: 8,
                                                     right: 8,
                                                     child: Container(
-                                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                                      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                                       decoration: BoxDecoration(
                                                         color: Colors.black.withOpacity(0.6),
                                                         borderRadius: BorderRadius.circular(8),
                                                       ),
-                                                      child: const Row(
+                                                      child: Row(
                                                         children: [
                                                           Icon(Icons.open_in_new, color: Colors.white, size: 10),
                                                           SizedBox(width: 4),
@@ -1365,7 +1365,7 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
                                     );
                                   },
                                 ),
-                                const SizedBox(height: 8),
+                                SizedBox(height: 8),
 
                                 // Button to pick location manually
                                 SizedBox(
@@ -1389,8 +1389,8 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
                                         });
                                       }
                                     },
-                                    icon: const Icon(Icons.pin_drop, color: Colors.red),
-                                    label: const Text(
+                                    icon: Icon(Icons.pin_drop, color: Colors.red),
+                                    label: Text(
                                       'Pilih Lokasi Manual via Peta',
                                       style: TextStyle(
                                         color: Colors.red,
@@ -1399,14 +1399,14 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
                                     ),
                                     style: TextButton.styleFrom(
                                       backgroundColor: Colors.red.withOpacity(0.08),
-                                      padding: const EdgeInsets.symmetric(vertical: 14),
+                                      padding: EdgeInsets.symmetric(vertical: 14),
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(16),
                                       ),
                                     ),
                                   ),
                                 ),
-                                const SizedBox(height: 8),
+                                SizedBox(height: 8),
 
                                 // Button to lock GPS Location
                                 SizedBox(
@@ -1426,7 +1426,7 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
                                                 });
                                                 if (context.mounted) {
                                                   ScaffoldMessenger.of(context).showSnackBar(
-                                                    const SnackBar(
+                                                    SnackBar(
                                                       content: Text('Lokasi GPS berhasil dikunci!'),
                                                     ),
                                                   );
@@ -1434,7 +1434,7 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
                                               } else {
                                                 if (context.mounted) {
                                                   ScaffoldMessenger.of(context).showSnackBar(
-                                                    const SnackBar(
+                                                    SnackBar(
                                                       content: Text('Gagal mendapatkan lokasi. Pastikan GPS aktif.'),
                                                     ),
                                                   );
@@ -1453,7 +1453,7 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
                                             }
                                           },
                                     icon: _isGpsLoading
-                                        ? const SizedBox(
+                                        ? SizedBox(
                                             width: 16,
                                             height: 16,
                                             child: CircularProgressIndicator(
@@ -1461,17 +1461,17 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
                                               color: AppTheme.primaryBlue,
                                             ),
                                           )
-                                        : const Icon(Icons.gps_fixed, color: AppTheme.primaryBlue),
+                                        : Icon(Icons.gps_fixed, color: AppTheme.primaryBlue),
                                     label: Text(
                                       _isGpsLoading ? 'Mengunci Lokasi...' : 'Kunci Lokasi Otomatis via GPS',
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         color: AppTheme.primaryBlue,
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
                                     style: TextButton.styleFrom(
                                       backgroundColor: AppTheme.lightBlueBackground,
-                                      padding: const EdgeInsets.symmetric(vertical: 14),
+                                      padding: EdgeInsets.symmetric(vertical: 14),
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(16),
                                       ),
@@ -1479,11 +1479,11 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
                                   ),
                                 ),
                               ],
-                              const SizedBox(height: 12),
+                              SizedBox(height: 12),
                               TextFormField(
                                 controller: _deliveryFeeController,
                                 keyboardType: TextInputType.number,
-                                decoration: const InputDecoration(
+                                decoration: InputDecoration(
                                   labelText: 'Biaya Ongkir (Rp)',
                                   prefixIcon: Icon(Icons.monetization_on_outlined),
                                 ),
@@ -1497,29 +1497,29 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16),
 
                   // 6. Voucher Card (Voucher diskon)
                   Card(
                     child: Padding(
-padding: const EdgeInsets.all(16.0),
+padding: EdgeInsets.all(16.0),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text('Voucher Diskon', style: Theme.of(context).textTheme.titleMedium),
-                          const SizedBox(height: 12),
+                          SizedBox(height: 12),
                           StreamBuilder<List<VoucherModel>>(
                             stream: _vouchersStream,
                             builder: (context, snapshot) {
                               if (snapshot.hasError) {
                                 if (kDebugMode) print("Vouchers Stream Error: ${snapshot.error}");
-                                return Text('Gagal memuat voucher: ${getCleanErrorMessage(snapshot.error)}', style: const TextStyle(fontSize: 11, color: Colors.red));
+                                return Text('Gagal memuat voucher: ${getCleanErrorMessage(snapshot.error)}', style: TextStyle(fontSize: 11, color: Colors.red));
                               }
                               final activeVouchers = snapshot.data ?? [];
                               final eligibleVouchers = activeVouchers.where((v) => _itemsPrice >= v.minOrder && _items.length >= v.minQty).toList();
 
                               if (activeVouchers.isEmpty) {
-                                return const Text(
+                                return Text(
                                   'Tidak ada voucher aktif tersedia',
                                   style: TextStyle(fontSize: 12, color: AppTheme.textGray, fontStyle: FontStyle.italic),
                                 );
@@ -1531,8 +1531,8 @@ padding: const EdgeInsets.all(16.0),
                                   DropdownButtonFormField<String>(
                                     isExpanded: true,
                                     value: _appliedVoucher?.id,
-                                    hint: const Text('Pilih Voucher Diskon', style: TextStyle(fontSize: 12)),
-                                    decoration: const InputDecoration(
+                                    hint: Text('Pilih Voucher Diskon', style: TextStyle(fontSize: 12)),
+                                    decoration: InputDecoration(
                                       prefixIcon: Icon(Icons.confirmation_number_outlined),
                                     ),
                                     items: activeVouchers.map((v) {
@@ -1559,7 +1559,7 @@ padding: const EdgeInsets.all(16.0),
                                     },
                                   ),
                                   if (_appliedVoucher != null) ...[
-                                    const SizedBox(height: 10),
+                                    SizedBox(height: 10),
                                     Row(
                                       children: [
                                         Icon(
@@ -1567,7 +1567,7 @@ padding: const EdgeInsets.all(16.0),
                                           color: eligibleVouchers.contains(_appliedVoucher) ? Colors.green : Colors.orange,
                                           size: 18,
                                         ),
-                                        const SizedBox(width: 6),
+                                        SizedBox(width: 6),
                                         Expanded(
                                           child: Text(
                                             eligibleVouchers.contains(_appliedVoucher)
@@ -1583,7 +1583,7 @@ padding: const EdgeInsets.all(16.0),
                                           ),
                                         ),
                                         IconButton(
-                                          icon: const Icon(Icons.close, color: Colors.redAccent, size: 18),
+                                          icon: Icon(Icons.close, color: Colors.redAccent, size: 18),
                                           onPressed: () {
                                             setState(() {
                                               _appliedVoucher = null;
@@ -1601,21 +1601,21 @@ padding: const EdgeInsets.all(16.0),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16),
 
                   // 7. Notes Card (catatan Tambahan)
                   Card(
                     child: Padding(
-                      padding: const EdgeInsets.all(16.0),
+                      padding: EdgeInsets.all(16.0),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text('Catatan Tambahan', style: Theme.of(context).textTheme.titleMedium),
-                          const SizedBox(height: 8),
+                          SizedBox(height: 8),
                           TextFormField(
                             controller: _notesController,
                             maxLines: 2,
-                            decoration: const InputDecoration(
+                            decoration: InputDecoration(
                               hintText: 'Tulis noda membandel, sobekan, atau request khusus...',
                             ),
                           ),
@@ -1623,11 +1623,11 @@ padding: const EdgeInsets.all(16.0),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  SizedBox(height: 24),
 
                   // Total & submit section
                   Container(
-                    padding: const EdgeInsets.all(20),
+                    padding: EdgeInsets.all(20),
                     decoration: BoxDecoration(
                       color: AppTheme.primaryBlue.withOpacity(0.05),
                       borderRadius: BorderRadius.circular(20),
@@ -1639,12 +1639,12 @@ padding: const EdgeInsets.all(16.0),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                               const Text('Total Pembayaran', style: TextStyle(color: AppTheme.textGray, fontSize: 12)),
-                              const SizedBox(height: 4),
+                               Text('Total Pembayaran', style: TextStyle(color: AppTheme.textGray, fontSize: 12)),
+                              SizedBox(height: 4),
                               if (_voucherDiscount + (_usePointsRedemption && _selectedCustomerPoints >= 10 ? 25000 : 0.0) > 0) ...[
                                 Text(
                                   'Rp ${(_itemsPrice + _deliveryFee).toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")}',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 12,
                                     decoration: TextDecoration.lineThrough,
                                     color: Colors.red,
@@ -1652,7 +1652,7 @@ padding: const EdgeInsets.all(16.0),
                                 ),
                                 Text(
                                   'Diskon: -Rp ${(_voucherDiscount + (_usePointsRedemption && _selectedCustomerPoints >= 10 ? 25000 : 0.0)).toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")}',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 11,
                                     color: Colors.green,
                                     fontWeight: FontWeight.w600,
@@ -1661,7 +1661,7 @@ padding: const EdgeInsets.all(16.0),
                               ],
                               Text(
                                 'Rp ${_totalPrice.toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")}',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 20,
                                   fontWeight: FontWeight.bold,
                                   color: AppTheme.primaryBlue,
@@ -1674,15 +1674,15 @@ padding: const EdgeInsets.all(16.0),
                           onPressed: _isSubmitting ? null : _submitOrder,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppTheme.primaryBlue,
-                            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                            padding: EdgeInsets.symmetric(horizontal: 32, vertical: 16),
                           ),
                           child: _isSubmitting
-                              ? const SizedBox(
+                              ? SizedBox(
                                   height: 20,
                                   width: 20,
                                   child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                                 )
-                              : const Text('Buat Pesanan'),
+                              : Text('Buat Pesanan'),
                         ),
                       ],
                     ),

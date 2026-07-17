@@ -7,7 +7,7 @@ import '../../services/database_service.dart';
 import '../../theme.dart';
 
 class FinancialReportScreen extends StatefulWidget {
-  const FinancialReportScreen({Key? key}) : super(key: key);
+  FinancialReportScreen({Key? key}) : super(key: key);
 
   @override
   State<FinancialReportScreen> createState() => _FinancialReportScreenState();
@@ -32,7 +32,7 @@ class _FinancialReportScreenState extends State<FinancialReportScreen> {
         return StatefulBuilder(
           builder: (context, setStateDialog) {
             return AlertDialog(
-              title: const Text('Catat Pengeluaran Baru'),
+              title: Text('Catat Pengeluaran Baru'),
               content: Form(
                 key: formKey,
                 child: SingleChildScrollView(
@@ -41,17 +41,17 @@ class _FinancialReportScreenState extends State<FinancialReportScreen> {
                     children: [
                       TextFormField(
                         controller: titleController,
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           labelText: 'Nama Pengeluaran / Keterangan',
                           hintText: 'Contoh: Beli Parfum Sepatu 2L',
                         ),
                         validator: (v) => v == null || v.trim().isEmpty ? 'Keterangan wajib diisi' : null,
                       ),
-                      const SizedBox(height: 12),
+                      SizedBox(height: 12),
                       DropdownButtonFormField<String>(
                         value: selectedCategory,
-                        decoration: const InputDecoration(labelText: 'Kategori'),
-                        items: const [
+                        decoration: InputDecoration(labelText: 'Kategori'),
+                        items: [
                           DropdownMenuItem(value: 'Sabun & Bahan Kimia', child: Text('Sabun & Bahan Kimia')),
                           DropdownMenuItem(value: 'Gaji Karyawan', child: Text('Gaji Karyawan')),
                           DropdownMenuItem(value: 'Transportasi & Kurir', child: Text('Transportasi & Kurir')),
@@ -66,11 +66,11 @@ class _FinancialReportScreenState extends State<FinancialReportScreen> {
                           }
                         },
                       ),
-                      const SizedBox(height: 12),
+                      SizedBox(height: 12),
                       TextFormField(
                         controller: amountController,
                         keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           labelText: 'Jumlah Pengeluaran (Rp)',
                           hintText: 'Contoh: 150000',
                         ),
@@ -81,21 +81,21 @@ class _FinancialReportScreenState extends State<FinancialReportScreen> {
                           return null;
                         },
                       ),
-                      const SizedBox(height: 12),
+                      SizedBox(height: 12),
                       ListTile(
                         contentPadding: EdgeInsets.zero,
-                        leading: const Icon(Icons.calendar_today, color: AppTheme.primaryBlue),
-                        title: const Text('Tanggal Pengeluaran', style: TextStyle(fontSize: 12, color: AppTheme.textGray)),
+                        leading: Icon(Icons.calendar_today, color: AppTheme.primaryBlue),
+                        title: Text('Tanggal Pengeluaran', style: TextStyle(fontSize: 12, color: AppTheme.textGray)),
                         subtitle: Text(
                           DateFormat('dd MMMM yyyy').format(selectedDate),
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                         ),
                         onTap: () async {
                           final date = await showDatePicker(
                             context: context,
                             initialDate: selectedDate,
                             firstDate: DateTime(2020),
-                            lastDate: DateTime.now().add(const Duration(days: 365)),
+                            lastDate: DateTime.now().add(Duration(days: 365)),
                           );
                           if (date != null) {
                             setStateDialog(() {
@@ -111,7 +111,7 @@ class _FinancialReportScreenState extends State<FinancialReportScreen> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const Text('Batal', style: TextStyle(color: AppTheme.textGray)),
+                  child: Text('Batal', style: TextStyle(color: AppTheme.textGray)),
                 ),
                 ElevatedButton(
                   onPressed: isSubmitting
@@ -134,7 +134,7 @@ class _FinancialReportScreenState extends State<FinancialReportScreen> {
                             if (context.mounted) {
                               Navigator.pop(context);
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Pengeluaran berhasil dicatat!')),
+                                SnackBar(content: Text('Pengeluaran berhasil dicatat!')),
                               );
                             }
                           } catch (e) {
@@ -151,8 +151,8 @@ class _FinancialReportScreenState extends State<FinancialReportScreen> {
                         },
                   style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryBlue),
                   child: isSubmitting
-                      ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                      : const Text('Simpan'),
+                      ? SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                      : Text('Simpan'),
                 ),
               ],
             );
@@ -177,7 +177,7 @@ class _FinancialReportScreenState extends State<FinancialReportScreen> {
         return StatefulBuilder(
           builder: (context, setStateDialog) {
             return AlertDialog(
-              title: const Text('Edit Catatan Pengeluaran'),
+              title: Text('Edit Catatan Pengeluaran'),
               content: Form(
                 key: formKey,
                 child: SingleChildScrollView(
@@ -186,17 +186,17 @@ class _FinancialReportScreenState extends State<FinancialReportScreen> {
                     children: [
                       TextFormField(
                         controller: titleController,
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           labelText: 'Nama Pengeluaran / Keterangan',
                           hintText: 'Contoh: Beli Parfum Sepatu 2L',
                         ),
                         validator: (v) => v == null || v.trim().isEmpty ? 'Keterangan wajib diisi' : null,
                       ),
-                      const SizedBox(height: 12),
+                      SizedBox(height: 12),
                       DropdownButtonFormField<String>(
                         value: selectedCategory,
-                        decoration: const InputDecoration(labelText: 'Kategori'),
-                        items: const [
+                        decoration: InputDecoration(labelText: 'Kategori'),
+                        items: [
                           DropdownMenuItem(value: 'Sabun & Bahan Kimia', child: Text('Sabun & Bahan Kimia')),
                           DropdownMenuItem(value: 'Gaji Karyawan', child: Text('Gaji Karyawan')),
                           DropdownMenuItem(value: 'Transportasi & Kurir', child: Text('Transportasi & Kurir')),
@@ -211,11 +211,11 @@ class _FinancialReportScreenState extends State<FinancialReportScreen> {
                           }
                         },
                       ),
-                      const SizedBox(height: 12),
+                      SizedBox(height: 12),
                       TextFormField(
                         controller: amountController,
                         keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           labelText: 'Jumlah Pengeluaran (Rp)',
                           hintText: 'Contoh: 150000',
                         ),
@@ -226,21 +226,21 @@ class _FinancialReportScreenState extends State<FinancialReportScreen> {
                           return null;
                         },
                       ),
-                      const SizedBox(height: 12),
+                      SizedBox(height: 12),
                       ListTile(
                         contentPadding: EdgeInsets.zero,
-                        leading: const Icon(Icons.calendar_today, color: AppTheme.primaryBlue),
-                        title: const Text('Tanggal Pengeluaran', style: TextStyle(fontSize: 12, color: AppTheme.textGray)),
+                        leading: Icon(Icons.calendar_today, color: AppTheme.primaryBlue),
+                        title: Text('Tanggal Pengeluaran', style: TextStyle(fontSize: 12, color: AppTheme.textGray)),
                         subtitle: Text(
                           DateFormat('dd MMMM yyyy').format(selectedDate),
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                         ),
                         onTap: () async {
                           final date = await showDatePicker(
                             context: context,
                             initialDate: selectedDate,
                             firstDate: DateTime(2020),
-                            lastDate: DateTime.now().add(const Duration(days: 365)),
+                            lastDate: DateTime.now().add(Duration(days: 365)),
                           );
                           if (date != null) {
                             setStateDialog(() {
@@ -256,7 +256,7 @@ class _FinancialReportScreenState extends State<FinancialReportScreen> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const Text('Batal', style: TextStyle(color: AppTheme.textGray)),
+                  child: Text('Batal', style: TextStyle(color: AppTheme.textGray)),
                 ),
                 ElevatedButton(
                   onPressed: isSubmitting
@@ -279,7 +279,7 @@ class _FinancialReportScreenState extends State<FinancialReportScreen> {
                             if (context.mounted) {
                               Navigator.pop(context);
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Pengeluaran berhasil diperbarui!')),
+                                SnackBar(content: Text('Pengeluaran berhasil diperbarui!')),
                               );
                             }
                           } catch (e) {
@@ -296,8 +296,8 @@ class _FinancialReportScreenState extends State<FinancialReportScreen> {
                         },
                   style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryBlue),
                   child: isSubmitting
-                      ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                      : const Text('Simpan'),
+                      ? SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                      : Text('Simpan'),
                 ),
               ],
             );
@@ -312,11 +312,11 @@ class _FinancialReportScreenState extends State<FinancialReportScreen> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Hapus Catatan'),
-        content: const Text('Apakah Anda yakin ingin menghapus catatan pengeluaran ini?'),
+        title: Text('Hapus Catatan'),
+        content: Text('Apakah Anda yakin ingin menghapus catatan pengeluaran ini?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Batal', style: TextStyle(color: AppTheme.textGray))),
-          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Hapus', style: TextStyle(color: Colors.red))),
+          TextButton(onPressed: () => Navigator.pop(context, false), child: Text('Batal', style: TextStyle(color: AppTheme.textGray))),
+          TextButton(onPressed: () => Navigator.pop(context, true), child: Text('Hapus', style: TextStyle(color: Colors.red))),
         ],
       ),
     );
@@ -325,7 +325,7 @@ class _FinancialReportScreenState extends State<FinancialReportScreen> {
       try {
         await dbService.deleteExpense(id);
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Pengeluaran berhasil dihapus')));
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Pengeluaran berhasil dihapus')));
         }
       } catch (e) {
         if (mounted) {
@@ -339,15 +339,15 @@ class _FinancialReportScreenState extends State<FinancialReportScreen> {
     final DateTimeRange? picked = await showDateRangePicker(
       context: context,
       firstDate: DateTime(2020),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
+      lastDate: DateTime.now().add(Duration(days: 365)),
       initialDateRange: _customDateRange ?? DateTimeRange(
-        start: DateTime.now().subtract(const Duration(days: 7)),
+        start: DateTime.now().subtract(Duration(days: 7)),
         end: DateTime.now(),
       ),
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
+            colorScheme: ColorScheme.light(
               primary: AppTheme.primaryBlue,
               onPrimary: Colors.white,
               onSurface: AppTheme.darkBlueText,
@@ -372,14 +372,14 @@ class _FinancialReportScreenState extends State<FinancialReportScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Laporan Keuangan'),
+        title: Text('Laporan Keuangan'),
         elevation: 0,
       ),
       body: StreamBuilder<List<OrderModel>>(
         stream: dbService.getOrders(),
         builder: (context, ordersSnap) {
           if (ordersSnap.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return Center(child: CircularProgressIndicator());
           }
           final orders = ordersSnap.data ?? [];
           final salesRecap = dbService.calculateSalesRecap(orders);
@@ -388,7 +388,7 @@ class _FinancialReportScreenState extends State<FinancialReportScreen> {
             stream: dbService.getExpenses(),
             builder: (context, expensesSnap) {
               if (expensesSnap.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
+                return Center(child: CircularProgressIndicator());
               }
               final expenses = expensesSnap.data ?? [];
               final expensesRecap = dbService.calculateExpensesRecap(expenses);
@@ -403,14 +403,14 @@ class _FinancialReportScreenState extends State<FinancialReportScreen> {
 
                 final customOrders = orders.where((o) {
                   if (o.paymentStatus != 'sudah_bayar') return false;
-                  return o.createdAt.isAfter(start.subtract(const Duration(seconds: 1))) &&
-                         o.createdAt.isBefore(end.add(const Duration(seconds: 1)));
+                  return o.createdAt.isAfter(start.subtract(Duration(seconds: 1))) &&
+                         o.createdAt.isBefore(end.add(Duration(seconds: 1)));
                 }).toList();
                 revenue = customOrders.fold(0.0, (sum, o) => sum + o.totalAmount);
 
                 final customExpenses = expenses.where((e) {
-                  return e.createdAt.isAfter(start.subtract(const Duration(seconds: 1))) &&
-                         e.createdAt.isBefore(end.add(const Duration(seconds: 1)));
+                  return e.createdAt.isAfter(start.subtract(Duration(seconds: 1))) &&
+                         e.createdAt.isBefore(end.add(Duration(seconds: 1)));
                 }).toList();
                 totalExpense = customExpenses.fold(0.0, (sum, e) => sum + e.amount);
               } else {
@@ -421,24 +421,24 @@ class _FinancialReportScreenState extends State<FinancialReportScreen> {
               double netProfit = revenue - totalExpense;
 
               return SingleChildScrollView(
-                padding: const EdgeInsets.all(16),
+                padding: EdgeInsets.all(16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Timeframe Filter Buttons
                     _buildTimeframeFilter(),
                     if (_selectedTimeframe == 'custom' && _customDateRange != null) ...[
-                      const SizedBox(height: 8),
+                      SizedBox(height: 8),
                       Center(
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                           decoration: BoxDecoration(
                             color: AppTheme.primaryBlue.withOpacity(0.08),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
                             'Rentang: ${DateFormat('dd/MM/yyyy').format(_customDateRange!.start)} - ${DateFormat('dd/MM/yyyy').format(_customDateRange!.end)}',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
                               color: AppTheme.primaryBlue,
@@ -447,19 +447,19 @@ class _FinancialReportScreenState extends State<FinancialReportScreen> {
                         ),
                       ),
                     ],
-                    const SizedBox(height: 20),
+                    SizedBox(height: 20),
 
                     // Financial Cards (Revenue, Expenses, Net Profit)
                     _buildFinancialSummaryCards(revenue, totalExpense, netProfit),
-                    const SizedBox(height: 24),
+                    SizedBox(height: 24),
 
                     // Visual Progress Chart
                     _buildVisualRatioBar(revenue, totalExpense),
-                    const SizedBox(height: 24),
+                    SizedBox(height: 24),
 
                     // Category Breakdown section
                     _buildCategoryBreakdown(expenses),
-                    const SizedBox(height: 24),
+                    SizedBox(height: 24),
 
                     // List of operating expenses
                     Row(
@@ -471,12 +471,12 @@ class _FinancialReportScreenState extends State<FinancialReportScreen> {
                         ),
                         TextButton.icon(
                           onPressed: _showAddExpenseDialog,
-                          icon: const Icon(Icons.add, size: 16),
-                          label: const Text('Tambah', style: TextStyle(fontSize: 12)),
+                          icon: Icon(Icons.add, size: 16),
+                          label: Text('Tambah', style: TextStyle(fontSize: 12)),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 10),
+                    SizedBox(height: 10),
                     _buildExpensesList(expenses),
                   ],
                 ),
@@ -488,7 +488,7 @@ class _FinancialReportScreenState extends State<FinancialReportScreen> {
       floatingActionButton: FloatingActionButton(
         onPressed: _showAddExpenseDialog,
         backgroundColor: AppTheme.primaryBlue,
-        child: const Icon(Icons.add_card, color: Colors.white),
+        child: Icon(Icons.add_card, color: Colors.white),
       ),
     );
   }
@@ -502,7 +502,7 @@ class _FinancialReportScreenState extends State<FinancialReportScreen> {
               color: AppTheme.lightGray.withOpacity(0.5),
               borderRadius: BorderRadius.circular(12),
             ),
-            padding: const EdgeInsets.all(4),
+            padding: EdgeInsets.all(4),
             child: Row(
               children: [
                 _buildFilterButton('daily', 'Hari Ini'),
@@ -513,7 +513,7 @@ class _FinancialReportScreenState extends State<FinancialReportScreen> {
             ),
           ),
         ),
-        const SizedBox(width: 8),
+        SizedBox(width: 8),
         IconButton(
           onPressed: _selectCustomDateRange,
           icon: Icon(
@@ -525,7 +525,7 @@ class _FinancialReportScreenState extends State<FinancialReportScreen> {
                 ? AppTheme.primaryBlue.withOpacity(0.12)
                 : AppTheme.lightGray.withOpacity(0.5),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            padding: const EdgeInsets.all(10),
+            padding: EdgeInsets.all(10),
           ),
         ),
       ],
@@ -542,7 +542,7 @@ class _FinancialReportScreenState extends State<FinancialReportScreen> {
           });
         },
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 8),
+          padding: EdgeInsets.symmetric(vertical: 8),
           decoration: BoxDecoration(
             color: isSelected ? AppTheme.white : Colors.transparent,
             borderRadius: BorderRadius.circular(8),
@@ -551,7 +551,7 @@ class _FinancialReportScreenState extends State<FinancialReportScreen> {
                     BoxShadow(
                       color: Colors.black.withOpacity(0.05),
                       blurRadius: 4,
-                      offset: const Offset(0, 2),
+                      offset: Offset(0, 2),
                     )
                   ]
                 : null,
@@ -583,7 +583,7 @@ class _FinancialReportScreenState extends State<FinancialReportScreen> {
                 Colors.blue,
               ),
             ),
-            const SizedBox(width: 12),
+            SizedBox(width: 12),
             Expanded(
               child: _buildSummaryCard(
                 'Total Pengeluaran',
@@ -594,7 +594,7 @@ class _FinancialReportScreenState extends State<FinancialReportScreen> {
             ),
           ],
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: 12),
         _buildNetProfitCard(net),
       ],
     );
@@ -607,7 +607,7 @@ class _FinancialReportScreenState extends State<FinancialReportScreen> {
         );
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppTheme.white,
         borderRadius: BorderRadius.circular(16),
@@ -620,14 +620,14 @@ class _FinancialReportScreenState extends State<FinancialReportScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(title, style: const TextStyle(fontSize: 11, color: AppTheme.textGray)),
+              Text(title, style: TextStyle(fontSize: 11, color: AppTheme.textGray)),
               Icon(icon, color: color, size: 16),
             ],
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           Text(
             'Rp $formattedAmount',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.bold,
               color: AppTheme.darkBlueText,
@@ -646,7 +646,7 @@ class _FinancialReportScreenState extends State<FinancialReportScreen> {
         );
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: isPositive ? Colors.green.shade50 : Colors.red.shade50,
         borderRadius: BorderRadius.circular(16),
@@ -661,16 +661,16 @@ class _FinancialReportScreenState extends State<FinancialReportScreen> {
               color: isPositive ? Colors.green.shade700 : Colors.red.shade700,
             ),
           ),
-          const SizedBox(width: 16),
+          SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Keuntungan Bersih (Net Profit)',
                   style: TextStyle(fontSize: 11, color: AppTheme.textGray, fontWeight: FontWeight.w600),
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: 4),
                 Text(
                   '${isPositive ? "" : "- "}Rp $formattedAmount',
                   style: TextStyle(
@@ -694,7 +694,7 @@ class _FinancialReportScreenState extends State<FinancialReportScreen> {
     double profitRatio = 1.0 - expenseRatio;
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppTheme.white,
         borderRadius: BorderRadius.circular(16),
@@ -703,11 +703,11 @@ class _FinancialReportScreenState extends State<FinancialReportScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Visualisasi Rasio Laba vs Pengeluaran',
             style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.darkBlueText),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           ClipRRect(
             borderRadius: BorderRadius.circular(8),
             child: SizedBox(
@@ -734,22 +734,22 @@ class _FinancialReportScreenState extends State<FinancialReportScreen> {
               ),
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Row(
                 children: [
                   Container(width: 8, height: 8, color: Colors.green),
-                  const SizedBox(width: 4),
-                  Text('Laba Bersih (${(profitRatio * 100).toStringAsFixed(0)}%)', style: const TextStyle(fontSize: 10, color: AppTheme.textGray)),
+                  SizedBox(width: 4),
+                  Text('Laba Bersih (${(profitRatio * 100).toStringAsFixed(0)}%)', style: TextStyle(fontSize: 10, color: AppTheme.textGray)),
                 ],
               ),
               Row(
                 children: [
                   Container(width: 8, height: 8, color: Colors.red),
-                  const SizedBox(width: 4),
-                  Text('Pengeluaran (${(expenseRatio * 100).toStringAsFixed(0)}%)', style: const TextStyle(fontSize: 10, color: AppTheme.textGray)),
+                  SizedBox(width: 4),
+                  Text('Pengeluaran (${(expenseRatio * 100).toStringAsFixed(0)}%)', style: TextStyle(fontSize: 10, color: AppTheme.textGray)),
                 ],
               ),
             ],
@@ -789,8 +789,8 @@ class _FinancialReportScreenState extends State<FinancialReportScreen> {
       } else if (_selectedTimeframe == 'custom' && _customDateRange != null) {
         final start = DateTime(_customDateRange!.start.year, _customDateRange!.start.month, _customDateRange!.start.day);
         final end = DateTime(_customDateRange!.end.year, _customDateRange!.end.month, _customDateRange!.end.day, 23, 59, 59);
-        if (exp.createdAt.isAfter(start.subtract(const Duration(seconds: 1))) &&
-            exp.createdAt.isBefore(end.add(const Duration(seconds: 1)))) {
+        if (exp.createdAt.isAfter(start.subtract(Duration(seconds: 1))) &&
+            exp.createdAt.isBefore(end.add(Duration(seconds: 1)))) {
           isMatch = true;
         }
       }
@@ -802,7 +802,7 @@ class _FinancialReportScreenState extends State<FinancialReportScreen> {
     }
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppTheme.white,
         borderRadius: BorderRadius.circular(16),
@@ -811,19 +811,19 @@ class _FinancialReportScreenState extends State<FinancialReportScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Rincian Pengeluaran per Kategori',
             style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.darkBlueText),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           if (total == 0)
-            const Padding(
+            Padding(
               padding: EdgeInsets.symmetric(vertical: 8.0),
               child: Text('Tidak ada pengeluaran di rentang waktu ini.', style: TextStyle(fontSize: 11, color: AppTheme.textGray, fontStyle: FontStyle.italic)),
             )
           else
             ...categories.entries.map((entry) {
-              if (entry.value == 0) return const SizedBox();
+              if (entry.value == 0) return SizedBox();
               double percentage = entry.value / total;
               final String amountFormatted = entry.value.toStringAsFixed(0).replaceAllMapped(
                     RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
@@ -831,21 +831,21 @@ class _FinancialReportScreenState extends State<FinancialReportScreen> {
                   );
 
               return Padding(
-                padding: const EdgeInsets.only(bottom: 8.0),
+                padding: EdgeInsets.only(bottom: 8.0),
                 child: Column(
                   children: [
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(entry.key, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500)),
-                        Text('Rp $amountFormatted (${(percentage * 100).toStringAsFixed(0)}%)', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                        Text(entry.key, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500)),
+                        Text('Rp $amountFormatted (${(percentage * 100).toStringAsFixed(0)}%)', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
                       ],
                     ),
-                    const SizedBox(height: 4),
+                    SizedBox(height: 4),
                     LinearProgressIndicator(
                       value: percentage,
                       backgroundColor: AppTheme.lightGray,
-                      valueColor: const AlwaysStoppedAnimation<Color>(AppTheme.primaryBlue),
+                      valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryBlue),
                     ),
                   ],
                 ),
@@ -876,8 +876,8 @@ class _FinancialReportScreenState extends State<FinancialReportScreen> {
       } else if (_selectedTimeframe == 'custom' && _customDateRange != null) {
         final start = DateTime(_customDateRange!.start.year, _customDateRange!.start.month, _customDateRange!.start.day);
         final end = DateTime(_customDateRange!.end.year, _customDateRange!.end.month, _customDateRange!.end.day, 23, 59, 59);
-        return exp.createdAt.isAfter(start.subtract(const Duration(seconds: 1))) &&
-               exp.createdAt.isBefore(end.add(const Duration(seconds: 1)));
+        return exp.createdAt.isAfter(start.subtract(Duration(seconds: 1))) &&
+               exp.createdAt.isBefore(end.add(Duration(seconds: 1)));
       }
       return true;
     }).toList();
@@ -885,12 +885,12 @@ class _FinancialReportScreenState extends State<FinancialReportScreen> {
     if (filtered.isEmpty) {
       return Container(
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 24),
+        padding: EdgeInsets.symmetric(vertical: 24),
         decoration: BoxDecoration(
           color: AppTheme.lightGray.withOpacity(0.3),
           borderRadius: BorderRadius.circular(12),
         ),
-        child: const Center(
+        child: Center(
           child: Text('Belum ada catatan pengeluaran.', style: TextStyle(fontSize: 12, color: AppTheme.textGray)),
         ),
       );
@@ -898,7 +898,7 @@ class _FinancialReportScreenState extends State<FinancialReportScreen> {
 
     return ListView.builder(
       shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
+      physics: NeverScrollableScrollPhysics(),
       itemCount: filtered.length,
       itemBuilder: (context, index) {
         final exp = filtered[index];
@@ -913,30 +913,30 @@ class _FinancialReportScreenState extends State<FinancialReportScreen> {
             );
 
         return Card(
-          margin: const EdgeInsets.only(bottom: 8),
+          margin: EdgeInsets.only(bottom: 8),
           elevation: 1,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           child: ListTile(
             dense: true,
             leading: CircleAvatar(
               backgroundColor: AppTheme.primaryBlue.withOpacity(0.08),
-              child: const Icon(Icons.monetization_on_outlined, color: AppTheme.primaryBlue, size: 20),
+              child: Icon(Icons.monetization_on_outlined, color: AppTheme.primaryBlue, size: 20),
             ),
-            title: Text(exp.title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-            subtitle: Text('${exp.category} • $formattedDate', style: const TextStyle(fontSize: 11, color: AppTheme.textGray)),
+            title: Text(exp.title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+            subtitle: Text('${exp.category} • $formattedDate', style: TextStyle(fontSize: 11, color: AppTheme.textGray)),
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
                   'Rp $amountFormatted',
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.red),
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.red),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.edit_outlined, color: Colors.blueAccent, size: 18),
+                  icon: Icon(Icons.edit_outlined, color: Colors.blueAccent, size: 18),
                   onPressed: () => _showEditExpenseDialog(exp),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 18),
+                  icon: Icon(Icons.delete_outline, color: Colors.redAccent, size: 18),
                   onPressed: () => _deleteExpense(exp.id),
                 ),
               ],
