@@ -501,24 +501,28 @@ class _OwnerBillingPackageScreenState extends State<OwnerBillingPackageScreen> {
             builder: (context, configSnapshot) {
               String selectedPackage = '';
               double activePrice = billingAmount;
-              if (configSnapshot.hasData && configSnapshot.data!.exists) {
-                final cData = configSnapshot.data!.data() as Map<String, dynamic>?;
-                selectedPackage = cData?['selectedPackage'] as String? ?? '';
-                final double? presetPrice = (cData?['selectedPackagePrice'] as num?)?.toDouble();
+              final cData = configSnapshot.hasData && configSnapshot.data!.exists
+                  ? configSnapshot.data!.data() as Map<String, dynamic>?
+                  : null;
+              if (cData != null) {
+                selectedPackage = cData['selectedPackage'] as String? ?? '';
+                final double? presetPrice = (cData['selectedPackagePrice'] as num?)?.toDouble();
                 if (presetPrice != null) {
                   activePrice = presetPrice;
                 }
               }
 
-              String activePackageLabel = 'Paket 2: Paket Pemeliharaan & Support';
-              if (activePrice == 100000.0) {
-                activePackageLabel = 'Paket 1: Paket Cloud Server';
-              } else if (activePrice == 150000.0) {
-                activePackageLabel = 'Paket 2: Paket Pemeliharaan & Support';
-              } else if (activePrice == 250000.0) {
-                activePackageLabel = 'Paket 3: Paket Premium (Domain Kustom)';
-              } else {
-                activePackageLabel = 'Paket Kustom (Developer)';
+              String activePackageLabel = cData?['selectedPackageName'] as String? ?? '';
+              if (activePackageLabel.isEmpty) {
+                if (activePrice == 100000.0) {
+                  activePackageLabel = 'Paket 1: Paket Cloud Server';
+                } else if (activePrice == 150000.0) {
+                  activePackageLabel = 'Paket 2: Paket Pemeliharaan & Support';
+                } else if (activePrice == 250000.0) {
+                  activePackageLabel = 'Paket 3: Paket Premium (Domain Kustom)';
+                } else {
+                  activePackageLabel = 'Paket Kustom (Developer)';
+                }
               }
 
               return SingleChildScrollView(
@@ -658,53 +662,53 @@ class _OwnerBillingPackageScreenState extends State<OwnerBillingPackageScreen> {
                     ),
                     SizedBox(height: 12),
 
-                    // Package 1 Card
-                    _buildPackageCard(
-                      packageKey: 'paket1',
-                      name: 'Paket 1: Cloud Server & Backup Data',
-                      price: 100000.0,
-                      isActive: activePrice == 100000.0,
-                      isSelected: selectedPackage == 'paket1',
-                      features: [
-                        'Sewa Cloud Server Database Online 24/7',
-                        'Akses Website Portal Pelanggan Terintegrasi',
-                        'Penyimpanan Struk Digital & Foto Bukti Sepatu',
-                        'Backup Database Transaksi Harian (Aman & Terjamin)',
-                        'Pemeliharaan Dasar Keamanan Server (Security Rules)',
-                      ],
-                    ),
-
-                    // Package 2 Card
-                    _buildPackageCard(
-                      packageKey: 'paket2',
-                      name: 'Paket 2: Pemeliharaan & Bantuan Teknis',
-                      price: 150000.0,
-                      isActive: activePrice == 150000.0,
-                      isSelected: selectedPackage == 'paket2' || (selectedPackage.isEmpty && activePrice == 150000.0),
-                      features: [
-                        'Semua Layanan Dasar Paket 1',
-                        'Garansi Kompatibilitas Pembaruan Sistem OS Android',
-                        'Bantuan Teknis Prioritas via WA (Troubleshooting)',
-                        'Bantuan Koneksi Printer Bluetooth Thermal Struk',
-                        'Update Minor Gratis (Ubah Teks Info/Harga Jasa)',
-                      ],
-                    ),
-
-                    // Package 3 Card
-                    _buildPackageCard(
-                      packageKey: 'paket3',
-                      name: 'Paket 3: Premium + Domain Kustom (.COM / .ID)',
-                      price: 250000.0,
-                      isActive: activePrice == 250000.0,
-                      isSelected: selectedPackage == 'paket3',
-                      isHot: true,
-                      features: [
-                        'Semua Layanan Pemeliharaan Paket 1 & 2',
-                        'Domain Kustom Pribadi Toko (Contoh: kickdirty.com / kickdirty.id)',
-                        'Gratis Biaya Domain dan Maintenance',
-                        'Instalasi SSL (Keamanan HTTPS Gembok Hijau Resmi)',
-                        'Prioritas Utama Respon Bantuan Teknis Developer 24/7',
-                      ],
+                    // Dynamic packages from Firestore
+                    StreamBuilder<QuerySnapshot>(
+                      stream: FirebaseFirestore.instance
+                          .collection('billing_packages')
+                          .orderBy('order')
+                          .snapshots(),
+                      builder: (context, pkgSnapshot) {
+                        if (pkgSnapshot.connectionState == ConnectionState.waiting) {
+                          return Center(child: Padding(
+                            padding: EdgeInsets.all(20),
+                            child: CircularProgressIndicator(),
+                          ));
+                        }
+                        if (!pkgSnapshot.hasData || pkgSnapshot.data!.docs.isEmpty) {
+                          return Padding(
+                            padding: EdgeInsets.all(20),
+                            child: Center(
+                              child: Text(
+                                'Belum ada paket tersedia.\nHubungi developer untuk setup.',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(color: AppTheme.textGray, fontSize: 13),
+                              ),
+                            ),
+                          );
+                        }
+                        final packages = pkgSnapshot.data!.docs;
+                        return Column(
+                          children: packages.map((doc) {
+                            final data = doc.data() as Map<String, dynamic>;
+                            final packageKey = doc.id;
+                            final name = data['name'] as String? ?? 'Paket';
+                            final price = (data['price'] as num?)?.toDouble() ?? 0.0;
+                            final features = List<String>.from(data['features'] ?? []);
+                            final isHot = data['isHot'] == true;
+                            final order = data['order'] as int? ?? 0;
+                            return _buildPackageCard(
+                              packageKey: packageKey,
+                              name: name,
+                              price: price,
+                              isActive: activePrice == price,
+                              isSelected: selectedPackage == packageKey || (selectedPackage.isEmpty && activePrice == price),
+                              features: features,
+                              isHot: isHot,
+                            );
+                          }).toList(),
+                        );
+                      },
                     ),
                     SizedBox(height: 16),
                   ],

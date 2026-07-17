@@ -115,6 +115,9 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
           _enableOwnerLogs = versionData?['enableOwnerLogs'] == true;
         });
       }
+
+      // Seed default packages if collection is empty
+      await _seedDefaultPackages();
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Gagal memuat konfigurasi billing: $e')),
@@ -603,6 +606,239 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
     );
   }
 
+  String _formatPackagePrice(num price) {
+    return price.toStringAsFixed(0).replaceAllMapped(
+      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+      (Match m) => '${m[1]}.',
+    );
+  }
+
+  Future<void> _seedDefaultPackages() async {
+    try {
+      final snapshot = await FirebaseFirestore.instance.collection('billing_packages').limit(1).get();
+      if (snapshot.docs.isNotEmpty) return;
+
+      final batch = FirebaseFirestore.instance.batch();
+      final col = FirebaseFirestore.instance.collection('billing_packages');
+
+      batch.set(col.doc('paket1'), {
+        'name': 'Paket 1: Cloud Server & Backup Data',
+        'price': 100000,
+        'order': 1,
+        'isHot': false,
+        'features': [
+          'Sewa Cloud Server Database Online 24/7',
+          'Akses Website Portal Pelanggan Terintegrasi',
+          'Penyimpanan Struk Digital & Foto Bukti Sepatu',
+          'Backup Database Transaksi Harian (Aman & Terjamin)',
+          'Pemeliharaan Dasar Keamanan Server (Security Rules)',
+        ],
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      batch.set(col.doc('paket2'), {
+        'name': 'Paket 2: Pemeliharaan & Bantuan Teknis',
+        'price': 150000,
+        'order': 2,
+        'isHot': false,
+        'features': [
+          'Semua Layanan Dasar Paket 1',
+          'Garansi Kompatibilitas Pembaruan Sistem OS Android',
+          'Bantuan Teknis Prioritas via WA (Troubleshooting)',
+          'Bantuan Koneksi Printer Bluetooth Thermal Struk',
+          'Update Minor Gratis (Ubah Teks Info/Harga Jasa)',
+        ],
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      batch.set(col.doc('paket3'), {
+        'name': 'Paket 3: Premium + Domain Kustom (.COM / .ID)',
+        'price': 250000,
+        'order': 3,
+        'isHot': true,
+        'features': [
+          'Semua Layanan Pemeliharaan Paket 1 & 2',
+          'Domain Kustom Pribadi Toko (Contoh: kickdirty.com / kickdirty.id)',
+          'Gratis Biaya Domain dan Maintenance',
+          'Instalasi SSL (Keamanan HTTPS Gembok Hijau Resmi)',
+          'Prioritas Utama Respon Bantuan Teknis Developer 24/7',
+        ],
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      await batch.commit();
+    } catch (_) {}
+  }
+
+  void _showPackageDialog({Map<String, dynamic>? existingData, String? docId}) {
+    final nameCtrl = TextEditingController(text: existingData?['name'] as String? ?? '');
+    final priceCtrl = TextEditingController(text: (existingData?['price'] as num?)?.toStringAsFixed(0) ?? '');
+    final orderCtrl = TextEditingController(text: (existingData?['order'] as int?)?.toString() ?? '');
+    final featuresCtrl = TextEditingController(
+      text: (existingData?['features'] as List<dynamic>?)?.join('\n') ?? '',
+    );
+    bool isHot = existingData?['isHot'] == true;
+    final isEditing = docId != null;
+
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setDialogState) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              title: Text(
+                isEditing ? 'Edit Paket' : 'Tambah Paket Baru',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.darkBlueText),
+              ),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: nameCtrl,
+                      decoration: InputDecoration(
+                        labelText: 'Nama Paket',
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                    ),
+                    SizedBox(height: 12),
+                    TextField(
+                      controller: priceCtrl,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        labelText: 'Harga / Bulan (Rp)',
+                        prefixText: 'Rp ',
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                    ),
+                    SizedBox(height: 12),
+                    TextField(
+                      controller: orderCtrl,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        labelText: 'Urutan Tampil (1, 2, 3, ...)',
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                    ),
+                    SizedBox(height: 12),
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text('Tandai sebagai Rekomendasi (isHot)', style: TextStyle(fontSize: 13, color: AppTheme.darkBlueText)),
+                      value: isHot,
+                      activeColor: AppTheme.primaryBlue,
+                      onChanged: (val) => setDialogState(() => isHot = val),
+                    ),
+                    SizedBox(height: 12),
+                    TextField(
+                      controller: featuresCtrl,
+                      maxLines: 6,
+                      decoration: InputDecoration(
+                        labelText: 'Fitur (1 baris = 1 fitur)',
+                        alignLabelWithHint: true,
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: Text('Batal', style: TextStyle(color: AppTheme.textGray)),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryBlue),
+                  onPressed: () async {
+                    final name = nameCtrl.text.trim();
+                    final price = num.tryParse(priceCtrl.text.trim());
+                    final order = int.tryParse(orderCtrl.text.trim());
+                    if (name.isEmpty || price == null || order == null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Nama, harga, dan urutan wajib diisi dengan benar.')),
+                      );
+                      return;
+                    }
+                    final features = featuresCtrl.text
+                        .split('\n')
+                        .map((e) => e.trim())
+                        .where((e) => e.isNotEmpty)
+                        .toList();
+
+                    final data = {
+                      'name': name,
+                      'price': price,
+                      'order': order,
+                      'isHot': isHot,
+                      'features': features,
+                      'updatedAt': FieldValue.serverTimestamp(),
+                    };
+
+                    try {
+                      if (isEditing) {
+                        await FirebaseFirestore.instance.collection('billing_packages').doc(docId).update(data);
+                      } else {
+                        await FirebaseFirestore.instance.collection('billing_packages').add(data);
+                      }
+                      if (mounted) Navigator.pop(ctx);
+                    } catch (e) {
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Gagal menyimpan paket: $e')),
+                        );
+                      }
+                    }
+                  },
+                  child: Text('Simpan'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _deletePackage(String docId, String name) {
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Text('Hapus Paket', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.red)),
+          content: Text('Yakin ingin menghapus paket "$name"? Tindakan ini tidak dapat dibatalkan.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text('Batal', style: TextStyle(color: AppTheme.textGray)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              onPressed: () async {
+                try {
+                  await FirebaseFirestore.instance.collection('billing_packages').doc(docId).delete();
+                  if (mounted) {
+                    Navigator.pop(ctx);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Paket "$name" berhasil dihapus.')),
+                    );
+                  }
+                } catch (e) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Gagal menghapus paket: $e')),
+                    );
+                  }
+                }
+              },
+              child: Text('Hapus', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final String currentMonthCode = DateFormat('yyyy-MM').format(DateTime.now());
@@ -897,6 +1133,160 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
                               style: ElevatedButton.styleFrom(backgroundColor: Colors.grey),
                             ),
                           ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(height: 20),
+                  Divider(),
+                  SizedBox(height: 16),
+
+                  // PACKAGE MANAGEMENT CRUD CARD
+                  Container(
+                    width: double.infinity,
+                    padding: EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: AppTheme.white,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: AppTheme.cardShadow,
+                      border: Border.all(color: AppTheme.lightGray, width: 0.5),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Kelola Paket Layanan (CRUD)',
+                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppTheme.darkBlueText),
+                        ),
+                        SizedBox(height: 4),
+                        Text(
+                          'Tambah, edit, atau hapus paket layanan yang tersedia untuk Owner.',
+                          style: TextStyle(fontSize: 11, color: AppTheme.textGray),
+                        ),
+                        SizedBox(height: 12),
+                        StreamBuilder<QuerySnapshot>(
+                          stream: FirebaseFirestore.instance
+                              .collection('billing_packages')
+                              .orderBy('order')
+                              .snapshots(),
+                          builder: (context, snapshot) {
+                            if (snapshot.connectionState == ConnectionState.waiting) {
+                              return Center(child: Padding(
+                                padding: EdgeInsets.all(16),
+                                child: CircularProgressIndicator(color: AppTheme.primaryBlue),
+                              ));
+                            }
+                            if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                              return Padding(
+                                padding: EdgeInsets.symmetric(vertical: 12),
+                                child: Text(
+                                  'Belum ada paket. Tekan tombol di bawah untuk menambah.',
+                                  style: TextStyle(fontSize: 12, color: AppTheme.textGray),
+                                ),
+                              );
+                            }
+                            final docs = snapshot.data!.docs;
+                            return Column(
+                              children: docs.map((doc) {
+                                final data = doc.data() as Map<String, dynamic>;
+                                final name = data['name'] as String? ?? 'Tanpa Nama';
+                                final price = data['price'] as num? ?? 0;
+                                final order = data['order'] as int? ?? 0;
+                                final isHot = data['isHot'] == true;
+                                final features = (data['features'] as List<dynamic>?)?.cast<String>() ?? [];
+                                return Container(
+                                  margin: EdgeInsets.only(bottom: 8),
+                                  padding: EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: isHot ? AppTheme.primaryBlue.withOpacity(0.05) : Colors.grey.shade50,
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(color: isHot ? AppTheme.primaryBlue.withOpacity(0.3) : AppTheme.lightGray, width: 0.5),
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Row(
+                                                  children: [
+                                                    Text(
+                                                      '#$order',
+                                                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppTheme.primaryBlue),
+                                                    ),
+                                                    SizedBox(width: 6),
+                                                    if (isHot)
+                                                      Container(
+                                                        padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                                        decoration: BoxDecoration(
+                                                          color: Colors.orange,
+                                                          borderRadius: BorderRadius.circular(4),
+                                                        ),
+                                                        child: Text('HOT', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.white)),
+                                                      ),
+                                                  ],
+                                                ),
+                                                SizedBox(height: 4),
+                                                Text(
+                                                  name,
+                                                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.darkBlueText),
+                                                ),
+                                                SizedBox(height: 2),
+                                                Text(
+                                                  'Rp ${_formatPackagePrice(price)} / Bulan',
+                                                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.primaryBlue),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                          IconButton(
+                                            icon: Icon(Icons.edit, size: 20, color: AppTheme.primaryBlue),
+                                            tooltip: 'Edit Paket',
+                                            onPressed: () => _showPackageDialog(existingData: data, docId: doc.id),
+                                          ),
+                                          IconButton(
+                                            icon: Icon(Icons.delete, size: 20, color: Colors.red),
+                                            tooltip: 'Hapus Paket',
+                                            onPressed: () => _deletePackage(doc.id, name),
+                                          ),
+                                        ],
+                                      ),
+                                      if (features.isNotEmpty) ...[
+                                        SizedBox(height: 8),
+                                        ...features.map((f) => Padding(
+                                          padding: EdgeInsets.only(left: 8, bottom: 2),
+                                          child: Row(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Text('• ', style: TextStyle(fontSize: 11, color: AppTheme.textGray)),
+                                              Expanded(child: Text(f, style: TextStyle(fontSize: 11, color: AppTheme.textGray))),
+                                            ],
+                                          ),
+                                        )),
+                                      ],
+                                    ],
+                                  ),
+                                );
+                              }).toList(),
+                            );
+                          },
+                        ),
+                        SizedBox(height: 8),
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton.icon(
+                            onPressed: () => _showPackageDialog(),
+                            icon: Icon(Icons.add, size: 18),
+                            label: Text('Tambah Paket Baru'),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: AppTheme.primaryBlue,
+                              side: BorderSide(color: AppTheme.primaryBlue),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            ),
+                          ),
                         ),
                       ],
                     ),
