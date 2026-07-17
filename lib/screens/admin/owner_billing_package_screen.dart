@@ -451,6 +451,10 @@ class _OwnerBillingPackageScreenState extends State<OwnerBillingPackageScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final authService = Provider.of<AuthService>(context, listen: false);
+    final String userRole = authService.currentUserModel?.role ?? 'owner';
+    final bool isDeveloper = userRole == 'developer';
+
     return Scaffold(
       appBar: AppBar(
         title: Text('Status & Paket Layanan'),
@@ -704,6 +708,7 @@ class _OwnerBillingPackageScreenState extends State<OwnerBillingPackageScreen> {
                               isSelected: selectedPackage == packageKey || (selectedPackage.isEmpty && billingAmount == price),
                               features: features,
                               sisaHari: sisaHari,
+                              isDeveloper: isDeveloper,
                               isHot: isHot,
                             );
                           }).toList(),
@@ -729,6 +734,7 @@ class _OwnerBillingPackageScreenState extends State<OwnerBillingPackageScreen> {
     required bool isSelected,
     required List<String> features,
     required int sisaHari,
+    required bool isDeveloper,
     bool isHot = false,
   }) {
     final priceFormatted = price.toStringAsFixed(0).replaceAllMapped(
@@ -825,7 +831,7 @@ class _OwnerBillingPackageScreenState extends State<OwnerBillingPackageScreen> {
                       onPressed: isSelected 
                           ? null 
                           : () {
-                              if (sisaHari > 0) {
+                              if (sisaHari > 0 && !isDeveloper) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
                                     content: Text('Anda baru dapat mengganti paket setelah masa aktif paket saat ini habis (jatuh tempo).'),
