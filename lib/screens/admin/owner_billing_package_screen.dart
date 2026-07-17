@@ -717,6 +717,7 @@ class _OwnerBillingPackageScreenState extends State<OwnerBillingPackageScreen> {
                               isActive: activePrice == price,
                               isSelected: selectedPackage == packageKey || (selectedPackage.isEmpty && activePrice == price),
                               features: features,
+                              sisaHari: sisaHari,
                               isHot: isHot,
                             );
                           }).toList(),
@@ -741,6 +742,7 @@ class _OwnerBillingPackageScreenState extends State<OwnerBillingPackageScreen> {
     required bool isActive,
     required bool isSelected,
     required List<String> features,
+    required int sisaHari,
     bool isHot = false,
   }) {
     final priceFormatted = price.toStringAsFixed(0).replaceAllMapped(
@@ -834,7 +836,20 @@ class _OwnerBillingPackageScreenState extends State<OwnerBillingPackageScreen> {
                     width: double.infinity,
                     height: 40,
                     child: OutlinedButton(
-                      onPressed: isSelected ? null : () => _selectPackage(packageKey, name, price),
+                      onPressed: isSelected 
+                          ? null 
+                          : () {
+                              if (sisaHari > 0) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Anda baru dapat mengganti paket setelah masa aktif paket saat ini habis (jatuh tempo).'),
+                                    backgroundColor: Colors.orange,
+                                  ),
+                                );
+                              } else {
+                                _selectPackage(packageKey, name, price);
+                              }
+                            },
                       style: OutlinedButton.styleFrom(
                         foregroundColor: AppTheme.primaryBlue,
                         side: BorderSide(color: isSelected ? Colors.grey : AppTheme.primaryBlue, width: 1.5),
