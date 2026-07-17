@@ -57,6 +57,7 @@ dependencies:
   flutter_map: ^6.1.0
   latlong2: ^0.9.0
   shared_preferences: ^2.2.2
+  blue_thermal_printer: any
 
 dev_dependencies:
   flutter_test:

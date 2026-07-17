@@ -22,6 +22,9 @@ import 'developer_billing_screen.dart';
 import 'billing_block_screen.dart';
 import 'activity_logs_screen.dart';
 import '../chat_screen.dart';
+import 'printer_settings_screen.dart';
+import '../../utils/printer/printer_service.dart';
+import 'dart:async';
 import 'package:intl/intl.dart';
 
 import 'settings_screen.dart';
@@ -40,15 +43,50 @@ class _AdminDashboardState extends State<AdminDashboard> {
   int _currentIndex = 0;
   bool _showNetProfit = false;
   Map<String, bool> _staffPerms = {};
+  bool _isPrinterConnected = false;
+  StreamSubscription<bool>? _printerSubscription;
 
   bool _hasPerm(String key, String? role) {
     if (role == 'owner' || role == 'developer') return true;
     return _staffPerms[key] == true;
   }
 
+  void _initPrinterStatus() async {
+    // Initial check
+    final isConnected = await PrinterService.instance.isConnected();
+    if (mounted) {
+      setState(() {
+        _isPrinterConnected = isConnected;
+      });
+    }
+    
+    // Listen to changes
+    _printerSubscription = PrinterService.instance.connectionStatusStream.listen((status) {
+      if (mounted) {
+        setState(() {
+          _isPrinterConnected = status;
+        });
+        
+        // Show offline/online notification
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              status ? 'Printer Thermal Terhubung (Online)' : 'Printer Thermal Terputus (Offline)',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            backgroundColor: status ? Colors.green : Colors.red,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    });
+  }
+
   @override
   void initState() {
     super.initState();
+    _initPrinterStatus();
     // Run update check on dashboard load
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkForUpdates();
@@ -69,6 +107,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
   @override
   void dispose() {
+    _printerSubscription?.cancel();
     AutoBackupService.instance.stopChecking();
     super.dispose();
   }
@@ -358,6 +397,37 @@ class _AdminDashboardState extends State<AdminDashboard> {
       appBar: AppBar(
         title: Text('KickDirty Dashboard'),
         actions: [
+          StreamBuilder<bool>(
+            stream: PrinterService.instance.connectionStatusStream,
+            initialData: _isPrinterConnected,
+            builder: (context, snapshot) {
+              final connected = snapshot.data ?? false;
+              return Tooltip(
+                message: connected ? 'Printer Online' : 'Printer Offline',
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                  child: Row(
+                    children: [
+                      Icon(
+                        connected ? Icons.print : Icons.print_disabled,
+                        color: connected ? Colors.green : Colors.grey,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        connected ? 'Online' : 'Offline',
+                        style: TextStyle(
+                          color: connected ? Colors.green : Colors.grey,
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
           StreamBuilder<DocumentSnapshot>(
             stream: FirebaseFirestore.instance.collection('app_config').doc('version_info').snapshots(),
             builder: (context, snapshot) {
@@ -374,6 +444,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(builder: (_) => AdminSettingsScreen()),
+                    );
+                  } else if (value == 'printer_settings') {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const PrinterSettingsScreen()),
                     );
                   } else if (value == 'developer_billing') {
                     Navigator.push(
@@ -446,6 +521,16 @@ class _AdminDashboardState extends State<AdminDashboard> {
                         ],
                       ),
                     ),
+                  PopupMenuItem<String>(
+                    value: 'printer_settings',
+                    child: Row(
+                      children: [
+                        Icon(Icons.print_outlined, color: AppTheme.darkBlueText, size: 20),
+                        SizedBox(width: 10),
+                        Text('Printer Settings'),
+                      ],
+                    ),
+                  ),
                   if (role == 'owner' || role == 'staff')
                     PopupMenuItem<String>(
                       value: 'dev_support',

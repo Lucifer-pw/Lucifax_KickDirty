@@ -11,6 +11,7 @@ import '../../services/whatsapp_service.dart';
 import '../../theme.dart';
 import '../../widgets/invoice_detail_modal.dart';
 import '../../utils/error_helper.dart';
+import '../../utils/printer/printer_service.dart';
 
 class HistoryOrdersScreen extends StatefulWidget {
   final bool isTab;
@@ -222,7 +223,56 @@ class _HistoryOrdersScreenState extends State<HistoryOrdersScreen> {
         ? _buildThermalInvoiceDocument(order, shopName, shopPhone)
         : _buildPdfInvoiceDocument(order, shopName, shopPhone);
 
-    // Open print preview
+    // Direct bluetooth printing check if thermal is chosen
+    if (isThermal) {
+      final isPrinterConnected = await PrinterService.instance.isConnected();
+      if (isPrinterConnected) {
+        // Show printing overlay/loader
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => const Center(
+            child: Card(
+              child: Padding(
+                padding: EdgeInsets.all(20.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CircularProgressIndicator(),
+                    SizedBox(height: 12),
+                    Text('Mencetak langsung ke printer...', style: TextStyle(fontSize: 12)),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+
+        try {
+          final pdfBytes = await pdf.save();
+          await for (final page in Printing.raster(pdfBytes, pages: [0], dpi: 180)) {
+            final pngBytes = await page.toPng();
+            await PrinterService.instance.printThermal(pngBytes);
+          }
+          if (mounted) {
+            Navigator.pop(context); // close loader
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Struk berhasil dicetak!'), backgroundColor: Colors.green),
+            );
+          }
+        } catch (e) {
+          if (mounted) {
+            Navigator.pop(context); // close loader
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Gagal mencetak: $e'), backgroundColor: Colors.red),
+            );
+          }
+        }
+        return; // Exit, do not open standard print dialog
+      }
+    }
+
+    // Fallback or Standard: Open print preview
     await Printing.layoutPdf(
       onLayout: (PdfPageFormat format) async => pdf.save(),
       name: isThermal ? 'thermal_${order.id}.pdf' : 'invoice_${order.id}.pdf',
