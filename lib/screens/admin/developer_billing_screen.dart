@@ -613,10 +613,12 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
     );
   }
 
-  Future<void> _seedDefaultPackages() async {
+  Future<void> _seedDefaultPackages({bool force = false}) async {
     try {
-      final snapshot = await FirebaseFirestore.instance.collection('billing_packages').limit(1).get();
-      if (snapshot.docs.isNotEmpty) return;
+      if (!force) {
+        final snapshot = await FirebaseFirestore.instance.collection('billing_packages').limit(1).get();
+        if (snapshot.docs.isNotEmpty) return;
+      }
 
       final batch = FirebaseFirestore.instance.batch();
       final col = FirebaseFirestore.instance.collection('billing_packages');
@@ -667,7 +669,18 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
       });
 
       await batch.commit();
-    } catch (_) {}
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Paket default berhasil disimpan!'), backgroundColor: Colors.green),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal menyimpan paket default: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
   }
 
   void _showPackageDialog({Map<String, dynamic>? existingData, String? docId}) {
@@ -1179,9 +1192,24 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
                             if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
                               return Padding(
                                 padding: EdgeInsets.symmetric(vertical: 12),
-                                child: Text(
-                                  'Belum ada paket. Tekan tombol di bawah untuk menambah.',
-                                  style: TextStyle(fontSize: 12, color: AppTheme.textGray),
+                                child: Column(
+                                  children: [
+                                    Text(
+                                      'Belum ada paket di database.',
+                                      style: TextStyle(fontSize: 12, color: AppTheme.textGray),
+                                    ),
+                                    SizedBox(height: 8),
+                                    ElevatedButton.icon(
+                                      onPressed: () => _seedDefaultPackages(force: true),
+                                      icon: Icon(Icons.restore, size: 14),
+                                      label: Text('Gunakan Paket Bawaan (Default)', style: TextStyle(fontSize: 11)),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.orange,
+                                        foregroundColor: Colors.white,
+                                        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               );
                             }
@@ -1275,18 +1303,36 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
                           },
                         ),
                         SizedBox(height: 8),
-                        SizedBox(
-                          width: double.infinity,
-                          child: OutlinedButton.icon(
-                            onPressed: () => _showPackageDialog(),
-                            icon: Icon(Icons.add, size: 18),
-                            label: Text('Tambah Paket Baru'),
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: AppTheme.primaryBlue,
-                              side: BorderSide(color: AppTheme.primaryBlue),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                onPressed: () => _showPackageDialog(),
+                                icon: Icon(Icons.add, size: 16),
+                                label: Text('Tambah Paket', style: TextStyle(fontSize: 12)),
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: AppTheme.primaryBlue,
+                                  side: BorderSide(color: AppTheme.primaryBlue),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                  padding: EdgeInsets.symmetric(vertical: 10),
+                                ),
+                              ),
                             ),
-                          ),
+                            SizedBox(width: 8),
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                onPressed: () => _seedDefaultPackages(force: true),
+                                icon: Icon(Icons.restart_alt, size: 16),
+                                label: Text('Reset ke Default', style: TextStyle(fontSize: 12)),
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: Colors.orange,
+                                  side: BorderSide(color: Colors.orange),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                  padding: EdgeInsets.symmetric(vertical: 10),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
