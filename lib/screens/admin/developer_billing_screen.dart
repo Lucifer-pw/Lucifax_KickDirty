@@ -1226,7 +1226,9 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
                                   margin: EdgeInsets.only(bottom: 8),
                                   padding: EdgeInsets.all(12),
                                   decoration: BoxDecoration(
-                                    color: isHot ? AppTheme.primaryBlue.withOpacity(0.05) : Colors.grey.shade50,
+                                    color: isHot 
+                                        ? AppTheme.primaryBlue.withOpacity(0.05) 
+                                        : (AppTheme.isDarkMode ? Colors.grey[850] : Colors.grey.shade50),
                                     borderRadius: BorderRadius.circular(8),
                                     border: Border.all(color: isHot ? AppTheme.primaryBlue.withOpacity(0.3) : AppTheme.lightGray, width: 0.5),
                                   ),

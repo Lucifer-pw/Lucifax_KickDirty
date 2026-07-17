@@ -23,9 +23,9 @@ class _OwnerBillingPackageScreenState extends State<OwnerBillingPackageScreen> {
         height: height,
         width: height,
         decoration: BoxDecoration(
-          color: Colors.grey[100],
+          color: AppTheme.isDarkMode ? Colors.grey[800] : Colors.grey[100],
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.grey[300]!),
+          border: Border.all(color: AppTheme.isDarkMode ? Colors.grey[700]! : Colors.grey[300]!),
         ),
         child: Center(
           child: Column(
@@ -244,10 +244,14 @@ class _OwnerBillingPackageScreenState extends State<OwnerBillingPackageScreen> {
                                   margin: EdgeInsets.symmetric(horizontal: 4),
                                   padding: EdgeInsets.symmetric(vertical: 10),
                                   decoration: BoxDecoration(
-                                    color: isSel ? AppTheme.primaryBlue : Colors.grey[100],
+                                    color: isSel 
+                                        ? AppTheme.primaryBlue 
+                                        : (AppTheme.isDarkMode ? Colors.grey[800] : Colors.grey[100]),
                                     borderRadius: BorderRadius.circular(10),
                                     border: Border.all(
-                                      color: isSel ? AppTheme.primaryBlue : Colors.grey[300]!,
+                                      color: isSel 
+                                          ? AppTheme.primaryBlue 
+                                          : (AppTheme.isDarkMode ? Colors.grey[700]! : Colors.grey[300]!),
                                       width: 1.5,
                                     ),
                                   ),
@@ -302,16 +306,25 @@ class _OwnerBillingPackageScreenState extends State<OwnerBillingPackageScreen> {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Text('Total Tagihan:', style: TextStyle(fontSize: 12)),
-                                Text('Rp $formattedCalculatedAmount', style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primaryBlue)),
+                                Text('Total Tagihan:', style: TextStyle(fontSize: 12, color: AppTheme.darkBlueText)),
+                                Text(
+                                  'Rp $formattedCalculatedAmount', 
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold, 
+                                    color: AppTheme.isDarkMode ? AppTheme.secondaryBlue : AppTheme.primaryBlue,
+                                  ),
+                                ),
                               ],
                             ),
                             SizedBox(height: 8),
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Text('Jatuh Tempo Baru:', style: TextStyle(fontSize: 12)),
-                                Text(formattedNewDueDate, style: TextStyle(fontWeight: FontWeight.bold)),
+                                Text('Jatuh Tempo Baru:', style: TextStyle(fontSize: 12, color: AppTheme.darkBlueText)),
+                                Text(
+                                  formattedNewDueDate, 
+                                  style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.darkBlueText),
+                                ),
                               ],
                             ),
                           ],
@@ -826,7 +839,9 @@ class _OwnerBillingPackageScreenState extends State<OwnerBillingPackageScreen> {
                         foregroundColor: AppTheme.primaryBlue,
                         side: BorderSide(color: isSelected ? Colors.grey : AppTheme.primaryBlue, width: 1.5),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                        backgroundColor: isSelected ? Colors.grey.shade100 : Colors.transparent,
+                        backgroundColor: isSelected 
+                            ? (AppTheme.isDarkMode ? Colors.grey[800] : Colors.grey.shade100) 
+                            : Colors.transparent,
                       ),
                       child: Text(
                         isSelected ? 'Paket Pilihan Anda' : 'Pilih Paket ini',
