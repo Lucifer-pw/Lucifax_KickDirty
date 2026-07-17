@@ -471,237 +471,224 @@ class _OwnerBillingPackageScreenState extends State<OwnerBillingPackageScreen> {
           ),
         ],
       ),
-      body: StreamBuilder<DocumentSnapshot>(
-        stream: FirebaseFirestore.instance.collection('developer_billing').doc('config').snapshots(),
-        builder: (context, billingSnapshot) {
-          if (billingSnapshot.connectionState == ConnectionState.waiting) {
+      body: StreamBuilder<QuerySnapshot>(
+        stream: FirebaseFirestore.instance.collection('billing_packages').orderBy('order').snapshots(),
+        builder: (context, pkgSnapshot) {
+          if (pkgSnapshot.connectionState == ConnectionState.waiting) {
             return Center(child: CircularProgressIndicator());
           }
-
-          double billingAmount = 150000.0;
-          DateTime billingDueDate = DateTime(2026, 8, 1);
-          String billingQr = '';
-          if (billingSnapshot.hasData && billingSnapshot.data!.exists) {
-            final bData = billingSnapshot.data!.data() as Map<String, dynamic>?;
-            if (bData != null) {
-              final nextDueDate = (bData['nextDueDate'] as Timestamp?)?.toDate();
-              billingAmount = (bData['amount'] as num?)?.toDouble() ?? 150000.0;
-              billingQr = bData['qrImage'] as String? ?? '';
-              if (nextDueDate != null) {
-                billingDueDate = nextDueDate;
-              }
-            }
-          }
-
-          // Calculate remaining billing days
-          final now = DateTime.now();
-          final startOfToday = DateTime(now.year, now.month, now.day);
-          final startOfDue = DateTime(billingDueDate.year, billingDueDate.month, billingDueDate.day);
-          final int sisaHari = startOfDue.difference(startOfToday).inDays;
-
-          Color sisaHariColor = Colors.green;
-          String statusBillingText = 'Layanan Aktif';
-          if (sisaHari <= 0) {
-            sisaHariColor = Colors.red;
-            statusBillingText = 'Jatuh Tempo!';
-          } else if (sisaHari <= 7) {
-            sisaHariColor = Colors.orange;
-            statusBillingText = 'Segera Jatuh Tempo';
-          }
+          final packages = pkgSnapshot.data?.docs ?? [];
 
           return StreamBuilder<DocumentSnapshot>(
-            stream: FirebaseFirestore.instance.collection('app_config').doc('business_config').snapshots(),
-            builder: (context, configSnapshot) {
-              String selectedPackage = '';
-              double activePrice = billingAmount;
-              final cData = configSnapshot.hasData && configSnapshot.data!.exists
-                  ? configSnapshot.data!.data() as Map<String, dynamic>?
-                  : null;
-              if (cData != null) {
-                selectedPackage = cData['selectedPackage'] as String? ?? '';
-                final double? presetPrice = (cData['selectedPackagePrice'] as num?)?.toDouble();
-                if (presetPrice != null) {
-                  activePrice = presetPrice;
+            stream: FirebaseFirestore.instance.collection('developer_billing').doc('config').snapshots(),
+            builder: (context, billingSnapshot) {
+              if (billingSnapshot.connectionState == ConnectionState.waiting) {
+                return Center(child: CircularProgressIndicator());
+              }
+
+              double billingAmount = 150000.0;
+              DateTime billingDueDate = DateTime(2026, 8, 1);
+              String billingQr = '';
+              if (billingSnapshot.hasData && billingSnapshot.data!.exists) {
+                final bData = billingSnapshot.data!.data() as Map<String, dynamic>?;
+                if (bData != null) {
+                  final nextDueDate = (bData['nextDueDate'] as Timestamp?)?.toDate();
+                  billingAmount = (bData['amount'] as num?)?.toDouble() ?? 150000.0;
+                  billingQr = bData['qrImage'] as String? ?? '';
+                  if (nextDueDate != null) {
+                    billingDueDate = nextDueDate;
+                  }
                 }
               }
 
-              String activePackageLabel = cData?['selectedPackageName'] as String? ?? '';
-              if (activePackageLabel.isEmpty) {
-                if (activePrice == 100000.0) {
-                  activePackageLabel = 'Paket 1: Paket Cloud Server';
-                } else if (activePrice == 150000.0) {
-                  activePackageLabel = 'Paket 2: Paket Pemeliharaan & Support';
-                } else if (activePrice == 250000.0) {
-                  activePackageLabel = 'Paket 3: Paket Premium (Domain Kustom)';
-                } else {
-                  activePackageLabel = 'Paket Kustom (Developer)';
-                }
+              // Calculate remaining billing days
+              final now = DateTime.now();
+              final startOfToday = DateTime(now.year, now.month, now.day);
+              final startOfDue = DateTime(billingDueDate.year, billingDueDate.month, billingDueDate.day);
+              final int sisaHari = startOfDue.difference(startOfToday).inDays;
+
+              Color sisaHariColor = Colors.green;
+              String statusBillingText = 'Layanan Aktif';
+              if (sisaHari <= 0) {
+                sisaHariColor = Colors.red;
+                statusBillingText = 'Jatuh Tempo!';
+              } else if (sisaHari <= 7) {
+                sisaHariColor = Colors.orange;
+                statusBillingText = 'Segera Jatuh Tempo';
               }
 
-              return SingleChildScrollView(
-                padding: EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Billing Status Card
-                    Container(
-                      padding: EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: AppTheme.white,
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: AppTheme.cardShadow,
-                        border: Border.all(color: AppTheme.lightGray),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              return StreamBuilder<DocumentSnapshot>(
+                stream: FirebaseFirestore.instance.collection('app_config').doc('business_config').snapshots(),
+                builder: (context, configSnapshot) {
+                  String selectedPackage = '';
+                  double activePrice = billingAmount;
+                  final cData = configSnapshot.hasData && configSnapshot.data!.exists
+                      ? configSnapshot.data!.data() as Map<String, dynamic>?
+                      : null;
+                  if (cData != null) {
+                    selectedPackage = cData['selectedPackage'] as String? ?? '';
+                    final double? presetPrice = (cData['selectedPackagePrice'] as num?)?.toDouble();
+                    if (presetPrice != null) {
+                      activePrice = presetPrice;
+                    }
+                  }
+
+                  // Determine active package label dynamically from packages collection using billingAmount (current paid amount)
+                  String activePackageLabel = 'Paket Kustom (Developer)';
+                  final activePkgList = packages.where(
+                    (doc) => ((doc.data() as Map<String, dynamic>?)?['price'] as num?)?.toDouble() == billingAmount,
+                  ).toList();
+                  if (activePkgList.isNotEmpty) {
+                    activePackageLabel = (activePkgList.first.data() as Map<String, dynamic>)['name'] as String? ?? '';
+                  } else {
+                    if (billingAmount == 100000.0) {
+                      activePackageLabel = 'Paket 1: Paket Cloud Server';
+                    } else if (billingAmount == 150000.0) {
+                      activePackageLabel = 'Paket 2: Paket Pemeliharaan & Support';
+                    } else if (billingAmount == 250000.0) {
+                      activePackageLabel = 'Paket 3: Paket Premium (Domain Kustom)';
+                    }
+                  }
+
+                  return SingleChildScrollView(
+                    padding: EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Billing Status Card
+                        Container(
+                          padding: EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: AppTheme.white,
+                            borderRadius: BorderRadius.circular(20),
+                            boxShadow: AppTheme.cardShadow,
+                            border: Border.all(color: AppTheme.lightGray),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Text('Status Aplikasi', style: TextStyle(fontSize: 12, color: AppTheme.textGray)),
-                                  SizedBox(height: 4),
-                                  Text(
-                                    statusBillingText,
-                                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: sisaHariColor),
+                                  Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text('Status Aplikasi', style: TextStyle(fontSize: 12, color: AppTheme.textGray)),
+                                      SizedBox(height: 4),
+                                      Text(
+                                        statusBillingText,
+                                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: sisaHariColor),
+                                      ),
+                                    ],
+                                  ),
+                                  Container(
+                                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                    decoration: BoxDecoration(
+                                      color: sisaHariColor.withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Text(
+                                      sisaHari <= 0 ? 'Habis' : '$sisaHari Hari Lagi',
+                                      style: TextStyle(color: sisaHariColor, fontWeight: FontWeight.bold, fontSize: 13),
+                                    ),
                                   ),
                                 ],
                               ),
-                              Container(
-                                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                decoration: BoxDecoration(
-                                  color: sisaHariColor.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Text(
-                                  sisaHari <= 0 ? 'Habis' : '$sisaHari Hari Lagi',
-                                  style: TextStyle(color: sisaHariColor, fontWeight: FontWeight.bold, fontSize: 13),
+                              Divider(height: 24),
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Padding(
+                                    padding: EdgeInsets.only(top: 2.0),
+                                    child: Icon(Icons.dns_outlined, color: AppTheme.primaryBlue, size: 20),
+                                  ),
+                                  SizedBox(width: 10),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Paket Terbayar Saat Ini:',
+                                          style: TextStyle(fontSize: 12, color: AppTheme.textGray, height: 1.2),
+                                        ),
+                                        SizedBox(height: 4),
+                                        Text(
+                                          activePackageLabel,
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 14,
+                                            color: AppTheme.darkBlueText,
+                                            height: 1.2,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              SizedBox(height: 16),
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Padding(
+                                    padding: EdgeInsets.only(top: 2.0),
+                                    child: Icon(Icons.event_note, color: Colors.indigo, size: 20),
+                                  ),
+                                  SizedBox(width: 10),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Jatuh Tempo Berikutnya:',
+                                          style: TextStyle(fontSize: 12, color: AppTheme.textGray, height: 1.2),
+                                        ),
+                                        SizedBox(height: 4),
+                                        Text(
+                                          DateFormat('dd MMMM yyyy').format(billingDueDate),
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 14,
+                                            color: AppTheme.darkBlueText,
+                                            height: 1.2,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              SizedBox(height: 20),
+                              SizedBox(
+                                width: double.infinity,
+                                height: 50,
+                                child: ElevatedButton.icon(
+                                  onPressed: () => _showPaymentBottomSheet(context, activePrice, billingDueDate, billingQr),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppTheme.primaryBlue,
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                    padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                                  ),
+                                  icon: Icon(Icons.payment, color: Colors.white, size: 18),
+                                  label: Text(
+                                    'Bayar Tagihan Sekarang',
+                                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                                  ),
                                 ),
                               ),
                             ],
                           ),
-                          Divider(height: 24),
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Padding(
-                                padding: EdgeInsets.only(top: 2.0),
-                                child: Icon(Icons.dns_outlined, color: AppTheme.primaryBlue, size: 20),
-                              ),
-                              SizedBox(width: 10),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Paket Terbayar Saat Ini:',
-                                      style: TextStyle(fontSize: 12, color: AppTheme.textGray, height: 1.2),
-                                    ),
-                                    SizedBox(height: 4),
-                                    Text(
-                                      activePackageLabel,
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 14,
-                                        color: AppTheme.darkBlueText,
-                                        height: 1.2,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                          SizedBox(height: 16),
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Padding(
-                                padding: EdgeInsets.only(top: 2.0),
-                                child: Icon(Icons.event_note, color: Colors.indigo, size: 20),
-                              ),
-                              SizedBox(width: 10),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Jatuh Tempo Berikutnya:',
-                                      style: TextStyle(fontSize: 12, color: AppTheme.textGray, height: 1.2),
-                                    ),
-                                    SizedBox(height: 4),
-                                    Text(
-                                      DateFormat('dd MMMM yyyy').format(billingDueDate),
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 14,
-                                        color: AppTheme.darkBlueText,
-                                        height: 1.2,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                          SizedBox(height: 20),
-                          SizedBox(
-                            width: double.infinity,
-                            height: 50,
-                            child: ElevatedButton.icon(
-                              onPressed: () => _showPaymentBottomSheet(context, activePrice, billingDueDate, billingQr),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppTheme.primaryBlue,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                              ),
-                              icon: Icon(Icons.payment, color: Colors.white, size: 18),
-                              label: Text(
-                                'Bayar Tagihan Sekarang',
-                                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                        ),
 
-                    SizedBox(height: 24),
-                    Text(
-                      'PILIHAN PAKET MAINTENANCE APLIKASI',
-                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppTheme.darkBlueText, letterSpacing: 0.5),
-                    ),
-                    SizedBox(height: 12),
+                        SizedBox(height: 24),
+                        Text(
+                          'PILIHAN PAKET MAINTENANCE APLIKASI',
+                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppTheme.darkBlueText, letterSpacing: 0.5),
+                        ),
+                        SizedBox(height: 12),
 
-                    // Dynamic packages from Firestore
-                    StreamBuilder<QuerySnapshot>(
-                      stream: FirebaseFirestore.instance
-                          .collection('billing_packages')
-                          .orderBy('order')
-                          .snapshots(),
-                      builder: (context, pkgSnapshot) {
-                        if (pkgSnapshot.connectionState == ConnectionState.waiting) {
-                          return Center(child: Padding(
-                            padding: EdgeInsets.all(20),
-                            child: CircularProgressIndicator(),
-                          ));
-                        }
-                        if (!pkgSnapshot.hasData || pkgSnapshot.data!.docs.isEmpty) {
-                          return Padding(
-                            padding: EdgeInsets.all(20),
-                            child: Center(
-                              child: Text(
-                                'Belum ada paket tersedia.\nHubungi developer untuk setup.',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(color: AppTheme.textGray, fontSize: 13),
-                              ),
-                            ),
-                          );
-                        }
-                        final packages = pkgSnapshot.data!.docs;
-                        return Column(
+                        // Dynamic packages from Firestore
+                        Column(
                           children: packages.map((doc) {
                             final data = doc.data() as Map<String, dynamic>;
                             final packageKey = doc.id;
@@ -709,24 +696,23 @@ class _OwnerBillingPackageScreenState extends State<OwnerBillingPackageScreen> {
                             final price = (data['price'] as num?)?.toDouble() ?? 0.0;
                             final features = List<String>.from(data['features'] ?? []);
                             final isHot = data['isHot'] == true;
-                            final order = data['order'] as int? ?? 0;
                             return _buildPackageCard(
                               packageKey: packageKey,
                               name: name,
                               price: price,
-                              isActive: activePrice == price,
-                              isSelected: selectedPackage == packageKey || (selectedPackage.isEmpty && activePrice == price),
+                              isActive: billingAmount == price,
+                              isSelected: selectedPackage == packageKey || (selectedPackage.isEmpty && billingAmount == price),
                               features: features,
                               sisaHari: sisaHari,
                               isHot: isHot,
                             );
                           }).toList(),
-                        );
-                      },
+                        ),
+                        SizedBox(height: 16),
+                      ],
                     ),
-                    SizedBox(height: 16),
-                  ],
-                ),
+                  );
+                },
               );
             },
           );
