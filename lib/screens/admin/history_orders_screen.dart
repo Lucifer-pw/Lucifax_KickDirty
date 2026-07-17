@@ -204,7 +204,7 @@ class _HistoryOrdersScreenState extends State<HistoryOrdersScreen> {
   }
 
   // Generate and print PDF invoice
-  Future<void> _generatePdfInvoice(OrderModel order) async {
+  Future<void> _generatePdfInvoice(OrderModel order, {bool isThermal = false}) async {
     String shopName = "KickDirty";
     String shopPhone = "6281328580511";
     try {
@@ -215,12 +215,205 @@ class _HistoryOrdersScreenState extends State<HistoryOrdersScreen> {
       }
     } catch (_) {}
 
-    final pdf = _buildPdfInvoiceDocument(order, shopName, shopPhone);
+    final pdf = isThermal 
+        ? _buildThermalInvoiceDocument(order, shopName, shopPhone)
+        : _buildPdfInvoiceDocument(order, shopName, shopPhone);
 
     // Open print preview
     await Printing.layoutPdf(
       onLayout: (PdfPageFormat format) async => pdf.save(),
-      name: 'invoice_${order.id}.pdf',
+      name: isThermal ? 'thermal_${order.id}.pdf' : 'invoice_${order.id}.pdf',
+      format: isThermal 
+          ? const PdfPageFormat(58 * PdfPageFormat.mm, double.infinity, marginAll: 4 * PdfPageFormat.mm)
+          : PdfPageFormat.a5,
+    );
+  }
+
+  // Build 58mm Thermal Printer Invoice Document
+  pw.Document _buildThermalInvoiceDocument(OrderModel order, String shopName, String shopPhone) {
+    final pdf = pw.Document();
+
+    String day = order.createdAt.day.toString().padLeft(2, '0');
+    String month = order.createdAt.month.toString().padLeft(2, '0');
+    String year = order.createdAt.year.toString();
+    String formattedDate = "$day-$month-$year";
+
+    pdf.addPage(
+      pw.Page(
+        pageFormat: const PdfPageFormat(58 * PdfPageFormat.mm, double.infinity, marginAll: 4 * PdfPageFormat.mm),
+        build: (pw.Context context) {
+          return pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              // Header
+              pw.Center(
+                child: pw.Column(
+                  children: [
+                    pw.Text(
+                      shopName.toUpperCase(),
+                      style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold),
+                    ),
+                    pw.Text(
+                      'Laundry Sepatu',
+                      style: const pw.TextStyle(fontSize: 7),
+                    ),
+                    pw.Text(
+                      'HP/WA: $shopPhone',
+                      style: const pw.TextStyle(fontSize: 7),
+                    ),
+                  ],
+                ),
+              ),
+              pw.SizedBox(height: 4),
+              pw.Text('-' * 28, style: const pw.TextStyle(fontSize: 8)),
+              pw.SizedBox(height: 4),
+
+              // Metadata
+              pw.Text('No: ${order.id}', style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold)),
+              pw.Text('Tgl: $formattedDate', style: const pw.TextStyle(fontSize: 7)),
+              pw.Text('Cust: ${order.customerName}', style: const pw.TextStyle(fontSize: 7)),
+              pw.Text('Status: ${order.status.toUpperCase()}', style: const pw.TextStyle(fontSize: 7)),
+              pw.SizedBox(height: 4),
+              pw.Text('-' * 28, style: const pw.TextStyle(fontSize: 8)),
+              pw.SizedBox(height: 4),
+
+              // Items List
+              ...order.items.map((item) {
+                return pw.Padding(
+                  padding: const pw.EdgeInsets.only(bottom: 4),
+                  child: pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                      pw.Text(item.itemName, style: pw.TextStyle(fontSize: 7, fontWeight: pw.FontWeight.bold)),
+                      pw.Row(
+                        mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                        children: [
+                          pw.Text(' (${item.serviceName})', style: const pw.TextStyle(fontSize: 6, color: PdfColors.grey700)),
+                          pw.Text('Rp ${item.price.toStringAsFixed(0)}', style: const pw.TextStyle(fontSize: 7)),
+                        ],
+                      ),
+                    ],
+                  ),
+                );
+              }),
+
+              pw.Text('-' * 28, style: const pw.TextStyle(fontSize: 8)),
+              pw.SizedBox(height: 4),
+
+              // Pricing details
+              pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Text('Subtotal:', style: const pw.TextStyle(fontSize: 7)),
+                  pw.Text('Rp ${order.items.fold(0.0, (sum, item) => sum + item.price).toStringAsFixed(0)}', style: const pw.TextStyle(fontSize: 7)),
+                ],
+              ),
+              if (order.deliveryFee > 0)
+                pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                  children: [
+                    pw.Text('Ongkir:', style: const pw.TextStyle(fontSize: 7)),
+                    pw.Text('Rp ${order.deliveryFee.toStringAsFixed(0)}', style: const pw.TextStyle(fontSize: 7)),
+                  ],
+                ),
+              if (order.voucherDiscount > 0)
+                pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                  children: [
+                    pw.Text('Diskon:', style: const pw.TextStyle(fontSize: 7, color: PdfColors.green)),
+                    pw.Text('-Rp ${order.voucherDiscount.toStringAsFixed(0)}', style: const pw.TextStyle(fontSize: 7, color: PdfColors.green)),
+                  ],
+                ),
+              if (order.pointsRedeemed > 0)
+                pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                  children: [
+                    pw.Text('Poin Red:', style: const pw.TextStyle(fontSize: 7, color: PdfColors.green)),
+                    pw.Text(
+                      '-Rp ${((order.items.fold(0.0, (sum, item) => sum + item.price) + order.deliveryFee - order.voucherDiscount) - order.totalAmount).clamp(0.0, double.infinity).toStringAsFixed(0)}',
+                      style: const pw.TextStyle(fontSize: 7, color: PdfColors.green),
+                    ),
+                  ],
+                ),
+              pw.SizedBox(height: 2),
+              pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Text('TOTAL:', style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold)),
+                  pw.Text('Rp ${order.totalAmount.toStringAsFixed(0)}', style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold)),
+                ],
+              ),
+              pw.SizedBox(height: 4),
+
+              if (order.notes.isNotEmpty) ...[
+                pw.Text('Notes: ${order.notes}', style: pw.TextStyle(fontSize: 6, fontStyle: pw.FontStyle.italic)),
+                pw.SizedBox(height: 4),
+              ],
+
+              pw.Text('-' * 28, style: const pw.TextStyle(fontSize: 8)),
+              pw.SizedBox(height: 6),
+
+              // Footer
+              pw.Center(
+                child: pw.Column(
+                  children: [
+                    pw.Text('Terima kasih!', style: const pw.TextStyle(fontSize: 7, fontWeight: pw.FontWeight.bold)),
+                    pw.Text('Sepatu bersih, langkah percaya diri.', style: const pw.TextStyle(fontSize: 6)),
+                  ],
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+
+    return pdf;
+  }
+
+  // Show print options selection dialog
+  void _showPrintOptionsDialog(OrderModel order) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: AppTheme.white,
+          title: Text(
+            'Pilih Format Cetak',
+            style: TextStyle(color: AppTheme.darkBlueText, fontWeight: FontWeight.bold, fontSize: 16),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: Icon(Icons.picture_as_pdf_outlined, color: AppTheme.primaryBlue),
+                title: Text('Format A5 (Standar PDF)', style: TextStyle(color: AppTheme.darkBlueText)),
+                subtitle: Text('Sesuai untuk printer inkjet/laser A4/A5', style: TextStyle(color: AppTheme.textGray, fontSize: 11)),
+                onTap: () {
+                  Navigator.pop(context);
+                  _generatePdfInvoice(order, isThermal: false);
+                },
+              ),
+              Divider(height: 1),
+              ListTile(
+                leading: Icon(Icons.print_outlined, color: Colors.green),
+                title: Text('Format Thermal (58mm)', style: TextStyle(color: AppTheme.darkBlueText)),
+                subtitle: Text('Sesuai untuk printer bluetooth kasir roll', style: TextStyle(color: AppTheme.textGray, fontSize: 11)),
+                onTap: () {
+                  Navigator.pop(context);
+                  _generatePdfInvoice(order, isThermal: true);
+                },
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text('Batal', style: TextStyle(color: AppTheme.textGray)),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -541,7 +734,7 @@ class _HistoryOrdersScreenState extends State<HistoryOrdersScreen> {
 
                                   // PDF Invoice Print
                                   TextButton.icon(
-                                    onPressed: () => _generatePdfInvoice(order),
+                                    onPressed: () => _showPrintOptionsDialog(order),
                                     icon: Icon(Icons.print_outlined, color: AppTheme.textGray, size: 14),
                                     label: Text('Cetak', style: TextStyle(color: AppTheme.textGray, fontSize: 11)),
                                   ),
