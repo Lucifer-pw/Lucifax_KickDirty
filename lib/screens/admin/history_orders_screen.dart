@@ -419,6 +419,16 @@ class _HistoryOrdersScreenState extends State<HistoryOrdersScreen> {
                   _generatePdfInvoice(order, isThermal: true);
                 },
               ),
+              Divider(height: 1),
+              ListTile(
+                leading: Icon(Icons.help_outline, color: Colors.orange),
+                title: Text('Panduan Printer Bluetooth', style: TextStyle(color: AppTheme.darkBlueText)),
+                subtitle: Text('Cara menghubungkan HP ke printer thermal bluetooth', style: TextStyle(color: AppTheme.textGray, fontSize: 11)),
+                onTap: () {
+                  Navigator.pop(context);
+                  _showPrinterGuideDialog();
+                },
+              ),
             ],
           ),
           actions: [
@@ -429,6 +439,109 @@ class _HistoryOrdersScreenState extends State<HistoryOrdersScreen> {
           ],
         );
       },
+    );
+  }
+
+  // Show printer connection guide dialog
+  void _showPrinterGuideDialog() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return DefaultTabController(
+          length: 2,
+          child: AlertDialog(
+            backgroundColor: AppTheme.white,
+            title: Row(
+              children: [
+                Icon(Icons.bluetooth, color: AppTheme.primaryBlue),
+                SizedBox(width: 8),
+                Text(
+                  'Koneksi Printer Bluetooth',
+                  style: TextStyle(color: AppTheme.darkBlueText, fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+              ],
+            ),
+            content: Container(
+              width: double.maxFinite,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TabBar(
+                    labelColor: AppTheme.primaryBlue,
+                    unselectedLabelColor: AppTheme.textGray,
+                    indicatorColor: AppTheme.primaryBlue,
+                    tabs: [
+                      Tab(text: 'Android (HP)', icon: Icon(Icons.android)),
+                      Tab(text: 'iOS (iPhone)', icon: Icon(Icons.phone_iphone)),
+                    ],
+                  ),
+                  SizedBox(height: 12),
+                  Container(
+                    height: 280,
+                    child: TabBarView(
+                      children: [
+                        // Android Guide
+                        ListView(
+                          children: [
+                            _buildGuideStep('1', 'Nyalakan Bluetooth & Printer Thermal Anda.'),
+                            _buildGuideStep('2', 'Buka Pengaturan HP -> Bluetooth, lalu pasangkan (pair) printer bluetooth Anda (biasanya nama printer: MPT-II, RPP02N, dll. PIN pairing: 0000 atau 1234).'),
+                            _buildGuideStep('3', 'Unduh aplikasi Print Service di Google Play Store (Rekomendasi: ESC/POS Wi-Fi/BlueTooth Print Service atau RawBT).'),
+                            _buildGuideStep('4', 'Buka aplikasi print service tersebut, lalu hubungkan (bind) dengan printer Bluetooth yang sudah dipasangkan.'),
+                            _buildGuideStep('5', 'Aktifkan Print Service tersebut di HP Anda melalui menu Pengaturan HP -> Koneksi & Berbagi -> Pencetakan (Printing) -> aktifkan print service yang diunduh.'),
+                            _buildGuideStep('6', 'Kembali ke aplikasi KickDirty, klik "Cetak" -> pilih "Format Thermal (58mm)" -> pilih printer service yang tadi diaktifkan -> klik ikon Print.'),
+                          ],
+                        ),
+                        // iOS Guide
+                        ListView(
+                          children: [
+                            _buildGuideStep('1', 'Pastikan Printer Thermal Anda mendukung koneksi Bluetooth iOS.'),
+                            _buildGuideStep('2', 'Nyalakan Bluetooth HP dan pasangkan printer thermal Anda di Pengaturan iOS.'),
+                            _buildGuideStep('3', 'Unduh aplikasi pihak ketiga pencetakan di App Store seperti MobiPrint atau Bluetooth Print.'),
+                            _buildGuideStep('4', 'Gunakan opsi "Kirim PDF" atau "Share" di riwayat pesanan KickDirty, lalu kirim ke aplikasi print helper tersebut untuk dicetak secara langsung.'),
+                            _buildGuideStep('5', 'Atau jika printer mendukung AirPrint, Anda bisa langsung memilih printer dari daftar printer iOS saat menekan opsi Cetak Thermal.'),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text('Tutup', style: TextStyle(color: AppTheme.primaryBlue, fontWeight: FontWeight.bold)),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildGuideStep(String number, String text) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          CircleAvatar(
+            radius: 9,
+            backgroundColor: AppTheme.primaryBlue.withOpacity(0.12),
+            child: Text(
+              number,
+              style: TextStyle(fontSize: 10, color: AppTheme.primaryBlue, fontWeight: FontWeight.bold),
+            ),
+          ),
+          SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(fontSize: 12, color: AppTheme.darkBlueText, height: 1.4),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
