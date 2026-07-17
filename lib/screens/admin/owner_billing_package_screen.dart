@@ -195,7 +195,7 @@ class _OwnerBillingPackageScreenState extends State<OwnerBillingPackageScreen> {
 
                 return Container(
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: AppTheme.white,
                     borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
                   ),
                   padding: EdgeInsets.all(24),

@@ -910,7 +910,7 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
                     width: double.infinity,
                     padding: EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: AppTheme.white,
                       borderRadius: BorderRadius.circular(12),
                       boxShadow: AppTheme.cardShadow,
                       border: Border.all(color: AppTheme.lightGray, width: 0.5),
@@ -954,7 +954,7 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
                       width: double.infinity,
                       padding: EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: AppTheme.white,
                         borderRadius: BorderRadius.circular(12),
                         boxShadow: AppTheme.cardShadow,
                         border: Border.all(color: AppTheme.lightGray, width: 0.5),

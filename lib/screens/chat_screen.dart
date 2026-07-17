@@ -208,7 +208,7 @@ class _ChatScreenState extends State<ChatScreen> {
                         padding: EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                         constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
                         decoration: BoxDecoration(
-                          color: isMe ? AppTheme.primaryBlue : Colors.grey[200],
+                          color: isMe ? AppTheme.primaryBlue : (AppTheme.isDarkMode ? Color(0xFF334155) : Color(0xFFF1F5F9)),
                           borderRadius: BorderRadius.only(
                             topLeft: Radius.circular(16),
                             topRight: Radius.circular(16),
@@ -238,7 +238,7 @@ class _ChatScreenState extends State<ChatScreen> {
                               timeText,
                               style: TextStyle(
                                 fontSize: 9,
-                                color: isMe ? Colors.white70 : Colors.black45,
+                                color: isMe ? Colors.white70 : (AppTheme.isDarkMode ? Colors.white54 : Colors.black45),
                               ),
                             ),
                           ],
@@ -255,7 +255,7 @@ class _ChatScreenState extends State<ChatScreen> {
           if (!_loadingQuickReplies && _quickReplies.isNotEmpty)
             Container(
               height: 48,
-              color: Colors.grey[50],
+              color: AppTheme.isDarkMode ? Color(0xFF0F172A) : Colors.grey[50],
               child: ListView(
                 scrollDirection: Axis.horizontal,
                 padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -264,8 +264,8 @@ class _ChatScreenState extends State<ChatScreen> {
                     padding: EdgeInsets.only(right: 8.0),
                     child: ActionChip(
                       label: Text(reply, style: TextStyle(fontSize: 12)),
-                      backgroundColor: Colors.white,
-                      side: BorderSide(color: Colors.grey[300]!),
+                      backgroundColor: AppTheme.white,
+                      side: BorderSide(color: AppTheme.lightGray),
                       onPressed: () {
                         _messageController.text = reply;
                         _sendMessage();
@@ -288,7 +288,7 @@ class _ChatScreenState extends State<ChatScreen> {
             child: Container(
               padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: AppTheme.white,
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.05),
@@ -338,7 +338,7 @@ class _ChatScreenState extends State<ChatScreen> {
           builder: (context, setStateSheet) {
             return Container(
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: AppTheme.white,
                 borderRadius: BorderRadius.only(
                   topLeft: Radius.circular(24),
                   topRight: Radius.circular(24),

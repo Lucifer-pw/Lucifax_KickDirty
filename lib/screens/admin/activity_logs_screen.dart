@@ -127,7 +127,7 @@ class _ActivityLogsScreenState extends State<ActivityLogsScreen> {
                 padding: EdgeInsets.all(16.0),
                 child: Container(
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: AppTheme.white,
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: AppTheme.cardShadow,
                   ),
@@ -227,7 +227,7 @@ class _ActivityLogsScreenState extends State<ActivityLogsScreen> {
                           margin: EdgeInsets.only(bottom: 12),
                           padding: EdgeInsets.all(16),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: AppTheme.white,
                             borderRadius: BorderRadius.circular(20),
                             boxShadow: AppTheme.cardShadow,
                             border: Border.all(color: AppTheme.lightGray, width: 0.5),

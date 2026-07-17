@@ -234,7 +234,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     if (!_isRegistering) ...[
                       Container(
                         decoration: BoxDecoration(
-                          color: Colors.grey.shade100,
+                          color: AppTheme.isDarkMode ? Color(0xFF1E293B) : Color(0xFFF1F5F9),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Row(
@@ -251,10 +251,11 @@ class _LoginScreenState extends State<LoginScreen> {
                                 },
                                 selectedColor: AppTheme.primaryBlue,
                                 labelStyle: TextStyle(
-                                  color: !_isPhoneLogin ? Colors.white : Colors.black87,
+                                  color: !_isPhoneLogin ? Colors.white : (AppTheme.isDarkMode ? Colors.white70 : Colors.black87),
                                   fontWeight: FontWeight.bold,
                                 ),
                                 backgroundColor: Colors.transparent,
+                                side: BorderSide.none,
                                 elevation: 0,
                                 pressElevation: 0,
                                 shadowColor: Colors.transparent,
@@ -274,10 +275,11 @@ class _LoginScreenState extends State<LoginScreen> {
                                 },
                                 selectedColor: AppTheme.primaryBlue,
                                 labelStyle: TextStyle(
-                                  color: _isPhoneLogin ? Colors.white : Colors.black87,
+                                  color: _isPhoneLogin ? Colors.white : (AppTheme.isDarkMode ? Colors.white70 : Colors.black87),
                                   fontWeight: FontWeight.bold,
                                 ),
                                 backgroundColor: Colors.transparent,
+                                side: BorderSide.none,
                                 elevation: 0,
                                 pressElevation: 0,
                                 shadowColor: Colors.transparent,
