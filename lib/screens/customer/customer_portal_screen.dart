@@ -3228,7 +3228,7 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
 
         return Container(
           width: double.infinity,
-          color: AppTheme.darkBlueText,
+          color: const Color(0xFF0A1D37),
           padding: EdgeInsets.symmetric(horizontal: 24, vertical: 32),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
