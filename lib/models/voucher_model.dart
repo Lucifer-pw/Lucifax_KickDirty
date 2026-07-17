@@ -74,7 +74,10 @@ class VoucherModel {
 
     final now = DateTime.now();
     if (validFrom != null && now.isBefore(validFrom!)) return 0.0;
-    if (validTo != null && now.isAfter(validTo!)) return 0.0;
+    if (validTo != null) {
+      final expiry = DateTime(validTo!.year, validTo!.month, validTo!.day, 23, 59, 59, 999);
+      if (now.isAfter(expiry)) return 0.0;
+    }
 
     if (discountType == 'percentage') {
       double discount = orderTotal * (discountValue / 100);

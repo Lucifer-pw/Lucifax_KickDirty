@@ -830,7 +830,10 @@ class DatabaseService with ChangeNotifier {
           .map((doc) => VoucherModel.fromMap(doc.data(), doc.id))
           .where((v) {
             if (v.validFrom != null && now.isBefore(v.validFrom!)) return false;
-            if (v.validTo != null && now.isAfter(v.validTo!)) return false;
+            if (v.validTo != null) {
+              final expiry = DateTime(v.validTo!.year, v.validTo!.month, v.validTo!.day, 23, 59, 59, 999);
+              if (now.isAfter(expiry)) return false;
+            }
             return true;
           })
           .toList();
@@ -876,7 +879,10 @@ class DatabaseService with ChangeNotifier {
     final now = DateTime.now();
 
     if (voucher.validFrom != null && now.isBefore(voucher.validFrom!)) return null;
-    if (voucher.validTo != null && now.isAfter(voucher.validTo!)) return null;
+    if (voucher.validTo != null) {
+      final expiry = DateTime(voucher.validTo!.year, voucher.validTo!.month, voucher.validTo!.day, 23, 59, 59, 999);
+      if (now.isAfter(expiry)) return null;
+    }
     if (orderTotal < voucher.minOrder) return null;
     if (itemQty < voucher.minQty) return null;
 
