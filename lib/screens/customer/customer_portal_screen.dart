@@ -33,6 +33,45 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
   int _currentIndex = 0;
   String? _selectedCategoryId;
 
+  Map<String, double>? _parseLatLng(String url) {
+    if (url.isEmpty) return null;
+    
+    // Try query=lat,lng or q=lat,lng
+    final regExp = RegExp(r'(?:query|q|place)=([+-]?\d+\.\d+)\s*,\s*([+-]?\d+\.\d+)');
+    final match = regExp.firstMatch(url);
+    if (match != null && match.groupCount >= 2) {
+      final lat = double.tryParse(match.group(1)!);
+      final lng = double.tryParse(match.group(2)!);
+      if (lat != null && lng != null) {
+        return {'latitude': lat, 'longitude': lng};
+      }
+    }
+    
+    // Try @lat,lng
+    final regExpAt = RegExp(r'@([+-]?\d+\.\d+)\s*,\s*([+-]?\d+\.\d+)');
+    final matchAt = regExpAt.firstMatch(url);
+    if (matchAt != null && matchAt.groupCount >= 2) {
+      final lat = double.tryParse(matchAt.group(1)!);
+      final lng = double.tryParse(matchAt.group(2)!);
+      if (lat != null && lng != null) {
+        return {'latitude': lat, 'longitude': lng};
+      }
+    }
+
+    // Try raw coordinates (e.g. -7.556,110.825)
+    final regExpRaw = RegExp(r'^([+-]?\d+\.\d+)\s*,\s*([+-]?\d+\.\d+)$');
+    final matchRaw = regExpRaw.firstMatch(url.trim());
+    if (matchRaw != null && matchRaw.groupCount >= 2) {
+      final lat = double.tryParse(matchRaw.group(1)!);
+      final lng = double.tryParse(matchRaw.group(2)!);
+      if (lat != null && lng != null) {
+        return {'latitude': lat, 'longitude': lng};
+      }
+    }
+
+    return null;
+  }
+
   late Stream<List<CategoryModel>> _categoriesStream;
   late Stream<List<ServiceModel>> _servicesStream;
   late Stream<List<VoucherModel>> _vouchersStream;
@@ -135,6 +174,7 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
     final nameController = TextEditingController();
     final notesController = TextEditingController();
     final addressController = TextEditingController(text: currentUser.addressDetail);
+    final mapsLinkController = TextEditingController(text: currentUser.mapsLink);
     final voucherController = TextEditingController();
 
     CategoryModel? selectedCategory = categories.isNotEmpty ? categories.first : null;
@@ -502,65 +542,135 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
                         ),
                         const SizedBox(height: 8),
 
-                        // GPS maps link display
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: orderMapsLink.isEmpty
-                                ? Colors.amber.withOpacity(0.05)
-                                : AppTheme.lightBlueBackground,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: orderMapsLink.isEmpty
-                                  ? Colors.amber.withOpacity(0.2)
-                                  : AppTheme.primaryBlue.withOpacity(0.2),
-                            ),
+                        // GPS maps link input
+                        TextFormField(
+                          controller: mapsLinkController,
+                          decoration: const InputDecoration(
+                            labelText: 'Link / Koordinat Google Maps',
+                            hintText: 'https://maps.google.com/... atau -7.556,110.825',
+                            prefixIcon: Icon(Icons.map_outlined),
+                            helperText: 'Buka Google Maps -> Cari Lokasi -> Bagikan -> Salin Link, atau masukkan koordinat manual.',
+                            helperMaxLines: 2,
                           ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Icon(
-                                    orderMapsLink.isEmpty
-                                        ? Icons.info_outline
-                                        : Icons.check_circle_outline,
-                                    color: orderMapsLink.isEmpty
-                                        ? Colors.amber[700]
-                                        : AppTheme.primaryBlue,
-                                    size: 20,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Text(
-                                      orderMapsLink.isEmpty
-                                          ? 'Lokasi GPS belum dikunci (disarankan agar kurir tidak tersesat)'
-                                          : 'Lokasi GPS Terkunci',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.bold,
-                                        color: orderMapsLink.isEmpty
-                                            ? Colors.amber[800]
-                                            : AppTheme.darkBlueText,
+                          onChanged: (val) {
+                            setStateSheet(() {
+                              orderMapsLink = val.trim();
+                            });
+                          },
+                        ),
+                        const SizedBox(height: 8),
+
+                        // Minimap preview
+                        Builder(
+                          builder: (context) {
+                            final coords = _parseLatLng(orderMapsLink);
+                            if (coords == null) {
+                              return Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: Colors.amber.withOpacity(0.05),
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(color: Colors.amber.withOpacity(0.2)),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.info_outline, color: Colors.amber[700], size: 20),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        'Lokasi GPS belum dikunci/dimasukkan (disarankan agar kurir tidak tersesat)',
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.amber[800],
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }
+                            
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Pratinjau Peta Lokasi Pengiriman:',
+                                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppTheme.darkBlueText),
+                                ),
+                                const SizedBox(height: 4),
+                                GestureDetector(
+                                  onTap: () async {
+                                    if (orderMapsLink.startsWith('http') && await canLaunchUrl(Uri.parse(orderMapsLink))) {
+                                      await launchUrl(Uri.parse(orderMapsLink));
+                                    } else {
+                                      final mapUrl = 'https://www.google.com/maps/search/?api=1&query=${coords['latitude']},${coords['longitude']}';
+                                      if (await canLaunchUrl(Uri.parse(mapUrl))) {
+                                        await launchUrl(Uri.parse(mapUrl));
+                                      }
+                                    }
+                                  },
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(16),
+                                    child: Container(
+                                      height: 150,
+                                      width: double.infinity,
+                                      color: Colors.grey[200],
+                                      child: Stack(
+                                        children: [
+                                          Image.network(
+                                            'https://static-maps.yandex.ru/1.x/?ll=${coords['longitude']},${coords['latitude']}&z=15&size=450,150&l=map&pt=${coords['longitude']},${coords['latitude']},pm2rdm',
+                                            fit: BoxFit.cover,
+                                            width: double.infinity,
+                                            height: double.infinity,
+                                            errorBuilder: (context, error, stackTrace) {
+                                              return Container(
+                                                color: Colors.grey[300],
+                                                child: const Center(
+                                                  child: Column(
+                                                    mainAxisAlignment: MainAxisAlignment.center,
+                                                    children: [
+                                                      Icon(Icons.map_outlined, color: Colors.grey, size: 36),
+                                                      SizedBox(height: 4),
+                                                      Text(
+                                                        'Peta tidak dapat dimuat',
+                                                        style: TextStyle(color: Colors.grey, fontSize: 12),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              );
+                                            },
+                                          ),
+                                          Positioned(
+                                            bottom: 8,
+                                            right: 8,
+                                            child: Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                              decoration: BoxDecoration(
+                                                color: Colors.black.withOpacity(0.6),
+                                                borderRadius: BorderRadius.circular(8),
+                                              ),
+                                              child: const Row(
+                                                children: [
+                                                  Icon(Icons.open_in_new, color: Colors.white, size: 10),
+                                                  SizedBox(width: 4),
+                                                  Text(
+                                                    'Buka Google Maps',
+                                                    style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
                                   ),
-                                ],
-                              ),
-                              if (orderMapsLink.isNotEmpty) ...[
-                                const SizedBox(height: 6),
-                                Text(
-                                  orderMapsLink,
-                                  style: const TextStyle(
-                                    fontSize: 11,
-                                    color: AppTheme.textGray,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  maxLines: 1,
                                 ),
                               ],
-                            ],
-                          ),
+                            );
+                          },
                         ),
                         const SizedBox(height: 8),
 
@@ -579,6 +689,7 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
                                       if (link != null) {
                                         setStateSheet(() {
                                           orderMapsLink = link;
+                                          mapsLinkController.text = link;
                                         });
                                         // Save to database user profile
                                         await FirebaseFirestore.instance
@@ -1501,8 +1612,93 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
                     helperText: 'Buka Google Maps -> Cari Lokasi -> Bagikan -> Salin Link',
                     helperMaxLines: 2,
                   ),
+                  onChanged: (val) {
+                    setStateDialog(() {});
+                  },
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 8),
+
+                // Real-time minimap preview
+                Builder(
+                  builder: (context) {
+                    final currentLink = mapsController.text.trim();
+                    final coords = _parseLatLng(currentLink);
+                    if (coords == null) {
+                      return const SizedBox.shrink();
+                    }
+                    
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Pratinjau Peta Lokasi:',
+                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppTheme.darkBlueText),
+                        ),
+                        const SizedBox(height: 4),
+                        GestureDetector(
+                          onTap: () async {
+                            if (currentLink.startsWith('http') && await canLaunchUrl(Uri.parse(currentLink))) {
+                              await launchUrl(Uri.parse(currentLink));
+                            } else {
+                              final mapUrl = 'https://www.google.com/maps/search/?api=1&query=${coords['latitude']},${coords['longitude']}';
+                              if (await canLaunchUrl(Uri.parse(mapUrl))) {
+                                await launchUrl(Uri.parse(mapUrl));
+                              }
+                            }
+                          },
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(16),
+                            child: Container(
+                              height: 120,
+                              width: double.infinity,
+                              color: Colors.grey[200],
+                              child: Stack(
+                                children: [
+                                  Image.network(
+                                    'https://static-maps.yandex.ru/1.x/?ll=${coords['longitude']},${coords['latitude']}&z=15&size=450,150&l=map&pt=${coords['longitude']},${coords['latitude']},pm2rdm',
+                                    fit: BoxFit.cover,
+                                    width: double.infinity,
+                                    height: double.infinity,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return Container(
+                                        color: Colors.grey[300],
+                                        child: const Center(
+                                          child: Icon(Icons.map_outlined, color: Colors.grey, size: 24),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                  Positioned(
+                                    bottom: 6,
+                                    right: 6,
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: Colors.black.withOpacity(0.6),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: const Row(
+                                        children: [
+                                          Icon(Icons.open_in_new, color: Colors.white, size: 8),
+                                          SizedBox(width: 2),
+                                          Text(
+                                            'Buka Google Maps',
+                                            style: TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+                    );
+                  },
+                ),
 
                 // Button to lock GPS Location
                 SizedBox(
