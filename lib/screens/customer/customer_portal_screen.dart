@@ -178,7 +178,7 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
             double deliveryFee = (selectedMethod['fee'] ?? 0.0) as double;
 
             double pointsDiscount = usePointsRedemption ? discountValue : 0.0;
-            double voucherDiscount = appliedVoucher != null ? appliedVoucher!.calculateDiscount(servicePrice) : 0.0;
+            double voucherDiscount = appliedVoucher != null ? appliedVoucher!.calculateDiscount(servicePrice, itemQty: orderItems.length) : 0.0;
             
             double totalPrice = servicePrice + deliveryFee - pointsDiscount - voucherDiscount;
             if (totalPrice < 0) totalPrice = 0.0;
@@ -696,9 +696,9 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
                               stream: _vouchersStream,
                               builder: (context, snapshot) {
                                 final activeVouchers = snapshot.data ?? [];
-                                final eligibleVouchers = activeVouchers.where((v) => servicePrice >= v.minOrder).toList();
+                                final eligibleVouchers = activeVouchers.where((v) => servicePrice >= v.minOrder && orderItems.length >= v.minQty).toList();
 
-                                // Auto de-apply if cart total drops below minOrder
+                                // Auto de-apply if cart total drops below minOrder or quantity drops below minQty
                                 if (appliedVoucher != null && !eligibleVouchers.contains(appliedVoucher)) {
                                   WidgetsBinding.instance.addPostFrameCallback((_) {
                                     setStateSheet(() {
@@ -1040,7 +1040,7 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
 
                                     // Recalculate final totals
                                     double finalServicePrice = orderItems.fold(0.0, (sum, item) => sum + item.price);
-                                    double finalVoucherDiscount = appliedVoucher != null ? appliedVoucher!.calculateDiscount(finalServicePrice) : 0.0;
+                                    double finalVoucherDiscount = appliedVoucher != null ? appliedVoucher!.calculateDiscount(finalServicePrice, itemQty: orderItems.length) : 0.0;
                                     double finalTotalPrice = finalServicePrice + deliveryFee - pointsDiscount - finalVoucherDiscount;
                                     if (finalTotalPrice < 0) finalTotalPrice = 0.0;
 

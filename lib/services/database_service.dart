@@ -863,7 +863,7 @@ class DatabaseService with ChangeNotifier {
   }
 
   // Validate a voucher code and return the voucher if valid
-  Future<VoucherModel?> validateVoucher(String code, double orderTotal) async {
+  Future<VoucherModel?> validateVoucher(String code, double orderTotal, {int itemQty = 0}) async {
     final snapshot = await _db.collection('vouchers')
         .where('code', isEqualTo: code.toUpperCase().trim())
         .where('isActive', isEqualTo: true)
@@ -878,6 +878,7 @@ class DatabaseService with ChangeNotifier {
     if (voucher.validFrom != null && now.isBefore(voucher.validFrom!)) return null;
     if (voucher.validTo != null && now.isAfter(voucher.validTo!)) return null;
     if (orderTotal < voucher.minOrder) return null;
+    if (itemQty < voucher.minQty) return null;
 
     return voucher;
   }

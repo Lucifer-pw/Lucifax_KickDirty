@@ -154,7 +154,7 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
 
   double get _voucherDiscount {
     if (_appliedVoucher == null) return 0.0;
-    return _appliedVoucher!.calculateDiscount(_itemsPrice);
+    return _appliedVoucher!.calculateDiscount(_itemsPrice, itemQty: _items.length);
   }
 
   double get _totalPrice {
@@ -1177,9 +1177,9 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
                             stream: _vouchersStream,
                             builder: (context, snapshot) {
                               final activeVouchers = snapshot.data ?? [];
-                              final eligibleVouchers = activeVouchers.where((v) => _itemsPrice >= v.minOrder).toList();
+                              final eligibleVouchers = activeVouchers.where((v) => _itemsPrice >= v.minOrder && _items.length >= v.minQty).toList();
 
-                              // Auto de-apply if cart total drops below minOrder
+                              // Auto de-apply if cart total drops below minOrder or quantity drops below minQty
                               if (_appliedVoucher != null && !eligibleVouchers.contains(_appliedVoucher)) {
                                 WidgetsBinding.instance.addPostFrameCallback((_) {
                                   setState(() {

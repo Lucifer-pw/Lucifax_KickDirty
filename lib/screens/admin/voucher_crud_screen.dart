@@ -21,6 +21,7 @@ class _VoucherCrudScreenState extends State<VoucherCrudScreen> {
   final _valueController = TextEditingController();
   final _minOrderController = TextEditingController();
   final _maxDiscountController = TextEditingController();
+  final _minQtyController = TextEditingController();
 
   String _discountType = 'fixed'; // 'fixed' | 'percentage'
   DateTime? _validFrom;
@@ -34,6 +35,7 @@ class _VoucherCrudScreenState extends State<VoucherCrudScreen> {
     _valueController.dispose();
     _minOrderController.dispose();
     _maxDiscountController.dispose();
+    _minQtyController.dispose();
     super.dispose();
   }
 
@@ -46,6 +48,7 @@ class _VoucherCrudScreenState extends State<VoucherCrudScreen> {
       _valueController.text = voucher.discountValue.toStringAsFixed(0);
       _minOrderController.text = voucher.minOrder.toStringAsFixed(0);
       _maxDiscountController.text = voucher.maxDiscount.toStringAsFixed(0);
+      _minQtyController.text = voucher.minQty.toString();
       _validFrom = voucher.validFrom;
       _validTo = voucher.validTo;
     } else {
@@ -56,6 +59,7 @@ class _VoucherCrudScreenState extends State<VoucherCrudScreen> {
       _valueController.clear();
       _minOrderController.clear();
       _maxDiscountController.clear();
+      _minQtyController.clear();
       _validFrom = null;
       _validTo = null;
     }
@@ -119,6 +123,12 @@ class _VoucherCrudScreenState extends State<VoucherCrudScreen> {
                         controller: _minOrderController,
                         keyboardType: TextInputType.number,
                         decoration: const InputDecoration(hintText: 'Minimal Belanja (Rp) - Opsional'),
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: _minQtyController,
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(hintText: 'Minimal Jumlah Sepatu (Pasang) - Opsional'),
                       ),
                       if (_discountType == 'percentage') ...[
                         const SizedBox(height: 12),
@@ -195,6 +205,7 @@ class _VoucherCrudScreenState extends State<VoucherCrudScreen> {
                     final val = double.parse(_valueController.text);
                     final minOrder = double.tryParse(_minOrderController.text) ?? 0.0;
                     final maxDisc = double.tryParse(_maxDiscountController.text) ?? 0.0;
+                    final minQty = int.tryParse(_minQtyController.text) ?? 0;
 
                     if (voucher == null) {
                       await dbService.addVoucher(
@@ -207,6 +218,7 @@ class _VoucherCrudScreenState extends State<VoucherCrudScreen> {
                           discountValue: val,
                           minOrder: minOrder,
                           maxDiscount: maxDisc,
+                          minQty: minQty,
                           isActive: true,
                           validFrom: _validFrom,
                           validTo: _validTo,
@@ -224,6 +236,7 @@ class _VoucherCrudScreenState extends State<VoucherCrudScreen> {
                           discountValue: val,
                           minOrder: minOrder,
                           maxDiscount: maxDisc,
+                          minQty: minQty,
                           isActive: voucher.isActive,
                           validFrom: _validFrom,
                           validTo: _validTo,
@@ -385,6 +398,13 @@ class _VoucherCrudScreenState extends State<VoucherCrudScreen> {
                               const SizedBox(height: 4),
                               Text(
                                 'Min. belanja Rp ${v.minOrder.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}',
+                                style: const TextStyle(fontSize: 11, color: AppTheme.textGray),
+                              ),
+                            ],
+                            if (v.minQty > 0) ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                'Min. jumlah: ${v.minQty} pasang sepatu',
                                 style: const TextStyle(fontSize: 11, color: AppTheme.textGray),
                               ),
                             ],

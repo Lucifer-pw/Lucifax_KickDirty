@@ -9,6 +9,7 @@ class VoucherModel {
   final double discountValue;
   final double minOrder;
   final double maxDiscount;
+  final int minQty; // Minimum item quantity (number of shoe pairs)
   final bool isActive;
   final DateTime? validFrom;
   final DateTime? validTo;
@@ -23,6 +24,7 @@ class VoucherModel {
     required this.discountValue,
     this.minOrder = 0.0,
     this.maxDiscount = 0.0,
+    this.minQty = 0,
     this.isActive = true,
     this.validFrom,
     this.validTo,
@@ -39,6 +41,7 @@ class VoucherModel {
       discountValue: (map['discountValue'] as num?)?.toDouble() ?? 0.0,
       minOrder: (map['minOrder'] as num?)?.toDouble() ?? 0.0,
       maxDiscount: (map['maxDiscount'] as num?)?.toDouble() ?? 0.0,
+      minQty: map['minQty'] as int? ?? 0,
       isActive: map['isActive'] ?? true,
       validFrom: (map['validFrom'] as Timestamp?)?.toDate(),
       validTo: (map['validTo'] as Timestamp?)?.toDate(),
@@ -55,6 +58,7 @@ class VoucherModel {
       'discountValue': discountValue,
       'minOrder': minOrder,
       'maxDiscount': maxDiscount,
+      'minQty': minQty,
       'isActive': isActive,
       'validFrom': validFrom != null ? Timestamp.fromDate(validFrom!) : null,
       'validTo': validTo != null ? Timestamp.fromDate(validTo!) : null,
@@ -63,9 +67,10 @@ class VoucherModel {
   }
 
   /// Calculate actual discount for a given order total
-  double calculateDiscount(double orderTotal) {
+  double calculateDiscount(double orderTotal, {int itemQty = 0}) {
     if (!isActive) return 0.0;
     if (orderTotal < minOrder) return 0.0;
+    if (itemQty < minQty) return 0.0;
 
     final now = DateTime.now();
     if (validFrom != null && now.isBefore(validFrom!)) return 0.0;
