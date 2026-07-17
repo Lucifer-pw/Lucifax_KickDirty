@@ -246,10 +246,12 @@ class InvoiceDetailModal extends StatelessWidget {
                       'Ongkos Kirim',
                       'Rp ${order.deliveryFee.toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")}',
                     ),
-                  if (order.voucherDiscount > 0)
+                  if (order.voucherCode.isNotEmpty)
                     _buildPriceSummaryRow(
-                      'Diskon Voucher (${order.voucherCode})',
-                      '-Rp ${order.voucherDiscount.toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")}',
+                      'Voucher Terpasang',
+                      order.voucherDiscount > 0
+                          ? '${order.voucherCode} (-Rp ${order.voucherDiscount.toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")})'
+                          : order.voucherCode,
                       color: Colors.green,
                     ),
                   if (order.pointsRedeemed > 0 && pointsDiscount > 0)

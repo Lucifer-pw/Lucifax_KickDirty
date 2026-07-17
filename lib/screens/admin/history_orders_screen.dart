@@ -164,8 +164,13 @@ class _HistoryOrdersScreenState extends State<HistoryOrdersScreen> {
                       pw.Text('Subtotal: Rp ${order.items.fold(0.0, (sum, item) => sum + item.price).toStringAsFixed(0)}', style: const pw.TextStyle(fontSize: 8)),
                       if (order.deliveryFee > 0)
                         pw.Text('Ongkir: Rp ${order.deliveryFee.toStringAsFixed(0)}', style: const pw.TextStyle(fontSize: 8)),
-                      if (order.voucherDiscount > 0)
-                        pw.Text('Diskon Voucher: -Rp ${order.voucherDiscount.toStringAsFixed(0)}', style: const pw.TextStyle(fontSize: 8, color: PdfColors.green)),
+                      if (order.voucherCode.isNotEmpty)
+                        pw.Text(
+                          order.voucherDiscount > 0
+                              ? 'Voucher: ${order.voucherCode} (-Rp ${order.voucherDiscount.toStringAsFixed(0)})'
+                              : 'Voucher: ${order.voucherCode}',
+                          style: const pw.TextStyle(fontSize: 8, color: PdfColors.green),
+                        ),
                       if (order.pointsRedeemed > 0) ...[
                         // Calculate points discount dynamically
                         pw.Text(
