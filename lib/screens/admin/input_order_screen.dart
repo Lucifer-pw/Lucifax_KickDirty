@@ -1183,15 +1183,6 @@ padding: const EdgeInsets.all(16.0),
                               final activeVouchers = snapshot.data ?? [];
                               final eligibleVouchers = activeVouchers.where((v) => _itemsPrice >= v.minOrder && _items.length >= v.minQty).toList();
 
-                              // Auto de-apply if cart total drops below minOrder or quantity drops below minQty
-                              if (_appliedVoucher != null && !eligibleVouchers.contains(_appliedVoucher)) {
-                                WidgetsBinding.instance.addPostFrameCallback((_) {
-                                  setState(() {
-                                    _appliedVoucher = null;
-                                  });
-                                });
-                              }
-
                               if (activeVouchers.isEmpty) {
                                 return const Text(
                                   'Tidak ada voucher aktif tersedia',
@@ -1209,42 +1200,51 @@ padding: const EdgeInsets.all(16.0),
                                     decoration: const InputDecoration(
                                       prefixIcon: Icon(Icons.confirmation_number_outlined),
                                     ),
-                                    items: eligibleVouchers.map((v) {
+                                    items: activeVouchers.map((v) {
+                                      final isEligible = eligibleVouchers.contains(v);
                                       final discStr = v.discountType == 'percentage'
                                           ? 'Diskon ${v.discountValue.toStringAsFixed(0)}%'
                                           : 'Diskon Rp ${v.discountValue.toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")}';
                                       return DropdownMenuItem<String>(
                                         value: v.id,
                                         child: Text(
-                                          '${v.name} ($discStr)',
-                                          style: const TextStyle(fontSize: 12),
+                                          isEligible ? '${v.name} ($discStr)' : '${v.name} ($discStr) (Belum memenuhi syarat)',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: isEligible ? AppTheme.darkBlueText : Colors.grey,
+                                          ),
                                           overflow: TextOverflow.ellipsis,
                                         ),
                                       );
                                     }).toList(),
                                     onChanged: (val) {
                                       setState(() {
-                                        _appliedVoucher = eligibleVouchers.firstWhere((v) => v.id == val);
+                                        _appliedVoucher = activeVouchers.firstWhere((v) => v.id == val);
                                       });
                                     },
                                   ),
-                                  if (eligibleVouchers.isEmpty && activeVouchers.isNotEmpty) ...[
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      'Belanja belum memenuhi syarat minimum voucher (Min. belanja Rp ${activeVouchers.map((v) => v.minOrder).reduce((a, b) => a < b ? a : b).toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")})',
-                                      style: const TextStyle(fontSize: 11, color: Colors.orange, fontStyle: FontStyle.italic),
-                                    ),
-                                  ],
                                   if (_appliedVoucher != null) ...[
                                     const SizedBox(height: 10),
                                     Row(
                                       children: [
-                                        const Icon(Icons.check_circle, color: Colors.green, size: 18),
+                                        Icon(
+                                          eligibleVouchers.contains(_appliedVoucher) ? Icons.check_circle : Icons.warning_amber_rounded,
+                                          color: eligibleVouchers.contains(_appliedVoucher) ? Colors.green : Colors.orange,
+                                          size: 18,
+                                        ),
                                         const SizedBox(width: 6),
                                         Expanded(
                                           child: Text(
-                                            'Terpasang: ${_appliedVoucher!.name} (-Rp ${_voucherDiscount.toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")})',
-                                            style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 13),
+                                            eligibleVouchers.contains(_appliedVoucher)
+                                                ? 'Terpasang: ${_appliedVoucher!.name} (-Rp ${_voucherDiscount.toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")})'
+                                                : 'Voucher tidak aktif: Belum memenuhi syarat ' + 
+                                                  (_appliedVoucher!.minOrder > 0 ? '(Min. belanja Rp ${_appliedVoucher!.minOrder.toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")}) ' : '') + 
+                                                  (_appliedVoucher!.minQty > 0 ? '(Min. ${_appliedVoucher!.minQty} pasang sepatu)' : ''),
+                                            style: TextStyle(
+                                              color: eligibleVouchers.contains(_appliedVoucher) ? Colors.green : Colors.orange,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 13,
+                                            ),
                                           ),
                                         ),
                                         IconButton(

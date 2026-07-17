@@ -703,15 +703,6 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
                                 final activeVouchers = snapshot.data ?? [];
                                 final eligibleVouchers = activeVouchers.where((v) => servicePrice >= v.minOrder && orderItems.length >= v.minQty).toList();
 
-                                // Auto de-apply if cart total drops below minOrder or quantity drops below minQty
-                                if (appliedVoucher != null && !eligibleVouchers.contains(appliedVoucher)) {
-                                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                                    setStateSheet(() {
-                                      appliedVoucher = null;
-                                    });
-                                  });
-                                }
-
                                 if (activeVouchers.isEmpty) {
                                   return const Text(
                                     'Tidak ada voucher tersedia saat ini',
@@ -731,15 +722,19 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
                                         fillColor: Colors.white,
                                         filled: true,
                                       ),
-                                      items: eligibleVouchers.map((v) {
+                                      items: activeVouchers.map((v) {
+                                        final isEligible = eligibleVouchers.contains(v);
                                         final discStr = v.discountType == 'percentage'
                                             ? 'Diskon ${v.discountValue.toStringAsFixed(0)}%'
                                             : 'Diskon Rp ${v.discountValue.toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")}';
                                         return DropdownMenuItem<VoucherModel>(
                                           value: v,
                                           child: Text(
-                                            '${v.name} ($discStr)',
-                                            style: const TextStyle(fontSize: 12),
+                                            isEligible ? '${v.name} ($discStr)' : '${v.name} ($discStr) (Belum memenuhi syarat)',
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: isEligible ? AppTheme.darkBlueText : Colors.grey,
+                                            ),
                                             overflow: TextOverflow.ellipsis,
                                           ),
                                         );
@@ -750,23 +745,28 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
                                         });
                                       },
                                     ),
-                                    if (eligibleVouchers.isEmpty && activeVouchers.isNotEmpty) ...[
-                                      const SizedBox(height: 8),
-                                      Text(
-                                        'Tambahkan barang lagi untuk menggunakan voucher (Min. belanja Rp ${activeVouchers.map((v) => v.minOrder).reduce((a, b) => a < b ? a : b).toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")})',
-                                        style: const TextStyle(fontSize: 11, color: Colors.orange, fontStyle: FontStyle.italic),
-                                      ),
-                                    ],
                                     if (appliedVoucher != null) ...[
                                       const SizedBox(height: 10),
                                       Row(
                                         children: [
-                                          const Icon(Icons.check_circle, color: Colors.green, size: 16),
+                                          Icon(
+                                            eligibleVouchers.contains(appliedVoucher) ? Icons.check_circle : Icons.warning_amber_rounded,
+                                            color: eligibleVouchers.contains(appliedVoucher) ? Colors.green : Colors.orange,
+                                            size: 16,
+                                          ),
                                           const SizedBox(width: 6),
                                           Expanded(
                                             child: Text(
-                                              'Voucher Aktif: ${appliedVoucher!.name} (-Rp ${voucherDiscount.toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")})',
-                                              style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 12),
+                                              eligibleVouchers.contains(appliedVoucher)
+                                                  ? 'Voucher Aktif: ${appliedVoucher!.name} (-Rp ${voucherDiscount.toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")})'
+                                                  : 'Voucher tidak aktif: Belum memenuhi syarat ' + 
+                                                    (appliedVoucher!.minOrder > 0 ? '(Min. belanja Rp ${appliedVoucher!.minOrder.toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")}) ' : '') + 
+                                                    (appliedVoucher!.minQty > 0 ? '(Min. ${appliedVoucher!.minQty} pasang sepatu)' : ''),
+                                              style: TextStyle(
+                                                color: eligibleVouchers.contains(appliedVoucher) ? Colors.green : Colors.orange,
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 12,
+                                              ),
                                             ),
                                           ),
                                           GestureDetector(
