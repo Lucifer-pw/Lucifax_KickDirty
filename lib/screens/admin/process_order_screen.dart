@@ -882,6 +882,24 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
                   ),
                 ],
 
+                const SizedBox(height: 12),
+                Padding(
+                  padding: const EdgeInsets.only(left: 26),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Total Keseluruhan (Grand Total):',
+                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppTheme.darkBlueText),
+                      ),
+                      Text(
+                        'Rp ${order.totalAmount.toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")}',
+                        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppTheme.primaryBlue),
+                      ),
+                    ],
+                  ),
+                ),
+
                 const Divider(height: 24, color: AppTheme.lightGray),
 
                 // Footer section with pricing, payment toggle, and transition buttons
