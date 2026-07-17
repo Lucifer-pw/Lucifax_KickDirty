@@ -12,9 +12,18 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
     }
 
-    // Get the role of the currently authenticated user
+    // Get the role of the currently authenticated user safely
     function getUserRole() {
-      return getUserData().role;
+      return request.auth != null && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role
+        : 'customer';
+    }
+
+    // Get the phone number of the currently authenticated user safely
+    function getUserPhone() {
+      return request.auth != null && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && ('phoneNumber' in get(/databases/$(database)/documents/users/$(request.auth.uid)).data)
+        ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data.phoneNumber
+        : '';
     }
 
     function isOwnerOrStaff() {
@@ -105,13 +114,13 @@ service cloud.firestore {
                  || (request.auth != null
                      && (isOwnerOrStaff()
                          || resource.data.customerId == request.auth.uid
-                         || resource.data.customerPhone == getUserData().phoneNumber));
+                         || resource.data.customerPhone == getUserPhone()));
 
       allow list: if (request.auth != null
                       && (
                         isOwnerOrStaff()
                         || request.auth.uid == resource.data.customerId
-                        || getUserData().phoneNumber == resource.data.customerPhone
+                        || getUserPhone() == resource.data.customerPhone
                       ))
                   || (resource != null && resource.data.showOnWeb == true);
 

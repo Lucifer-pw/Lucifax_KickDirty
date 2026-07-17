@@ -2216,6 +2216,9 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
   }
 
   Widget _buildHomeTab(BuildContext context, UserModel currentUser, DatabaseService dbService, String phoneNumber) {
+    if (phoneNumber.trim().isEmpty) {
+      return const Center(child: CircularProgressIndicator());
+    }
     return StreamBuilder<List<OrderModel>>(
       stream: dbService.getOrdersByPhone(phoneNumber),
       builder: (context, snapshot) {
