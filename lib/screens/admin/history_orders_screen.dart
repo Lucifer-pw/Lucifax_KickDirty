@@ -422,7 +422,7 @@ class _HistoryOrdersScreenState extends State<HistoryOrdersScreen> {
               pw.Center(
                 child: pw.Column(
                   children: [
-                    pw.Text('Terima kasih!', style: const pw.TextStyle(fontSize: 7, fontWeight: pw.FontWeight.bold)),
+                    pw.Text('Terima kasih!', style: pw.TextStyle(fontSize: 7, fontWeight: pw.FontWeight.bold)),
                     pw.Text('Sepatu bersih, langkah percaya diri.', style: const pw.TextStyle(fontSize: 6)),
                   ],
                 ),
