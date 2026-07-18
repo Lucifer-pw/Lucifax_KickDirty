@@ -249,10 +249,31 @@ class InvoiceDetailModal extends StatelessWidget {
                     ),
                   if (order.voucherCode.isNotEmpty)
                     order.voucherName.isNotEmpty
-                        ? _buildPriceSummaryRow(
-                            'Voucher Terpasang',
-                            '${order.voucherCode} (${order.voucherName})${order.voucherDiscount > 0 ? " (-Rp ${order.voucherDiscount.toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")})" : ""}',
-                            color: Colors.green,
+                        ? Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 3.0),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Voucher Terpasang: ',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.green,
+                                  ),
+                                ),
+                                Expanded(
+                                  child: Text(
+                                    '${order.voucherCode} (${order.voucherName})${order.voucherDiscount > 0 ? " (-Rp ${order.voucherDiscount.toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")})" : ""}',
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.green,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
                           )
                         : FutureBuilder<QuerySnapshot>(
                             future: FirebaseFirestore.instance
@@ -272,10 +293,31 @@ class InvoiceDetailModal extends StatelessWidget {
                               final discountSuffix = order.voucherDiscount > 0
                                   ? ' (-Rp ${order.voucherDiscount.toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")})'
                                   : '';
-                              return _buildPriceSummaryRow(
-                                'Voucher Terpasang',
-                                '$displayText$discountSuffix',
-                                color: Colors.green,
+                              return Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 3.0),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      'Voucher Terpasang: ',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.green,
+                                      ),
+                                    ),
+                                    Expanded(
+                                      child: Text(
+                                        '$displayText$discountSuffix',
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.green,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               );
                             },
                           ),
@@ -390,9 +432,10 @@ class InvoiceDetailModal extends StatelessWidget {
 
   Widget _buildPriceSummaryRow(String label, String value, {bool isBold = false, Color? color}) {
     return Padding(
-      padding: EdgeInsets.symmetric(vertical: 3.0),
+      padding: const EdgeInsets.symmetric(vertical: 3.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             label,
@@ -402,12 +445,16 @@ class InvoiceDetailModal extends StatelessWidget {
               color: color ?? AppTheme.darkBlueText,
             ),
           ),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: isBold ? FontWeight.bold : FontWeight.w600,
-              color: color ?? AppTheme.darkBlueText,
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              value,
+              textAlign: TextAlign.right,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: isBold ? FontWeight.bold : FontWeight.w600,
+                color: color ?? AppTheme.darkBlueText,
+              ),
             ),
           ),
         ],
