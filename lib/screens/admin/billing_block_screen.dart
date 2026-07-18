@@ -14,7 +14,7 @@ class BillingBlockScreen extends StatefulWidget {
   final DateTime dueDate;
   final String qrImage;
 
-  BillingBlockScreen({
+  const BillingBlockScreen({
     Key? key,
     required this.amount,
     required this.dueDate,

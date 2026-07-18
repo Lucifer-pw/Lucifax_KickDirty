@@ -15,7 +15,7 @@ import '../../utils/printer/printer_service.dart';
 
 class HistoryOrdersScreen extends StatefulWidget {
   final bool isTab;
-  HistoryOrdersScreen({Key? key, this.isTab = false}) : super(key: key);
+  const HistoryOrdersScreen({Key? key, this.isTab = false}) : super(key: key);
 
   @override
   State<HistoryOrdersScreen> createState() => _HistoryOrdersScreenState();
