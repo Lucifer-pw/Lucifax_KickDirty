@@ -451,7 +451,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   } else if (value == 'printer_settings') {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => const PrinterSettingsScreen()),
+                      MaterialPageRoute(builder: (_) => PrinterSettingsScreen(role: role)),
                     );
                   } else if (value == 'developer_billing') {
                     Navigator.push(
