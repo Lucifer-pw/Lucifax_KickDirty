@@ -375,26 +375,47 @@ class InvoiceDetailModal extends StatelessWidget {
                     Divider(height: 24, color: AppTheme.lightGray),
                     Text('Dokumentasi Foto Cucian', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.darkBlueText)),
                     SizedBox(height: 8),
-                    Row(
-                      children: [
-                        if (order.photoBefore.isNotEmpty)
-                          Expanded(
-                            child: Padding(
-                              padding: EdgeInsets.only(right: 6.0),
-                              child: _buildImageThumbnail(context, order.photoBefore.first, 'Kondisi Awal (Before)'),
-                            ),
-                          ),
-                        if (order.photoAfter.isNotEmpty)
-                          Expanded(
-                            child: Padding(
-                              padding: EdgeInsets.only(left: 6.0),
-                              child: _buildImageThumbnail(context, order.photoAfter.first, 'Hasil Cuci (After)'),
-                            ),
-                          )
-                        else if (order.photoBefore.isNotEmpty)
-                          Expanded(child: SizedBox()),
-                      ],
-                    ),
+                    if (order.photoBefore.isNotEmpty) ...[
+                      Text(
+                        'Kondisi Awal (Before)${order.photoBefore.length > 1 ? " (${order.photoBefore.length} Foto)" : ""}',
+                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.textGray),
+                      ),
+                      SizedBox(height: 6),
+                      Wrap(
+                        spacing: 10,
+                        runSpacing: 10,
+                        children: List.generate(order.photoBefore.length, (index) {
+                          final label = order.photoBefore.length > 1
+                              ? 'Foto Before #${index + 1}'
+                              : 'Kondisi Awal (Before)';
+                          return SizedBox(
+                            width: 140,
+                            child: _buildImageThumbnail(context, order.photoBefore[index], label),
+                          );
+                        }),
+                      ),
+                      SizedBox(height: 12),
+                    ],
+                    if (order.photoAfter.isNotEmpty) ...[
+                      Text(
+                        'Hasil Cuci (After)${order.photoAfter.length > 1 ? " (${order.photoAfter.length} Foto)" : ""}',
+                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.textGray),
+                      ),
+                      SizedBox(height: 6),
+                      Wrap(
+                        spacing: 10,
+                        runSpacing: 10,
+                        children: List.generate(order.photoAfter.length, (index) {
+                          final label = order.photoAfter.length > 1
+                              ? 'Foto After #${index + 1}'
+                              : 'Hasil Cuci (After)';
+                          return SizedBox(
+                            width: 140,
+                            child: _buildImageThumbnail(context, order.photoAfter[index], label),
+                          );
+                        }),
+                      ),
+                    ],
                   ],
                 ],
               ),
