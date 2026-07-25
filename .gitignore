@@ -45,3 +45,8 @@ app.*.map.json
 # Android signing credentials
 /android/key.properties
 **/upload-keystore.jks
+
+# Environment variables & secrets
+.env
+*.env
+.env.*
