@@ -604,7 +604,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                       SizedBox(height: 16),
                     ],
 
-                    if (role == 'owner' || role == 'developer') ...[
+                    if (role == 'developer') ...[
                       _buildEmployeeStatusCard(role),
                       SizedBox(height: 16),
                     ],
