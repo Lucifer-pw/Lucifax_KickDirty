@@ -604,8 +604,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
                       SizedBox(height: 16),
                     ],
 
-                    if (role == 'developer') ...[
-                      _buildEmployeeStatusCard(),
+                    if (role == 'owner' || role == 'developer') ...[
+                      _buildEmployeeStatusCard(role),
                       SizedBox(height: 16),
                     ],
                     
@@ -1134,7 +1134,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 
-  Widget _buildEmployeeStatusCard() {
+  Widget _buildEmployeeStatusCard(String role) {
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
           .collection('users')
@@ -1153,8 +1153,14 @@ class _AdminDashboardState extends State<AdminDashboard> {
         
         for (var doc in userDocs) {
           final data = doc.data() as Map<String, dynamic>;
-          final lastSeenTimestamp = data['lastSeen'] as Timestamp?;
-          final lastSeen = lastSeenTimestamp?.toDate();
+          final lastSeenRaw = data['lastSeen'];
+          DateTime? lastSeen;
+          if (lastSeenRaw is Timestamp) {
+            lastSeen = lastSeenRaw.toDate();
+          } else if (lastSeenRaw is String) {
+            lastSeen = DateTime.tryParse(lastSeenRaw);
+          }
+          
           final bool isOnlineRaw = data['isOnline'] == true;
           
           // Consider online if flag is true AND lastSeen is within 2 minutes
@@ -1170,6 +1176,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
             'name': data['name'] ?? 'Karyawan',
             'role': data['role'] ?? 'staff',
             'isOnline': isOnline,
+            'lastSeen': lastSeen,
             'initial': (data['name'] as String? ?? 'K').isNotEmpty 
                 ? (data['name'] as String)[0].toUpperCase() 
                 : 'K',
@@ -1184,19 +1191,16 @@ class _AdminDashboardState extends State<AdminDashboard> {
           return (a['name'] as String).compareTo(b['name'] as String);
         });
 
+        final bool isDeveloper = role == 'developer';
+
         return Container(
           width: double.infinity,
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: const Color(0xFF1E2235), // Sleek dark card background matching the screenshot
+            color: AppTheme.white,
             borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.15),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
+            border: Border.all(color: AppTheme.lightGray),
+            boxShadow: AppTheme.cardShadow,
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1207,12 +1211,12 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.people_outline, color: Color(0xFFFF7A59), size: 22),
+                      Icon(Icons.people_outline, color: AppTheme.primaryBlue, size: 20),
                       const SizedBox(width: 8),
-                      const Text(
+                      Text(
                         'Status Karyawan',
                         style: TextStyle(
-                          color: Colors.white,
+                          color: AppTheme.darkBlueText,
                           fontWeight: FontWeight.bold,
                           fontSize: 14,
                         ),
@@ -1222,13 +1226,14 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      color: Colors.green.withOpacity(0.12),
+                      color: Colors.green.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.green.withOpacity(0.2)),
                     ),
                     child: Text(
                       '$activeCount Aktif',
-                      style: const TextStyle(
-                        color: Colors.greenAccent,
+                      style: TextStyle(
+                        color: Colors.green.shade700,
                         fontSize: 11,
                         fontWeight: FontWeight.bold,
                       ),
@@ -1236,17 +1241,18 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 14),
               
               // Horizontal employee list
               SizedBox(
-                height: 80,
+                height: isDeveloper ? 96 : 76,
                 child: ListView.builder(
                   scrollDirection: Axis.horizontal,
                   itemCount: employees.length,
                   itemBuilder: (context, index) {
                     final emp = employees[index];
                     final isOnline = emp['isOnline'] as bool;
+                    final lastSeen = emp['lastSeen'] as DateTime?;
                     
                     return Padding(
                       padding: const EdgeInsets.only(right: 16.0),
@@ -1259,12 +1265,12 @@ class _AdminDashboardState extends State<AdminDashboard> {
                               CircleAvatar(
                                 radius: 22,
                                 backgroundColor: isOnline 
-                                    ? const Color(0xFFFF5722) // Orange avatar if online
-                                    : const Color(0xFF2E3245), // Dark/grey if offline
+                                    ? AppTheme.primaryBlue 
+                                    : Colors.grey.shade200,
                                 child: Text(
                                   emp['initial'],
                                   style: TextStyle(
-                                    color: isOnline ? Colors.white : Colors.white60,
+                                    color: isOnline ? Colors.white : AppTheme.textGray,
                                     fontWeight: FontWeight.bold,
                                     fontSize: 15,
                                   ),
@@ -1277,10 +1283,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                   width: 12,
                                   height: 12,
                                   decoration: BoxDecoration(
-                                    color: isOnline ? Colors.green : Colors.grey,
+                                    color: isOnline ? Colors.green : Colors.grey.shade400,
                                     shape: BoxShape.circle,
                                     border: Border.all(
-                                      color: const Color(0xFF1E2235), // Match card background
+                                      color: AppTheme.white,
                                       width: 2,
                                     ),
                                   ),
@@ -1296,11 +1302,26 @@ class _AdminDashboardState extends State<AdminDashboard> {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
-                              color: isOnline ? Colors.white : Colors.white70,
+                              color: isOnline ? AppTheme.darkBlueText : AppTheme.textGray,
                               fontSize: 11,
-                              fontWeight: isOnline ? FontWeight.bold : FontWeight.normal,
+                              fontWeight: isOnline ? FontWeight.bold : FontWeight.w500,
                             ),
                           ),
+
+                          // Last Seen (Developer role only)
+                          if (isDeveloper) ...[
+                            const SizedBox(height: 2),
+                            Text(
+                              _formatLastSeen(lastSeen, isOnline),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: isOnline ? Colors.green.shade700 : AppTheme.textGray.withOpacity(0.8),
+                                fontSize: 9.5,
+                                fontWeight: isOnline ? FontWeight.w600 : FontWeight.normal,
+                              ),
+                            ),
+                          ],
                         ],
                       ),
                     );
@@ -1312,6 +1333,24 @@ class _AdminDashboardState extends State<AdminDashboard> {
         );
       },
     );
+  }
+
+  String _formatLastSeen(DateTime? lastSeen, bool isOnline) {
+    if (isOnline) return 'Online';
+    if (lastSeen == null) return 'Belum online';
+    
+    final difference = DateTime.now().difference(lastSeen);
+    if (difference.inSeconds < 60) {
+      return 'Baru saja';
+    } else if (difference.inMinutes < 60) {
+      return '${difference.inMinutes}m lalu';
+    } else if (difference.inHours < 24) {
+      return '${difference.inHours}j lalu';
+    } else if (difference.inDays < 7) {
+      return '${difference.inDays}h lalu';
+    } else {
+      return DateFormat('dd/MM HH:mm').format(lastSeen);
+    }
   }
 
 }
