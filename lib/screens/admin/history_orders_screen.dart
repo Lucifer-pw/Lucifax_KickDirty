@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:pdf/pdf.dart';
@@ -24,6 +25,88 @@ class HistoryOrdersScreen extends StatefulWidget {
 class _HistoryOrdersScreenState extends State<HistoryOrdersScreen> {
   String _searchQuery = '';
   String _statusFilter = 'semua'; // 'semua' | 'diterima' | 'sedang_diproses' | 'selesai' | 'diambil'
+
+  // --- Pagination State ---
+  final Map<int, List<OrderModel>> _pages = {};
+  bool _isLoading = true;
+  bool _isLoadingMore = false;
+  bool _hasMore = true;
+  DocumentSnapshot? _lastDocument;
+  final List<StreamSubscription> _subscriptions = [];
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadInitialOrders();
+    });
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+      _loadMore();
+    }
+  }
+
+  void _loadInitialOrders() {
+    final dbService = Provider.of<DatabaseService>(context, listen: false);
+    final sub = dbService.getOrdersHistory(limit: 50).listen((orders) async {
+      if (!mounted) return;
+      setState(() {
+        _pages[0] = orders;
+        _isLoading = false;
+        if (orders.length < 50) _hasMore = false;
+      });
+      if (orders.isNotEmpty) {
+        _lastDocument = await FirebaseFirestore.instance.collection('orders').doc(orders.last.id).get();
+      }
+    });
+    _subscriptions.add(sub);
+  }
+
+  Future<void> _loadMore() async {
+    if (_isLoadingMore || !_hasMore || _lastDocument == null) return;
+    
+    setState(() => _isLoadingMore = true);
+
+    final dbService = Provider.of<DatabaseService>(context, listen: false);
+    final pageIndex = _pages.length;
+    final currentLastDoc = _lastDocument;
+    
+    final sub = dbService.getOrdersHistory(limit: 50, startAfter: currentLastDoc).listen((orders) async {
+      if (!mounted) return;
+      setState(() {
+        _pages[pageIndex] = orders;
+        _isLoadingMore = false;
+        if (orders.length < 50) _hasMore = false;
+      });
+      if (orders.isNotEmpty) {
+        _lastDocument = await FirebaseFirestore.instance.collection('orders').doc(orders.last.id).get();
+      }
+    });
+    _subscriptions.add(sub);
+  }
+
+  List<OrderModel> get _allOrders {
+    final all = <OrderModel>[];
+    final sortedKeys = _pages.keys.toList()..sort();
+    for (var key in sortedKeys) {
+      all.addAll(_pages[key]!);
+    }
+    return all;
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    for (var sub in _subscriptions) {
+      sub.cancel();
+    }
+    super.dispose();
+  }
+  // --- End Pagination State ---
 
   // Build A5 PDF Invoice Document
   pw.Document _buildPdfInvoiceDocument(OrderModel order, String shopName, String shopPhone) {
@@ -603,7 +686,7 @@ class _HistoryOrdersScreenState extends State<HistoryOrdersScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final dbService = Provider.of<DatabaseService>(context);
+    // dbService removed from build as it's now used in initState/loadMore
 
     return Scaffold(
       appBar: AppBar(
@@ -656,53 +739,61 @@ class _HistoryOrdersScreenState extends State<HistoryOrdersScreen> {
 
           // Orders List
           Expanded(
-            child: StreamBuilder<List<OrderModel>>(
-              stream: dbService.getOrders(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return Center(child: CircularProgressIndicator());
-                }
-                if (snapshot.hasError) {
-                  return Center(child: Text(getCleanErrorMessage(snapshot.error)));
-                }
+            child: _isLoading
+                ? Center(child: CircularProgressIndicator())
+                : Builder(
+                    builder: (context) {
+                      var orders = _allOrders;
 
-                var orders = snapshot.data ?? [];
+                      // Filter by Search Query
+                      if (_searchQuery.isNotEmpty) {
+                        orders = orders.where((o) {
+                          return o.customerName.toLowerCase().contains(_searchQuery) ||
+                              o.customerPhone.contains(_searchQuery) ||
+                              o.id.toLowerCase().contains(_searchQuery);
+                        }).toList();
+                      }
 
-                // Filter by Search Query
-                if (_searchQuery.isNotEmpty) {
-                  orders = orders.where((o) {
-                    return o.customerName.toLowerCase().contains(_searchQuery) ||
-                        o.customerPhone.contains(_searchQuery) ||
-                        o.id.toLowerCase().contains(_searchQuery);
-                  }).toList();
-                }
+                      // Filter by Status
+                      if (_statusFilter != 'semua') {
+                        orders = orders.where((o) => o.status == _statusFilter).toList();
+                      }
 
-                // Filter by Status
-                if (_statusFilter != 'semua') {
-                  orders = orders.where((o) => o.status == _statusFilter).toList();
-                }
+                      if (orders.isEmpty) {
+                        return Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.history_toggle_off, size: 64, color: AppTheme.textGray),
+                              SizedBox(height: 16),
+                              Text(
+                                'Tidak ada riwayat pesanan',
+                                style: Theme.of(context).textTheme.titleMedium?.copyWith(color: AppTheme.textGray),
+                              ),
+                            ],
+                          ),
+                        );
+                      }
 
-                if (orders.isEmpty) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.history_toggle_off, size: 64, color: AppTheme.textGray),
-                        SizedBox(height: 16),
-                        Text(
-                          'Tidak ada riwayat pesanan',
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(color: AppTheme.textGray),
-                        ),
-                      ],
-                    ),
-                  );
-                }
-
-                return ListView.builder(
-                  padding: EdgeInsets.symmetric(horizontal: 16),
-                  itemCount: orders.length,
-                  itemBuilder: (context, index) {
-                    final order = orders[index];
+                      return ListView.builder(
+                        controller: _scrollController,
+                        padding: EdgeInsets.symmetric(horizontal: 16),
+                        itemCount: orders.length + (_hasMore ? 1 : 0),
+                        itemBuilder: (context, index) {
+                          if (index == orders.length) {
+                            return Center(
+                              child: Padding(
+                                padding: EdgeInsets.all(16.0),
+                                child: _isLoadingMore
+                                    ? CircularProgressIndicator()
+                                    : TextButton(
+                                        onPressed: _loadMore,
+                                        child: Text('Muat Lebih Banyak'),
+                                      ),
+                              ),
+                            );
+                          }
+                          final order = orders[index];
 
                     // Date formatting: DD-MM-YYYY
                     String day = order.createdAt.day.toString().padLeft(2, '0');

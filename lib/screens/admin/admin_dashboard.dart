@@ -282,7 +282,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
         navItems.add({'index': 1, 'icon': Icons.add_shopping_cart, 'label': 'Input'});
 
         // 3. Proses
-        screens.add(ProcessOrderScreen(isTab: true));
+        screens.add(ProcessOrderScreen(isTab: true, staffPerms: _staffPerms));
         navItems.add({'index': 2, 'icon': Icons.sync_alt, 'label': 'Proses'});
 
         // 4. Pesan
@@ -322,11 +322,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
               children: screens,
             ),
             bottomNavigationBar: StreamBuilder<List<OrderModel>>(
-              stream: dbService.getOrders(),
+              stream: dbService.getActiveOrders(),
               builder: (context, orderSnap) {
                 final orders = orderSnap.data ?? [];
-                final activeProcessCount = orders.where((o) =>
-                    o.status == 'dibayar' || o.status == 'diterima' || o.status == 'sedang_diproses' || o.status == 'selesai').length;
+                final activeProcessCount = orders.length;
 
                 return StreamBuilder<QuerySnapshot>(
                   stream: currentUser != null
@@ -563,7 +562,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
         ],
       ),
       body: StreamBuilder<List<OrderModel>>(
-        stream: dbService.getOrders(),
+        stream: dbService.getRecentOrders(days: 366),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return Center(child: CircularProgressIndicator());

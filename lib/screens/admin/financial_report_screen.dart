@@ -376,7 +376,7 @@ class _FinancialReportScreenState extends State<FinancialReportScreen> {
         elevation: 0,
       ),
       body: StreamBuilder<List<OrderModel>>(
-        stream: dbService.getOrders(),
+        stream: dbService.getRecentOrders(days: 366),
         builder: (context, ordersSnap) {
           if (ordersSnap.connectionState == ConnectionState.waiting) {
             return Center(child: CircularProgressIndicator());

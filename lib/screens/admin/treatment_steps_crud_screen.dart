@@ -37,6 +37,12 @@ class _TreatmentStepsCrudScreenState extends State<TreatmentStepsCrudScreen> {
     super.dispose();
   }
 
+  @override
+  void initState() {
+    super.initState();
+    _seedDefaultSteps();
+  }
+
   // Seed default steps if collection is empty
   Future<void> _seedDefaultSteps() async {
     final query = await FirebaseFirestore.instance.collection('treatment_steps').get();
@@ -285,7 +291,6 @@ class _TreatmentStepsCrudScreenState extends State<TreatmentStepsCrudScreen> {
 
   @override
   Widget build(BuildContext context) {
-    _seedDefaultSteps();
 
     return Scaffold(
       backgroundColor: AppTheme.isDarkMode ? Colors.grey[900] : Colors.grey[50],

@@ -93,6 +93,71 @@ class DatabaseService with ChangeNotifier {
     });
   }
 
+  // Get stream of active orders only (Diterima/Diproses) — optimized for dashboard & process screen
+  Stream<List<OrderModel>> getActiveOrders() {
+    return _db
+        .collection('orders')
+        .where('status', whereIn: ['dibayar', 'diterima', 'sedang_diproses', 'selesai'])
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs.map((doc) => OrderModel.fromMap(doc.data(), doc.id)).toList();
+    });
+  }
+
+  // Get stream of orders for dashboard recap (current month + recent completed)
+  Stream<List<OrderModel>> getRecentOrders({int days = 31}) {
+    final cutoff = DateTime.now().subtract(Duration(days: days));
+    return _db
+        .collection('orders')
+        .where('createdAt', isGreaterThanOrEqualTo: Timestamp.fromDate(cutoff))
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs.map((doc) => OrderModel.fromMap(doc.data(), doc.id)).toList();
+    });
+  }
+
+  // Get stream of orders by date range — for financial reports
+  Stream<List<OrderModel>> getOrdersByDateRange(DateTime start, DateTime end) {
+    return _db
+        .collection('orders')
+        .where('createdAt', isGreaterThanOrEqualTo: Timestamp.fromDate(start))
+        .where('createdAt', isLessThanOrEqualTo: Timestamp.fromDate(end))
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs.map((doc) => OrderModel.fromMap(doc.data(), doc.id)).toList();
+    });
+  }
+
+  // Get stream of completed/picked-up orders with pagination for history screen
+  Stream<List<OrderModel>> getOrdersHistory({int limit = 30, DocumentSnapshot? startAfter}) {
+    Query<Map<String, dynamic>> query = _db
+        .collection('orders')
+        .orderBy('createdAt', descending: true)
+        .limit(limit);
+    if (startAfter != null) {
+      query = query.startAfterDocument(startAfter);
+    }
+    return query.snapshots().map((snapshot) {
+      return snapshot.docs.map((doc) => OrderModel.fromMap(doc.data(), doc.id)).toList();
+    });
+  }
+
+  // Get stream of expenses by date range — for financial reports
+  Stream<List<ExpenseModel>> getExpensesByDateRange(DateTime start, DateTime end) {
+    return _db
+        .collection('expenses')
+        .where('createdAt', isGreaterThanOrEqualTo: Timestamp.fromDate(start))
+        .where('createdAt', isLessThanOrEqualTo: Timestamp.fromDate(end))
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs.map((doc) => ExpenseModel.fromMap(doc.data(), doc.id)).toList();
+    });
+  }
+
   // Get stream of customer orders
   Stream<List<OrderModel>> getCustomerOrders(String customerId) {
     return _db

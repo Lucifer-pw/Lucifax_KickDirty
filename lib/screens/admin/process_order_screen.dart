@@ -12,7 +12,9 @@ import '../../utils/error_helper.dart';
 
 class ProcessOrderScreen extends StatefulWidget {
   final bool isTab;
-  ProcessOrderScreen({Key? key, this.isTab = false}) : super(key: key);
+  final Map<String, bool> staffPerms;
+
+  ProcessOrderScreen({Key? key, this.isTab = false, this.staffPerms = const {}}) : super(key: key);
 
   @override
   State<ProcessOrderScreen> createState() => _ProcessOrderScreenState();
@@ -533,7 +535,7 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
     final dbService = Provider.of<DatabaseService>(context);
 
     return StreamBuilder<List<OrderModel>>(
-      stream: dbService.getOrders(),
+      stream: dbService.getActiveOrders(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Scaffold(body: Center(child: CircularProgressIndicator()));
@@ -740,21 +742,11 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
                             style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
                           ),
                         ),
-                        StreamBuilder<DocumentSnapshot>(
-                          stream: FirebaseFirestore.instance.collection('app_config').doc('staff_permissions').snapshots(),
-                          builder: (context, permSnap) {
+                        Builder(
+                          builder: (context) {
                             final role = Provider.of<AuthService>(context, listen: false).currentUserModel?.role ?? 'staff';
-                            if (role == 'owner' || role == 'developer') {
-                              return IconButton(
-                                icon: Icon(Icons.edit_outlined, size: 14, color: AppTheme.primaryBlue),
-                                padding: EdgeInsets.zero,
-                                constraints: BoxConstraints(),
-                                onPressed: () => _showEditCourierFeeDialog(order),
-                                tooltip: 'Ubah biaya ongkir',
-                              );
-                            }
-                            final perms = (permSnap.data?.data() as Map<String, dynamic>?) ?? {};
-                            if (perms['canEditCourierFee'] == true) {
+                            final canEdit = role == 'owner' || role == 'developer' || widget.staffPerms['canEditCourierFee'] == true;
+                            if (canEdit) {
                               return IconButton(
                                 icon: Icon(Icons.edit_outlined, size: 14, color: AppTheme.primaryBlue),
                                 padding: EdgeInsets.zero,

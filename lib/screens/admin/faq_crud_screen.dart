@@ -23,6 +23,12 @@ class _FaqCrudScreenState extends State<FaqCrudScreen> {
     super.dispose();
   }
 
+  @override
+  void initState() {
+    super.initState();
+    _seedDefaultFaqs();
+  }
+
   // Seed default FAQs if empty
   Future<void> _seedDefaultFaqs() async {
     final query = await FirebaseFirestore.instance.collection('faqs').get();
@@ -200,7 +206,6 @@ class _FaqCrudScreenState extends State<FaqCrudScreen> {
 
   @override
   Widget build(BuildContext context) {
-    _seedDefaultFaqs();
 
     return Scaffold(
       backgroundColor: AppTheme.isDarkMode ? Colors.grey[900] : Colors.grey[50],
