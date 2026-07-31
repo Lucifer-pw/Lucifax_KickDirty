@@ -855,7 +855,8 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
   @override
   Widget build(BuildContext context) {
     final String currentMonthCode = DateFormat('yyyy-MM').format(DateTime.now());
-    final bool isCurrentMonthPaid = _lastPaidMonth == currentMonthCode;
+    // Periode saat ini dianggap LUNAS jika sekarang masih sebelum jatuh tempo (bayar dulu, pakai kemudian)
+    final bool isCurrentMonthPaid = DateTime.now().isBefore(_nextDueDate);
     
     final authService = Provider.of<AuthService>(context, listen: false);
     final user = authService.currentUserModel;
