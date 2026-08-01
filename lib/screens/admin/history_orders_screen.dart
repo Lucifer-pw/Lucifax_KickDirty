@@ -786,7 +786,7 @@ class _HistoryOrdersScreenState extends State<HistoryOrdersScreen> {
                     children: [
                       _buildFilterChip('semua', 'Semua'),
                       SizedBox(width: 8),
-                      _buildFilterChip('dibayar', 'Belum Bayar'),
+                      _buildFilterChip('dibayar', 'Menunggu Pembayaran'),
                       SizedBox(width: 8),
                       _buildFilterChip('diterima', 'Diterima'),
                       SizedBox(width: 8),
@@ -848,9 +848,9 @@ class _HistoryOrdersScreenState extends State<HistoryOrdersScreen> {
 
                           // Determine Status Color & Display Text
                           Color statusColor = Colors.grey;
-                          String statusText = 'BELUM BAYAR';
+                          String statusText = 'MENUNGGU PEMBAYARAN';
                           if (order.status == 'dibayar') {
-                            statusText = 'BELUM BAYAR';
+                            statusText = 'MENUNGGU PEMBAYARAN';
                             statusColor = Colors.redAccent;
                           } else if (order.status == 'diterima') {
                             statusText = 'DITERIMA';

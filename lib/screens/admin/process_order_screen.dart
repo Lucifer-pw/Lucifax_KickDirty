@@ -634,7 +634,7 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
               indicatorColor: AppTheme.primaryBlue,
               indicatorWeight: 3,
               tabs: [
-                _buildTab(Icons.payments_outlined, 'Belum Bayar', ordersDiBayar.length),
+                _buildTab(Icons.payments_outlined, 'Menunggu Pembayaran', ordersDiBayar.length),
                 _buildTab(Icons.receipt_long_outlined, 'Diterima', ordersDiterima.length),
                 _buildTab(Icons.engineering_outlined, 'Diproses', ordersDiproses.length),
                 _buildTab(Icons.check_circle_outline, 'Selesai', ordersSelesai.length),
