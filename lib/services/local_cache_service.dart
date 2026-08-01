@@ -11,13 +11,15 @@ class LocalCacheService {
 
   Directory? _cacheDir;
 
-  /// Get or initialize the cache directory at /data/user/0/com.lucifax.kickdirty/app_flutter/cache/
+  /// Get or initialize the cache directory at /data/user/0/com.lucifax.kickdirty/data/cache/
   Future<Directory?> get _cacheDirectory async {
     if (kIsWeb) return null;
     if (_cacheDir != null) return _cacheDir;
     try {
       final appDocDir = await getApplicationDocumentsDirectory();
-      final cachePath = '${appDocDir.path}/cache';
+      // Parent directory of appDocDir is /data/user/0/com.lucifax.kickdirty
+      final parentPath = appDocDir.parent.path;
+      final cachePath = '$parentPath/data/cache';
       final dir = Directory(cachePath);
       if (!await dir.exists()) {
         await dir.create(recursive: true);
