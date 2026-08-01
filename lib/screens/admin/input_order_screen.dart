@@ -1159,15 +1159,20 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
                               ? logSnapshot.data!
                               : fallbackMethods;
                           
-                          if (_deliveryType.isEmpty || !methods.any((m) => m['id'] == _deliveryType)) {
-                            _deliveryType = methods.first['id'] as String;
+                          final String firstId = methods.first['id']?.toString() ?? 'ambil_sendiri';
+                          if (_deliveryType.isEmpty || !methods.any((m) => m['id']?.toString() == _deliveryType)) {
+                            _deliveryType = firstId;
                           }
 
                           final selectedMethod = methods.firstWhere(
-                            (m) => m['id'] == _deliveryType,
+                            (m) => m['id']?.toString() == _deliveryType,
                             orElse: () => methods.first,
                           );
                           final bool requiresAddress = selectedMethod['requiresAddress'] == true;
+
+                          final String activeValue = methods.any((m) => m['id']?.toString() == _deliveryType)
+                              ? _deliveryType
+                              : firstId;
 
                           return Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1176,17 +1181,19 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
                               SizedBox(height: 16),
                               DropdownButtonFormField<String>(
                                 isExpanded: true,
-                                value: methods.any((m) => m['id'] == _deliveryType) ? _deliveryType : methods.first['id'] as String,
+                                value: activeValue,
                                 decoration: InputDecoration(
                                   prefixIcon: Icon(Icons.local_shipping_outlined),
                                 ),
                                 items: methods.map((m) {
-                                  final fee = (m['fee'] ?? 0.0) as double;
+                                  final String id = m['id']?.toString() ?? '';
+                                  final String name = m['name']?.toString() ?? 'Metode';
+                                  final double fee = (m['fee'] as num?)?.toDouble() ?? 0.0;
                                   final feeStr = fee > 0 ? ' (Rp ${fee.toStringAsFixed(0)})' : '';
                                   return DropdownMenuItem<String>(
-                                    value: m['id'] as String,
+                                    value: id,
                                     child: Text(
-                                      '${m['name']}$feeStr',
+                                      '$name$feeStr',
                                       overflow: TextOverflow.ellipsis,
                                       maxLines: 1,
                                     ),
@@ -1194,10 +1201,14 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
                                 }).toList(),
                                 onChanged: (val) {
                                   if (val != null) {
-                                    final newMethod = methods.firstWhere((m) => m['id'] == val);
+                                    final newMethod = methods.firstWhere(
+                                      (m) => m['id']?.toString() == val,
+                                      orElse: () => methods.first,
+                                    );
+                                    final double fee = (newMethod['fee'] as num?)?.toDouble() ?? 0.0;
                                     setState(() {
                                       _deliveryType = val;
-                                      _deliveryFeeController.text = (newMethod['fee'] ?? 0.0).toStringAsFixed(0);
+                                      _deliveryFeeController.text = fee.toStringAsFixed(0);
                                     });
                                   }
                                 },
