@@ -1062,7 +1062,6 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
                                 itemCount: _photoBeforeList.length,
                                 itemBuilder: (context, index) {
                                   final img = _photoBeforeList[index];
-                                  final isBase64 = img.startsWith('data:image');
                                   return Stack(
                                     children: [
                                       Container(
@@ -1071,13 +1070,9 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
                                         margin: EdgeInsets.only(right: 8),
                                         decoration: BoxDecoration(
                                           borderRadius: BorderRadius.circular(8),
-                                          image: DecorationImage(
-                                            image: isBase64
-                                                ? MemoryImage(base64Decode(img.split(',')[1]))
-                                                : FileImage(File(img)) as ImageProvider,
-                                            fit: BoxFit.cover,
-                                          ),
+                                          color: AppTheme.isDarkMode ? Color(0xFF1E293B) : Colors.grey[200],
                                         ),
+                                        child: _buildSinglePhotoPreview(img),
                                       ),
                                       Positioned(
                                         top: 0,
@@ -1309,7 +1304,7 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
                                             child: Container(
                                               height: 150,
                                               width: double.infinity,
-                                              color: Colors.grey[200],
+                                              color: AppTheme.isDarkMode ? Color(0xFF1E293B) : Colors.grey[200],
                                               child: Stack(
                                                 children: [
                                                   Image.network(
@@ -1319,16 +1314,16 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
                                                     height: double.infinity,
                                                     errorBuilder: (context, error, stackTrace) {
                                                       return Container(
-                                                        color: Colors.grey[300],
+                                                        color: AppTheme.isDarkMode ? Color(0xFF1E293B) : Colors.grey[200],
                                                         child: Center(
                                                           child: Column(
                                                             mainAxisAlignment: MainAxisAlignment.center,
                                                             children: [
-                                                              Icon(Icons.map_outlined, color: Colors.grey, size: 36),
+                                                              Icon(Icons.map_outlined, color: AppTheme.textGray, size: 36),
                                                               SizedBox(height: 4),
                                                               Text(
-                                                                'Peta tidak dapat dimuat',
-                                                                style: TextStyle(color: Colors.grey, fontSize: 12),
+                                                                'Peta Lokasi Pengiriman',
+                                                                style: TextStyle(color: AppTheme.textGray, fontSize: 12),
                                                               ),
                                                             ],
                                                           ),
@@ -1695,6 +1690,79 @@ padding: EdgeInsets.all(16.0),
             },
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildSinglePhotoPreview(String img) {
+    Widget imageWidget;
+    if (img.startsWith('data:image')) {
+      try {
+        final base64Data = img.contains(',') ? img.split(',')[1] : img;
+        final bytes = base64Decode(base64Data);
+        imageWidget = Image.memory(
+          bytes,
+          fit: BoxFit.cover,
+          width: 100,
+          height: 100,
+          errorBuilder: (context, error, stackTrace) => _buildImageErrorFallback(),
+        );
+      } catch (_) {
+        imageWidget = _buildImageErrorFallback();
+      }
+    } else if (img.startsWith('http://') || img.startsWith('https://')) {
+      imageWidget = Image.network(
+        img,
+        fit: BoxFit.cover,
+        width: 100,
+        height: 100,
+        errorBuilder: (context, error, stackTrace) => _buildImageErrorFallback(),
+      );
+    } else if (!kIsWeb) {
+      try {
+        imageWidget = Image.file(
+          File(img),
+          fit: BoxFit.cover,
+          width: 100,
+          height: 100,
+          errorBuilder: (context, error, stackTrace) => _buildImageErrorFallback(),
+        );
+      } catch (_) {
+        imageWidget = _buildImageErrorFallback();
+      }
+    } else {
+      try {
+        final bytes = base64Decode(img);
+        imageWidget = Image.memory(
+          bytes,
+          fit: BoxFit.cover,
+          width: 100,
+          height: 100,
+          errorBuilder: (context, error, stackTrace) => _buildImageErrorFallback(),
+        );
+      } catch (_) {
+        imageWidget = _buildImageErrorFallback();
+      }
+    }
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(8),
+      child: imageWidget,
+    );
+  }
+
+  Widget _buildImageErrorFallback() {
+    return Container(
+      width: 100,
+      height: 100,
+      color: AppTheme.isDarkMode ? Color(0xFF334155) : Colors.grey[300],
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.broken_image_outlined, color: AppTheme.textGray, size: 28),
+          SizedBox(height: 4),
+          Text('Gagal muat', style: TextStyle(color: AppTheme.textGray, fontSize: 9)),
+        ],
       ),
     );
   }
