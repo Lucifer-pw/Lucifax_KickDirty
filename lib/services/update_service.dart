@@ -23,6 +23,49 @@ class UpdateInfo {
 class UpdateService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
 
+  /// Real-time stream of UpdateInfo based on Firestore app_config/version_info
+  Stream<UpdateInfo> getUpdateStream() async* {
+    PackageInfo packageInfo = await PackageInfo.fromPlatform();
+    String currentVersion = packageInfo.version;
+    String currentBuild = packageInfo.buildNumber;
+
+    yield* _db
+        .collection('app_config')
+        .doc('version_info')
+        .snapshots()
+        .map((snapshot) {
+      if (!snapshot.exists || snapshot.data() == null) {
+        return UpdateInfo(
+          latestVersion: currentVersion,
+          downloadUrl: '',
+          releaseUrl: 'https://github.com/Lucifer-pw/Lucifax_KickDirty/releases/latest',
+          isForceUpdate: false,
+          hasUpdate: false,
+        );
+      }
+
+      final data = snapshot.data() as Map<String, dynamic>;
+      String firestoreLatest = data['latestVersion'] ?? currentVersion;
+      String downloadUrl = data['downloadUrl'] ?? '';
+      String releaseUrl = data['releaseUrl'] ?? 'https://github.com/Lucifer-pw/Lucifax_KickDirty/releases/latest';
+      bool isForceUpdate = data['isForceUpdate'] == true;
+
+      List<String> firestoreParts = firestoreLatest.split('+');
+      String latestVersion = firestoreParts[0];
+      String latestBuild = firestoreParts.length > 1 ? firestoreParts[1] : '0';
+
+      bool hasUpdate = _isNewerVersion(currentVersion, currentBuild, latestVersion, latestBuild);
+
+      return UpdateInfo(
+        latestVersion: latestVersion,
+        downloadUrl: downloadUrl,
+        releaseUrl: releaseUrl,
+        isForceUpdate: isForceUpdate,
+        hasUpdate: hasUpdate,
+      );
+    });
+  }
+
   // Compare version strings and build numbers
   bool _isNewerVersion(
       String currentVer, String currentBuild, String latestVer, String latestBuild) {

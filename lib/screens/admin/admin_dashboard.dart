@@ -84,6 +84,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
     });
   }
 
+  StreamSubscription? _updateSubscription;
+
   @override
   void initState() {
     super.initState();
@@ -109,14 +111,16 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
   @override
   void dispose() {
+    _updateSubscription?.cancel();
     _printerSubscription?.cancel();
     PresenceService.instance.stop();
     AutoBackupService.instance.stopChecking();
     super.dispose();
   }
 
-  Future<void> _checkForUpdates() async {
-    await UpdateDialog.checkAndShow(context);
+  void _checkForUpdates() {
+    _updateSubscription?.cancel();
+    _updateSubscription = UpdateDialog.listenAndShow(context);
   }
 
   void _onTabTapped(int index) {

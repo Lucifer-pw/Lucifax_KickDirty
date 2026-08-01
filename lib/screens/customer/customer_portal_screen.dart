@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -78,9 +79,12 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
   late Stream<List<ServiceModel>> _servicesStream;
   late Stream<List<VoucherModel>> _vouchersStream;
 
+  StreamSubscription? _updateSubscription;
+
   @override
   void initState() {
     super.initState();
+
     final dbService = Provider.of<DatabaseService>(context, listen: false);
     _categoriesStream = dbService.getActiveCategories();
     _servicesStream = dbService.getServices();
@@ -88,7 +92,8 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
 
     // Run update check on customer portal load
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      UpdateDialog.checkAndShow(context);
+      _updateSubscription?.cancel();
+      _updateSubscription = UpdateDialog.listenAndShow(context);
       
       final authService = Provider.of<AuthService>(context, listen: false);
       if (authService.currentUserModel != null) {
@@ -99,6 +104,12 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
         );
       }
     });
+  }
+
+  @override
+  void dispose() {
+    _updateSubscription?.cancel();
+    super.dispose();
   }
 
   void _showOrderServiceDialog() async {

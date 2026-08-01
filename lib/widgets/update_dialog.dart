@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
@@ -22,12 +23,15 @@ class UpdateDialog extends StatefulWidget {
   @override
   State<UpdateDialog> createState() => _UpdateDialogState();
 
-  /// Helper method to check for updates and show dialog
+  static bool _isDialogShowing = false;
+
+  /// Helper method to check for updates once (GitHub API + Firestore fallback)
   static Future<void> checkAndShow(BuildContext context) async {
     final updateService = UpdateService();
     try {
       final updateInfo = await updateService.checkForUpdate();
-      if (updateInfo.hasUpdate && context.mounted) {
+      if (updateInfo.hasUpdate && context.mounted && !_isDialogShowing) {
+        _isDialogShowing = true;
         showDialog(
           context: context,
           barrierDismissible: !updateInfo.isForceUpdate,
@@ -37,11 +41,40 @@ class UpdateDialog extends StatefulWidget {
               isForceUpdate: updateInfo.isForceUpdate,
             );
           },
-        );
+        ).then((_) {
+          _isDialogShowing = false;
+        });
       }
     } catch (_) {
       // Fail silently
     }
+  }
+
+  /// Helper method to continuously listen for real-time version_info updates and show dialog
+  static StreamSubscription? listenAndShow(BuildContext context) {
+    final updateService = UpdateService();
+    
+    // 1. One-time initial check (GitHub API / Release check)
+    checkAndShow(context);
+
+    // 2. Real-time stream listener for instant version_info updates from Firestore
+    return updateService.getUpdateStream().listen((updateInfo) {
+      if (updateInfo.hasUpdate && context.mounted && !_isDialogShowing) {
+        _isDialogShowing = true;
+        showDialog(
+          context: context,
+          barrierDismissible: !updateInfo.isForceUpdate,
+          builder: (context) {
+            return UpdateDialog(
+              updateInfo: updateInfo,
+              isForceUpdate: updateInfo.isForceUpdate,
+            );
+          },
+        ).then((_) {
+          _isDialogShowing = false;
+        });
+      }
+    });
   }
 }
 
