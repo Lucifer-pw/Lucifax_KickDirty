@@ -740,6 +740,13 @@ class _HistoryOrdersScreenState extends State<HistoryOrdersScreen> {
     }
   }
 
+  String _formatCurrency(double amount) {
+    return amount.toStringAsFixed(0).replaceAllMapped(
+          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+          (Match m) => '${m[1]}.',
+        );
+  }
+
   @override
   Widget build(BuildContext context) {
     // dbService removed from build as it's now used in initState/loadMore
@@ -837,74 +844,145 @@ class _HistoryOrdersScreenState extends State<HistoryOrdersScreen> {
                           String year = order.createdAt.year.toString();
                           String formattedDate = "$day-$month-$year";
 
-                          // Determine Status Color
+                          // Determine Status Color & Display Text
                           Color statusColor = Colors.grey;
-                          if (order.status == 'diterima') statusColor = Colors.orange;
-                          if (order.status == 'sedang_diproses') statusColor = AppTheme.primaryBlue;
-                          if (order.status == 'selesai') statusColor = Colors.teal;
-                          if (order.status == 'diambil') statusColor = Colors.green;
+                          String statusText = order.status.toUpperCase();
+                          if (order.status == 'diterima' || order.status == 'dibayar') {
+                            statusColor = Colors.orange;
+                          } else if (order.status == 'sedang_diproses' || order.status == 'diproses') {
+                            statusColor = AppTheme.primaryBlue;
+                          } else if (order.status == 'selesai') {
+                            statusColor = Colors.teal;
+                          } else if (order.status == 'diambil') {
+                            statusColor = Colors.green;
+                          }
+
+                          // Build item summary description
+                          String itemDesc = '';
+                          if (order.items.isNotEmpty) {
+                            final names = order.items
+                                .map((e) => e.itemName.isNotEmpty ? e.itemName : e.serviceName)
+                                .where((n) => n.isNotEmpty)
+                                .join(', ');
+                            if (names.isNotEmpty) {
+                              itemDesc = '${order.items.length} Pasang $names';
+                            } else {
+                              itemDesc = '${order.items.length} Pasang Sepatu';
+                            }
+                          } else {
+                            itemDesc = '1 Pasang Sepatu';
+                          }
 
                           return Card(
                             margin: EdgeInsets.only(bottom: 12),
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              side: BorderSide(color: AppTheme.lightGray, width: 1),
+                            ),
                             child: InkWell(
                               onTap: () => InvoiceDetailModal.show(context, order),
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(14),
                               child: Padding(
                                 padding: EdgeInsets.all(16),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
+                                    // Top Header: Invoice ID (Left) & Status Badge (Right)
                                     Row(
                                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                       children: [
                                         Text(
                                           order.id,
-                                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.primaryBlue),
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 14,
+                                            color: AppTheme.primaryBlue,
+                                          ),
                                         ),
-                                        Text(
-                                          formattedDate,
-                                          style: TextStyle(fontSize: 11, color: AppTheme.textGray),
-                                        ),
-                                      ],
-                                    ),
-                                    SizedBox(height: 8),
-                                    Text(
-                                      order.customerName,
-                                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppTheme.darkBlueText),
-                                    ),
-                                    SizedBox(height: 4),
-                                    Text(
-                                      '${order.items.length} Barang: ${order.items.map((e) => e.itemName).join(", ")}',
-                                      style: TextStyle(fontSize: 12, color: AppTheme.textGray),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    SizedBox(height: 12),
-                                    Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                      children: [
                                         Container(
                                           padding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                           decoration: BoxDecoration(
-                                            color: statusColor.withOpacity(0.1),
-                                            borderRadius: BorderRadius.circular(20),
+                                            color: statusColor.withOpacity(0.12),
+                                            borderRadius: BorderRadius.circular(6),
                                             border: Border.all(color: statusColor.withOpacity(0.3)),
                                           ),
                                           child: Text(
-                                            order.status.toUpperCase(),
-                                            style: TextStyle(color: statusColor, fontSize: 10, fontWeight: FontWeight.bold),
+                                            statusText,
+                                            style: TextStyle(
+                                              color: statusColor,
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.bold,
+                                              letterSpacing: 0.5,
+                                            ),
                                           ),
-                                        ),
-                                        Text(
-                                          'Rp ${order.totalAmount.toStringAsFixed(0)}',
-                                          style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.darkBlueText),
                                         ),
                                       ],
                                     ),
-                                    
-                                    Divider(height: 24, color: AppTheme.lightGray),
 
-                                    // Action buttons (PDF, WA Notification)
+                                    SizedBox(height: 10),
+                                    Divider(height: 1, color: AppTheme.lightGray),
+                                    SizedBox(height: 10),
+
+                                    // Customer Name & Date
+                                    RichText(
+                                      text: TextSpan(
+                                        style: TextStyle(fontSize: 13, color: AppTheme.darkBlueText),
+                                        children: [
+                                          TextSpan(
+                                            text: 'Pelanggan: ',
+                                            style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.textGray),
+                                          ),
+                                          TextSpan(
+                                            text: order.customerName,
+                                            style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.darkBlueText),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    SizedBox(height: 3),
+                                    RichText(
+                                      text: TextSpan(
+                                        style: TextStyle(fontSize: 12, color: AppTheme.textGray),
+                                        children: [
+                                          TextSpan(text: 'Tanggal: '),
+                                          TextSpan(text: formattedDate, style: TextStyle(color: AppTheme.darkBlueText.withOpacity(0.8))),
+                                        ],
+                                      ),
+                                    ),
+
+                                    SizedBox(height: 10),
+
+                                    // Item summary (Left) & Total Amount (Right)
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      crossAxisAlignment: CrossAxisAlignment.end,
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            itemDesc,
+                                            style: TextStyle(fontSize: 12, color: AppTheme.textGray),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                        SizedBox(width: 8),
+                                        Text(
+                                          'Rp ${_formatCurrency(order.totalAmount)}',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 15,
+                                            color: AppTheme.darkBlueText,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+
+                                    SizedBox(height: 10),
+                                    Divider(height: 1, color: AppTheme.lightGray),
+                                    SizedBox(height: 4),
+
+                                    // Action buttons (WA Notif, Kirim PDF, Cetak)
                                     Row(
                                       mainAxisAlignment: MainAxisAlignment.end,
                                       children: [
