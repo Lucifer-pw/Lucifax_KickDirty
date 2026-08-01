@@ -11,6 +11,7 @@ import '../../services/database_service.dart';
 import '../../services/whatsapp_service.dart';
 import '../../theme.dart';
 import '../../widgets/invoice_detail_modal.dart';
+import '../../widgets/pagination_bar_widget.dart';
 import '../../utils/error_helper.dart';
 import '../../utils/printer/printer_service.dart';
 
@@ -26,84 +27,109 @@ class _HistoryOrdersScreenState extends State<HistoryOrdersScreen> {
   String _searchQuery = '';
   String _statusFilter = 'semua'; // 'semua' | 'diterima' | 'sedang_diproses' | 'selesai' | 'diambil'
 
-  // --- Pagination State ---
-  final Map<int, List<OrderModel>> _pages = {};
-  bool _isLoading = true;
-  bool _isLoadingMore = false;
-  bool _hasMore = true;
-  DocumentSnapshot? _lastDocument;
+  // --- Numbered Pagination State ---
+  int _itemsPerPage = 25;
+  int _currentPage = 1;
+  int _totalCount = 0;
+  bool _isLoadingCount = true;
+  bool _isLoadingPage = true;
+
+  final Map<int, List<OrderModel>> _pageOrdersCache = {};
+  final Map<int, DocumentSnapshot?> _pageLastDocs = {};
   final List<StreamSubscription> _subscriptions = [];
-  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
-    _scrollController.addListener(_onScroll);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadInitialOrders();
+      _initPagination();
     });
   }
 
-  void _onScroll() {
-    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
-      _loadMore();
+  void _cancelSubscriptions() {
+    for (var sub in _subscriptions) {
+      sub.cancel();
     }
+    _subscriptions.clear();
   }
 
-  void _loadInitialOrders() {
-    final dbService = Provider.of<DatabaseService>(context, listen: false);
-    final sub = dbService.getOrdersHistory(limit: 50).listen((orders) async {
-      if (!mounted) return;
-      setState(() {
-        _pages[0] = orders;
-        _isLoading = false;
-        if (orders.length < 50) _hasMore = false;
-      });
-      if (orders.isNotEmpty) {
-        _lastDocument = await FirebaseFirestore.instance.collection('orders').doc(orders.last.id).get();
-      }
+  Future<void> _initPagination() async {
+    _cancelSubscriptions();
+    setState(() {
+      _isLoadingCount = true;
+      _isLoadingPage = true;
+      _pageOrdersCache.clear();
+      _pageLastDocs.clear();
+      _currentPage = 1;
     });
+
+    final dbService = Provider.of<DatabaseService>(context, listen: false);
+    
+    // 1. Fetch total count (using cheap count query)
+    final count = await dbService.getOrdersHistoryCount(statusFilter: _statusFilter);
+    if (!mounted) return;
+
+    setState(() {
+      _totalCount = count;
+      _isLoadingCount = false;
+    });
+
+    // 2. Fetch page 1
+    _fetchPage(1);
+  }
+
+  void _fetchPage(int page) {
+    if (_pageOrdersCache.containsKey(page)) {
+      setState(() {
+        _currentPage = page;
+        _isLoadingPage = false;
+      });
+      return;
+    }
+
+    setState(() {
+      _currentPage = page;
+      _isLoadingPage = true;
+    });
+
+    final dbService = Provider.of<DatabaseService>(context, listen: false);
+    final DocumentSnapshot? startAfterDoc = page > 1 ? _pageLastDocs[page - 1] : null;
+
+    final sub = dbService.getPaginatedOrdersSnapshot(
+      limit: _itemsPerPage,
+      startAfterDoc: startAfterDoc,
+      statusFilter: _statusFilter,
+    ).listen((snapshot) {
+      if (!mounted) return;
+
+      final orders = snapshot.docs.map((doc) => OrderModel.fromMap(doc.data(), doc.id)).toList();
+
+      setState(() {
+        _pageOrdersCache[page] = orders;
+        if (snapshot.docs.isNotEmpty) {
+          _pageLastDocs[page] = snapshot.docs.last;
+        }
+        _isLoadingPage = false;
+      });
+    });
+
     _subscriptions.add(sub);
   }
 
-  Future<void> _loadMore() async {
-    if (_isLoadingMore || !_hasMore || _lastDocument == null) return;
-    
-    setState(() => _isLoadingMore = true);
-
-    final dbService = Provider.of<DatabaseService>(context, listen: false);
-    final pageIndex = _pages.length;
-    final currentLastDoc = _lastDocument;
-    
-    final sub = dbService.getOrdersHistory(limit: 50, startAfter: currentLastDoc).listen((orders) async {
-      if (!mounted) return;
-      setState(() {
-        _pages[pageIndex] = orders;
-        _isLoadingMore = false;
-        if (orders.length < 50) _hasMore = false;
-      });
-      if (orders.isNotEmpty) {
-        _lastDocument = await FirebaseFirestore.instance.collection('orders').doc(orders.last.id).get();
-      }
+  void _onItemsPerPageChanged(int newLimit) {
+    setState(() {
+      _itemsPerPage = newLimit;
     });
-    _subscriptions.add(sub);
+    _initPagination();
   }
 
-  List<OrderModel> get _allOrders {
-    final all = <OrderModel>[];
-    final sortedKeys = _pages.keys.toList()..sort();
-    for (var key in sortedKeys) {
-      all.addAll(_pages[key]!);
-    }
-    return all;
+  void _onPageChanged(int newPage) {
+    _fetchPage(newPage);
   }
 
   @override
   void dispose() {
-    _scrollController.dispose();
-    for (var sub in _subscriptions) {
-      sub.cancel();
-    }
+    _cancelSubscriptions();
     super.dispose();
   }
   // --- End Pagination State ---
@@ -736,14 +762,13 @@ class _HistoryOrdersScreenState extends State<HistoryOrdersScreen> {
               ],
             ),
           ),
-
           // Orders List
           Expanded(
-            child: _isLoading
+            child: (_isLoadingCount || _isLoadingPage)
                 ? Center(child: CircularProgressIndicator())
                 : Builder(
                     builder: (context) {
-                      var orders = _allOrders;
+                      var orders = _pageOrdersCache[_currentPage] ?? [];
 
                       // Filter by Search Query
                       if (_searchQuery.isNotEmpty) {
@@ -752,11 +777,6 @@ class _HistoryOrdersScreenState extends State<HistoryOrdersScreen> {
                               o.customerPhone.contains(_searchQuery) ||
                               o.id.toLowerCase().contains(_searchQuery);
                         }).toList();
-                      }
-
-                      // Filter by Status
-                      if (_statusFilter != 'semua') {
-                        orders = orders.where((o) => o.status == _statusFilter).toList();
                       }
 
                       if (orders.isEmpty) {
@@ -776,134 +796,132 @@ class _HistoryOrdersScreenState extends State<HistoryOrdersScreen> {
                       }
 
                       return ListView.builder(
-                        controller: _scrollController,
                         padding: EdgeInsets.symmetric(horizontal: 16),
-                        itemCount: orders.length + (_hasMore ? 1 : 0),
+                        itemCount: orders.length,
                         itemBuilder: (context, index) {
-                          if (index == orders.length) {
-                            return Center(
-                              child: Padding(
-                                padding: EdgeInsets.all(16.0),
-                                child: _isLoadingMore
-                                    ? CircularProgressIndicator()
-                                    : TextButton(
-                                        onPressed: _loadMore,
-                                        child: Text('Muat Lebih Banyak'),
-                                      ),
-                              ),
-                            );
-                          }
                           final order = orders[index];
 
-                    // Date formatting: DD-MM-YYYY
-                    String day = order.createdAt.day.toString().padLeft(2, '0');
-                    String month = order.createdAt.month.toString().padLeft(2, '0');
-                    String year = order.createdAt.year.toString();
-                    String formattedDate = "$day-$month-$year";
+                          // Date formatting: DD-MM-YYYY
+                          String day = order.createdAt.day.toString().padLeft(2, '0');
+                          String month = order.createdAt.month.toString().padLeft(2, '0');
+                          String year = order.createdAt.year.toString();
+                          String formattedDate = "$day-$month-$year";
 
-                    // Determine Status Color
-                    Color statusColor = Colors.grey;
-                    if (order.status == 'diterima') statusColor = Colors.orange;
-                    if (order.status == 'sedang_diproses') statusColor = AppTheme.primaryBlue;
-                    if (order.status == 'selesai') statusColor = Colors.teal;
-                    if (order.status == 'diambil') statusColor = Colors.green;
+                          // Determine Status Color
+                          Color statusColor = Colors.grey;
+                          if (order.status == 'diterima') statusColor = Colors.orange;
+                          if (order.status == 'sedang_diproses') statusColor = AppTheme.primaryBlue;
+                          if (order.status == 'selesai') statusColor = Colors.teal;
+                          if (order.status == 'diambil') statusColor = Colors.green;
 
-                    return Card(
-                      margin: EdgeInsets.only(bottom: 12),
-                      child: InkWell(
-                        onTap: () => InvoiceDetailModal.show(context, order),
-                        borderRadius: BorderRadius.circular(12),
-                        child: Padding(
-                          padding: EdgeInsets.all(16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    order.id,
-                                    style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primaryBlue),
-                                  ),
-                                  Container(
-                                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                    decoration: BoxDecoration(
-                                      color: statusColor.withOpacity(0.12),
-                                      borderRadius: BorderRadius.circular(6),
+                          return Card(
+                            margin: EdgeInsets.only(bottom: 12),
+                            child: InkWell(
+                              onTap: () => InvoiceDetailModal.show(context, order),
+                              borderRadius: BorderRadius.circular(12),
+                              child: Padding(
+                                padding: EdgeInsets.all(16),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text(
+                                          order.id,
+                                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.primaryBlue),
+                                        ),
+                                        Text(
+                                          formattedDate,
+                                          style: TextStyle(fontSize: 11, color: AppTheme.textGray),
+                                        ),
+                                      ],
                                     ),
-                                    child: Text(
-                                      order.status.toUpperCase().replaceAll('_', ' '),
-                                      style: TextStyle(
-                                        color: statusColor,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 10,
-                                      ),
+                                    SizedBox(height: 8),
+                                    Text(
+                                      order.customerName,
+                                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppTheme.darkBlueText),
                                     ),
-                                  ),
-                                ],
-                              ),
-                              Divider(height: 20, color: AppTheme.lightGray),
-                              
-                              Text(
-                                'Pelanggan: ${order.customerName}',
-                                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
-                              ),
-                              Text('Tanggal: $formattedDate', style: TextStyle(color: AppTheme.textGray, fontSize: 11)),
-                              SizedBox(height: 8),
+                                    SizedBox(height: 4),
+                                    Text(
+                                      '${order.items.length} Barang: ${order.items.map((e) => e.itemName).join(", ")}',
+                                      style: TextStyle(fontSize: 12, color: AppTheme.textGray),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    SizedBox(height: 12),
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Container(
+                                          padding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                          decoration: BoxDecoration(
+                                            color: statusColor.withOpacity(0.1),
+                                            borderRadius: BorderRadius.circular(20),
+                                            border: Border.all(color: statusColor.withOpacity(0.3)),
+                                          ),
+                                          child: Text(
+                                            order.status.toUpperCase(),
+                                            style: TextStyle(color: statusColor, fontSize: 10, fontWeight: FontWeight.bold),
+                                          ),
+                                        ),
+                                        Text(
+                                          'Rp ${order.totalAmount.toStringAsFixed(0)}',
+                                          style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.darkBlueText),
+                                        ),
+                                      ],
+                                    ),
+                                    
+                                    Divider(height: 24, color: AppTheme.lightGray),
 
-                              // Items count and price
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    '${order.items.length} Pasang Sepatu',
-                                    style: TextStyle(fontSize: 12, color: AppTheme.textGray),
-                                  ),
-                                  Text(
-                                    'Rp ${order.totalAmount.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}',
-                                    style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.darkBlueText),
-                                  ),
-                                ],
+                                    // Action buttons (PDF, WA Notification)
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.end,
+                                      children: [
+                                        // WA Notification
+                                        TextButton.icon(
+                                          onPressed: () => _sendWhatsAppMessage(order),
+                                          icon: Icon(Icons.chat_bubble_outline, color: Colors.green, size: 14),
+                                          label: Text('WA Notif', style: TextStyle(color: Colors.green, fontSize: 11)),
+                                        ),
+                                        SizedBox(width: 4),
+
+                                        // Kirim PDF via native share (WhatsApp)
+                                        TextButton.icon(
+                                          onPressed: () => _sharePdfInvoice(order),
+                                          icon: Icon(Icons.share, color: Colors.blue, size: 14),
+                                          label: Text('Kirim PDF', style: TextStyle(color: Colors.blue, fontSize: 11)),
+                                        ),
+                                        SizedBox(width: 4),
+
+                                        // PDF Invoice Print
+                                        TextButton.icon(
+                                          onPressed: () => _showPrintOptionsDialog(order),
+                                          icon: Icon(Icons.print_outlined, color: AppTheme.textGray, size: 14),
+                                          label: Text('Cetak', style: TextStyle(color: AppTheme.textGray, fontSize: 11)),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
                               ),
-                              
-                              Divider(height: 24, color: AppTheme.lightGray),
-
-                              // Action buttons (PDF, WA Notification)
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.end,
-                                children: [
-                                  // WA Notification
-                                  TextButton.icon(
-                                    onPressed: () => _sendWhatsAppMessage(order),
-                                    icon: Icon(Icons.chat_bubble_outline, color: Colors.green, size: 14),
-                                    label: Text('WA Notif', style: TextStyle(color: Colors.green, fontSize: 11)),
-                                  ),
-                                  SizedBox(width: 4),
-
-                                  // Kirim PDF via native share (WhatsApp)
-                                  TextButton.icon(
-                                    onPressed: () => _sharePdfInvoice(order),
-                                    icon: Icon(Icons.share, color: Colors.blue, size: 14),
-                                    label: Text('Kirim PDF', style: TextStyle(color: Colors.blue, fontSize: 11)),
-                                  ),
-                                  SizedBox(width: 4),
-
-                                  // PDF Invoice Print
-                                  TextButton.icon(
-                                    onPressed: () => _showPrintOptionsDialog(order),
-                                    icon: Icon(Icons.print_outlined, color: AppTheme.textGray, size: 14),
-                                    label: Text('Cetak', style: TextStyle(color: AppTheme.textGray, fontSize: 11)),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                );
-              },
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  ),
+          ),
+          // Numbered Pagination Bar at the bottom
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: PaginationBarWidget(
+              totalItems: _totalCount,
+              currentPage: _currentPage,
+              itemsPerPage: _itemsPerPage,
+              onPageChanged: _onPageChanged,
+              onItemsPerPageChanged: _onItemsPerPageChanged,
+              itemUnitName: 'transaksi',
             ),
           ),
         ],
@@ -917,10 +935,11 @@ class _HistoryOrdersScreenState extends State<HistoryOrdersScreen> {
       label: Text(label),
       selected: isSelected,
       onSelected: (val) {
-        if (val) {
+        if (val && _statusFilter != filter) {
           setState(() {
             _statusFilter = filter;
           });
+          _initPagination();
         }
       },
       selectedColor: AppTheme.primaryBlue.withOpacity(0.12),

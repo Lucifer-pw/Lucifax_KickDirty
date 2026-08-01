@@ -145,6 +145,56 @@ class DatabaseService with ChangeNotifier {
     });
   }
 
+  // Get total count of orders for pagination count info (super cheap 1 read per 1000 items)
+  Future<int> getOrdersHistoryCount({String? statusFilter}) async {
+    try {
+      Query<Map<String, dynamic>> query = _db.collection('orders');
+      if (statusFilter != null && statusFilter != 'semua') {
+        if (statusFilter == 'sedang_diproses') {
+          query = query.where('status', isEqualTo: 'Diproses');
+        } else if (statusFilter == 'diterima') {
+          query = query.where('status', isEqualTo: 'Diterima');
+        } else if (statusFilter == 'selesai') {
+          query = query.where('status', isEqualTo: 'Selesai');
+        } else if (statusFilter == 'diambil') {
+          query = query.where('status', isEqualTo: 'Diambil');
+        }
+      }
+      final countSnapshot = await query.count().get();
+      return countSnapshot.count ?? 0;
+    } catch (_) {
+      return 0;
+    }
+  }
+
+  // Get stream of order documents for a specific page Anchor
+  Stream<QuerySnapshot<Map<String, dynamic>>> getPaginatedOrdersSnapshot({
+    required int limit,
+    DocumentSnapshot? startAfterDoc,
+    String? statusFilter,
+  }) {
+    Query<Map<String, dynamic>> query = _db.collection('orders');
+    if (statusFilter != null && statusFilter != 'semua') {
+      if (statusFilter == 'sedang_diproses') {
+        query = query.where('status', isEqualTo: 'Diproses');
+      } else if (statusFilter == 'diterima') {
+        query = query.where('status', isEqualTo: 'Diterima');
+      } else if (statusFilter == 'selesai') {
+        query = query.where('status', isEqualTo: 'Selesai');
+      } else if (statusFilter == 'diambil') {
+        query = query.where('status', isEqualTo: 'Diambil');
+      }
+    }
+
+    query = query.orderBy('createdAt', descending: true).limit(limit);
+
+    if (startAfterDoc != null) {
+      query = query.startAfterDocument(startAfterDoc);
+    }
+
+    return query.snapshots();
+  }
+
   // Get stream of expenses by date range — for financial reports
   Stream<List<ExpenseModel>> getExpensesByDateRange(DateTime start, DateTime end) {
     return _db
