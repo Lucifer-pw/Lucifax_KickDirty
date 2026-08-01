@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/order_model.dart';
+import '../models/category_model.dart';
 
 class LocalCacheService {
   LocalCacheService._privateConstructor();
@@ -11,15 +12,24 @@ class LocalCacheService {
 
   Directory? _cacheDir;
 
-  /// Get or initialize the cache directory at /data/user/0/com.lucifax.kickdirty/data/cache/
+  /// Get or initialize the cache directory at /storage/emulated/0/Android/data/com.Lucifax.KickDirty/cache/
   Future<Directory?> get _cacheDirectory async {
     if (kIsWeb) return null;
     if (_cacheDir != null) return _cacheDir;
     try {
+      if (Platform.isAndroid) {
+        final extDirs = await getExternalCacheDirectories();
+        if (extDirs != null && extDirs.isNotEmpty) {
+          final dir = extDirs.first;
+          if (!await dir.exists()) {
+            await dir.create(recursive: true);
+          }
+          _cacheDir = dir;
+          return _cacheDir;
+        }
+      }
       final appDocDir = await getApplicationDocumentsDirectory();
-      // Parent directory of appDocDir is /data/user/0/com.lucifax.kickdirty
-      final parentPath = appDocDir.parent.path;
-      final cachePath = '$parentPath/data/cache';
+      final cachePath = '${appDocDir.path}/cache';
       final dir = Directory(cachePath);
       if (!await dir.exists()) {
         await dir.create(recursive: true);
@@ -106,7 +116,57 @@ class LocalCacheService {
     return null;
   }
 
-  /// Complete wipe of all cache files in /data/user/0/com.lucifax.kickdirty/app_flutter/cache/
+  /// Save any JSON serializable generic cache
+  Future<void> saveGenericCache(String key, dynamic data) async {
+    try {
+      final jsonString = jsonEncode({
+        'timestamp': DateTime.now().millisecondsSinceEpoch,
+        'data': data,
+      });
+
+      if (kIsWeb) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('cache_$key', jsonString);
+      } else {
+        final dir = await _cacheDirectory;
+        if (dir != null) {
+          final file = File('${dir.path}/$key.json');
+          await file.writeAsString(jsonString, flush: true);
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) print('Error saving generic cache $key: $e');
+    }
+  }
+
+  /// Read any JSON serializable generic cache
+  Future<dynamic> getGenericCache(String key) async {
+    try {
+      String? jsonString;
+      if (kIsWeb) {
+        final prefs = await SharedPreferences.getInstance();
+        jsonString = prefs.getString('cache_$key');
+      } else {
+        final dir = await _cacheDirectory;
+        if (dir != null) {
+          final file = File('${dir.path}/$key.json');
+          if (await file.exists()) {
+            jsonString = await file.readAsString();
+          }
+        }
+      }
+
+      if (jsonString != null && jsonString.isNotEmpty) {
+        final map = jsonDecode(jsonString);
+        return map['data'];
+      }
+    } catch (e) {
+      if (kDebugMode) print('Error reading generic cache $key: $e');
+    }
+    return null;
+  }
+
+  /// Complete wipe of all cache files in Android/data/com.Lucifax.KickDirty/cache/
   /// Triggered automatically on Logout
   Future<void> clearAllCache() async {
     try {

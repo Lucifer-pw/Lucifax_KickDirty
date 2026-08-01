@@ -7,6 +7,7 @@ import '../../models/order_model.dart';
 import '../../services/database_service.dart';
 import '../../services/auth_service.dart';
 import '../../services/image_service.dart';
+import '../../services/local_cache_service.dart';
 import '../../theme.dart';
 import '../../utils/error_helper.dart';
 
@@ -22,11 +23,24 @@ class ProcessOrderScreen extends StatefulWidget {
 
 class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  List<OrderModel>? _cachedOrders;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
+    _loadCache();
+  }
+
+  Future<void> _loadCache() async {
+    final rawData = await LocalCacheService.instance.getGenericCache('active_orders');
+    if (rawData != null && rawData is List && mounted) {
+      setState(() {
+        _cachedOrders = rawData
+            .map((item) => OrderModel.fromMap(item as Map<String, dynamic>, item['id'] ?? ''))
+            .toList();
+      });
+    }
   }
 
   @override
@@ -537,14 +551,22 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
     return StreamBuilder<List<OrderModel>>(
       stream: dbService.getActiveOrders(),
       builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
+        if (snapshot.hasData && snapshot.data != null) {
+          _cachedOrders = snapshot.data;
+          LocalCacheService.instance.saveGenericCache(
+            'active_orders',
+            snapshot.data!.map((o) => o.toMap()).toList(),
+          );
+        }
+
+        if (snapshot.connectionState == ConnectionState.waiting && _cachedOrders == null) {
           return Scaffold(body: Center(child: CircularProgressIndicator()));
         }
-        if (snapshot.hasError) {
+        if (snapshot.hasError && _cachedOrders == null) {
           return Scaffold(body: Center(child: Text(getCleanErrorMessage(snapshot.error))));
         }
 
-        final allOrders = snapshot.data ?? [];
+        final allOrders = snapshot.data ?? _cachedOrders ?? [];
         
         // Filter active orders based on tabs (ignore status 'diambil' in active process screen)
         final ordersDiBayar = allOrders.where((o) => o.status == 'dibayar').toList();

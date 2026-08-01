@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/category_model.dart';
 import '../../services/database_service.dart';
+import '../../services/local_cache_service.dart';
 import '../../theme.dart';
 import 'service_crud_screen.dart';
 import '../../utils/error_helper.dart';
@@ -17,6 +18,25 @@ class _CategoryCrudScreenState extends State<CategoryCrudScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _descController = TextEditingController();
+
+  List<CategoryModel>? _cachedCategories;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCache();
+  }
+
+  Future<void> _loadCache() async {
+    final rawData = await LocalCacheService.instance.getGenericCache('categories');
+    if (rawData != null && rawData is List && mounted) {
+      setState(() {
+        _cachedCategories = rawData
+            .map((item) => CategoryModel.fromMap(item as Map<String, dynamic>, item['id'] ?? ''))
+            .toList();
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -153,14 +173,22 @@ class _CategoryCrudScreenState extends State<CategoryCrudScreen> {
       body: StreamBuilder<List<CategoryModel>>(
         stream: dbService.getCategories(),
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
+          if (snapshot.hasData && snapshot.data != null) {
+            _cachedCategories = snapshot.data;
+            LocalCacheService.instance.saveGenericCache(
+              'categories',
+              snapshot.data!.map((c) => c.toMap()).toList(),
+            );
+          }
+
+          if (snapshot.connectionState == ConnectionState.waiting && _cachedCategories == null) {
             return Center(child: CircularProgressIndicator());
           }
-          if (snapshot.hasError) {
+          if (snapshot.hasError && _cachedCategories == null) {
             return Center(child: Text(getCleanErrorMessage(snapshot.error)));
           }
 
-          final categories = snapshot.data ?? [];
+          final categories = snapshot.data ?? _cachedCategories ?? [];
           if (categories.isEmpty) {
             return Center(
               child: Column(

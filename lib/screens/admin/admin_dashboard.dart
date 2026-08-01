@@ -6,6 +6,7 @@ import '../../models/order_model.dart';
 import '../../models/expense_model.dart';
 import '../../services/auth_service.dart';
 import '../../services/database_service.dart';
+import '../../services/local_cache_service.dart';
 import '../../theme.dart';
 import '../../widgets/watermark.dart';
 import '../../widgets/update_dialog.dart';
@@ -85,11 +86,14 @@ class _AdminDashboardState extends State<AdminDashboard> {
   }
 
   StreamSubscription? _updateSubscription;
+  List<OrderModel>? _cachedOrders;
+  List<ExpenseModel>? _cachedExpenses;
 
   @override
   void initState() {
     super.initState();
     _initPrinterStatus();
+    _loadDashboardCache();
     // Run update check on dashboard load
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkForUpdates();
@@ -107,6 +111,25 @@ class _AdminDashboardState extends State<AdminDashboard> {
         );
       }
     });
+  }
+
+  Future<void> _loadDashboardCache() async {
+    final rawOrders = await LocalCacheService.instance.getGenericCache('dashboard_orders');
+    if (rawOrders != null && rawOrders is List && mounted) {
+      setState(() {
+        _cachedOrders = rawOrders
+            .map((item) => OrderModel.fromMap(item as Map<String, dynamic>, item['id'] ?? ''))
+            .toList();
+      });
+    }
+    final rawExpenses = await LocalCacheService.instance.getGenericCache('dashboard_expenses');
+    if (rawExpenses != null && rawExpenses is List && mounted) {
+      setState(() {
+        _cachedExpenses = rawExpenses
+            .map((item) => ExpenseModel.fromMap(item as Map<String, dynamic>, item['id'] ?? ''))
+            .toList();
+      });
+    }
   }
 
   @override
@@ -568,16 +591,31 @@ class _AdminDashboardState extends State<AdminDashboard> {
       body: StreamBuilder<List<OrderModel>>(
         stream: dbService.getRecentOrders(days: 366),
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
+          if (snapshot.hasData && snapshot.data != null) {
+            _cachedOrders = snapshot.data;
+            LocalCacheService.instance.saveGenericCache(
+              'dashboard_orders',
+              snapshot.data!.map((o) => o.toMap()).toList(),
+            );
+          }
+
+          if (snapshot.connectionState == ConnectionState.waiting && _cachedOrders == null) {
             return Center(child: CircularProgressIndicator());
           }
-          final orders = snapshot.data ?? [];
+          final orders = snapshot.data ?? _cachedOrders ?? [];
           final recaps = dbService.calculateSalesRecap(orders);
 
           return StreamBuilder<List<ExpenseModel>>(
             stream: dbService.getExpenses(),
             builder: (context, expSnapshot) {
-              final expenses = expSnapshot.data ?? [];
+              if (expSnapshot.hasData && expSnapshot.data != null) {
+                _cachedExpenses = expSnapshot.data;
+                LocalCacheService.instance.saveGenericCache(
+                  'dashboard_expenses',
+                  expSnapshot.data!.map((e) => e.toMap()).toList(),
+                );
+              }
+              final expenses = expSnapshot.data ?? _cachedExpenses ?? [];
               final expRecaps = dbService.calculateExpensesRecap(expenses);
 
               final displayRecaps = _showNetProfit

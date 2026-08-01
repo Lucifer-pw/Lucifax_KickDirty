@@ -4,13 +4,36 @@ import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../services/database_service.dart';
 import '../../services/auth_service.dart';
+import '../../services/local_cache_service.dart';
 import '../../theme.dart';
 import '../chat_screen.dart';
 import '../../utils/error_helper.dart';
 
-class AdminChatListScreen extends StatelessWidget {
+class AdminChatListScreen extends StatefulWidget {
   final bool isTab;
   AdminChatListScreen({Key? key, this.isTab = false}) : super(key: key);
+
+  @override
+  State<AdminChatListScreen> createState() => _AdminChatListScreenState();
+}
+
+class _AdminChatListScreenState extends State<AdminChatListScreen> {
+  List<Map<String, dynamic>>? _cachedRooms;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCache();
+  }
+
+  Future<void> _loadCache() async {
+    final rawData = await LocalCacheService.instance.getGenericCache('chat_rooms');
+    if (rawData != null && rawData is List && mounted) {
+      setState(() {
+        _cachedRooms = rawData.cast<Map<String, dynamic>>();
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -21,21 +44,26 @@ class AdminChatListScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text('Pesan Masuk Pelanggan'),
-        automaticallyImplyLeading: !isTab,
+        automaticallyImplyLeading: !widget.isTab,
       ),
       body: currentUser == null
           ? Center(child: CircularProgressIndicator())
           : StreamBuilder<List<Map<String, dynamic>>>(
               stream: dbService.getChatRooms(),
               builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
+                if (snapshot.hasData && snapshot.data != null) {
+                  _cachedRooms = snapshot.data;
+                  LocalCacheService.instance.saveGenericCache('chat_rooms', snapshot.data);
+                }
+
+                if (snapshot.connectionState == ConnectionState.waiting && _cachedRooms == null) {
                   return Center(child: CircularProgressIndicator());
                 }
-                if (snapshot.hasError) {
+                if (snapshot.hasError && _cachedRooms == null) {
                   return Center(child: Text(getCleanErrorMessage(snapshot.error)));
                 }
 
-                final rooms = snapshot.data ?? [];
+                final rooms = snapshot.data ?? _cachedRooms ?? [];
 
                 if (rooms.isEmpty) {
                   return Center(
