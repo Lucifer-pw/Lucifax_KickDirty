@@ -150,14 +150,16 @@ class DatabaseService with ChangeNotifier {
     try {
       Query<Map<String, dynamic>> query = _db.collection('orders');
       if (statusFilter != null && statusFilter != 'semua') {
-        if (statusFilter == 'sedang_diproses') {
-          query = query.where('status', isEqualTo: 'Diproses');
+        if (statusFilter == 'dibayar') {
+          query = query.where('status', whereIn: ['dibayar', 'Dibayar', 'menunggu_pembayaran']);
         } else if (statusFilter == 'diterima') {
-          query = query.where('status', isEqualTo: 'Diterima');
+          query = query.where('status', whereIn: ['diterima', 'Diterima']);
+        } else if (statusFilter == 'sedang_diproses' || statusFilter == 'diproses') {
+          query = query.where('status', whereIn: ['sedang_diproses', 'diproses', 'Diproses']);
         } else if (statusFilter == 'selesai') {
-          query = query.where('status', isEqualTo: 'Selesai');
+          query = query.where('status', whereIn: ['selesai', 'Selesai']);
         } else if (statusFilter == 'diambil') {
-          query = query.where('status', isEqualTo: 'Diambil');
+          query = query.where('status', whereIn: ['diambil', 'Diambil']);
         }
       }
       final countSnapshot = await query.count().get();
@@ -175,14 +177,16 @@ class DatabaseService with ChangeNotifier {
   }) {
     Query<Map<String, dynamic>> query = _db.collection('orders');
     if (statusFilter != null && statusFilter != 'semua') {
-      if (statusFilter == 'sedang_diproses') {
-        query = query.where('status', isEqualTo: 'Diproses');
+      if (statusFilter == 'dibayar') {
+        query = query.where('status', whereIn: ['dibayar', 'Dibayar', 'menunggu_pembayaran']);
       } else if (statusFilter == 'diterima') {
-        query = query.where('status', isEqualTo: 'Diterima');
+        query = query.where('status', whereIn: ['diterima', 'Diterima']);
+      } else if (statusFilter == 'sedang_diproses' || statusFilter == 'diproses') {
+        query = query.where('status', whereIn: ['sedang_diproses', 'diproses', 'Diproses']);
       } else if (statusFilter == 'selesai') {
-        query = query.where('status', isEqualTo: 'Selesai');
+        query = query.where('status', whereIn: ['selesai', 'Selesai']);
       } else if (statusFilter == 'diambil') {
-        query = query.where('status', isEqualTo: 'Diambil');
+        query = query.where('status', whereIn: ['diambil', 'Diambil']);
       }
     }
 
