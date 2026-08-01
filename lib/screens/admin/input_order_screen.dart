@@ -1151,15 +1151,21 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
                       child: StreamBuilder<List<Map<String, dynamic>>>(
                         stream: _logisticsStream,
                         builder: (context, logSnapshot) {
-                          final methods = logSnapshot.data ?? [];
+                          final List<Map<String, dynamic>> fallbackMethods = [
+                            {'id': 'ambil_sendiri', 'name': 'Ambil Sendiri / Datang ke Toko', 'fee': 0.0, 'requiresAddress': false},
+                            {'id': 'antar_jemput', 'name': 'Antar Jemput Kurir (Rp 10.000)', 'fee': 10000.0, 'requiresAddress': true},
+                          ];
+                          final methods = (logSnapshot.hasData && logSnapshot.data!.isNotEmpty)
+                              ? logSnapshot.data!
+                              : fallbackMethods;
                           
-                          if (methods.isNotEmpty && !methods.any((m) => m['id'] == _deliveryType)) {
-                            _deliveryType = methods.first['id'];
+                          if (_deliveryType.isEmpty || !methods.any((m) => m['id'] == _deliveryType)) {
+                            _deliveryType = methods.first['id'] as String;
                           }
 
                           final selectedMethod = methods.firstWhere(
                             (m) => m['id'] == _deliveryType,
-                            orElse: () => {'requiresAddress': false, 'fee': 0.0},
+                            orElse: () => methods.first,
                           );
                           final bool requiresAddress = selectedMethod['requiresAddress'] == true;
 
@@ -1170,7 +1176,7 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
                               SizedBox(height: 16),
                               DropdownButtonFormField<String>(
                                 isExpanded: true,
-                                value: _deliveryType.isEmpty && methods.isNotEmpty ? methods.first['id'] : _deliveryType,
+                                value: methods.any((m) => m['id'] == _deliveryType) ? _deliveryType : methods.first['id'] as String,
                                 decoration: InputDecoration(
                                   prefixIcon: Icon(Icons.local_shipping_outlined),
                                 ),
@@ -1521,12 +1527,16 @@ padding: EdgeInsets.all(16.0),
                                 );
                               }
 
+                              final String? selectedVoucherId = (activeVouchers.any((v) => v.id == _appliedVoucher?.id))
+                                  ? _appliedVoucher?.id
+                                  : null;
+
                               return Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   DropdownButtonFormField<String>(
                                     isExpanded: true,
-                                    value: _appliedVoucher?.id,
+                                    value: selectedVoucherId,
                                     hint: Text('Pilih Voucher Diskon', style: TextStyle(fontSize: 12)),
                                     decoration: InputDecoration(
                                       prefixIcon: Icon(Icons.confirmation_number_outlined),
