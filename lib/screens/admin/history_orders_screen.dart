@@ -786,6 +786,8 @@ class _HistoryOrdersScreenState extends State<HistoryOrdersScreen> {
                     children: [
                       _buildFilterChip('semua', 'Semua'),
                       SizedBox(width: 8),
+                      _buildFilterChip('dibayar', 'Belum Bayar'),
+                      SizedBox(width: 8),
                       _buildFilterChip('diterima', 'Diterima'),
                       SizedBox(width: 8),
                       _buildFilterChip('sedang_diproses', 'Diproses'),
@@ -846,14 +848,21 @@ class _HistoryOrdersScreenState extends State<HistoryOrdersScreen> {
 
                           // Determine Status Color & Display Text
                           Color statusColor = Colors.grey;
-                          String statusText = order.status.toUpperCase();
-                          if (order.status == 'diterima' || order.status == 'dibayar') {
+                          String statusText = 'BELUM BAYAR';
+                          if (order.status == 'dibayar') {
+                            statusText = 'BELUM BAYAR';
+                            statusColor = Colors.redAccent;
+                          } else if (order.status == 'diterima') {
+                            statusText = 'DITERIMA';
                             statusColor = Colors.orange;
                           } else if (order.status == 'sedang_diproses' || order.status == 'diproses') {
+                            statusText = 'DIPROSES';
                             statusColor = AppTheme.primaryBlue;
                           } else if (order.status == 'selesai') {
+                            statusText = 'SELESAI';
                             statusColor = Colors.teal;
                           } else if (order.status == 'diambil') {
+                            statusText = 'DIAMBIL';
                             statusColor = Colors.green;
                           }
 

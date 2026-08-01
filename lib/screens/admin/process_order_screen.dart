@@ -576,16 +576,17 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
 
         Widget _buildTab(IconData icon, String text, int count) {
           return Tab(
+            height: 52,
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Stack(
                   clipBehavior: Clip.none,
                   children: [
-                    Icon(icon, size: 24),
+                    Icon(icon, size: 22),
                     if (count > 0)
                       Positioned(
-                        top: -6,
+                        top: -5,
                         right: -8,
                         child: Container(
                           padding: EdgeInsets.symmetric(horizontal: 4, vertical: 1),
@@ -608,8 +609,15 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
                       ),
                   ],
                 ),
-                SizedBox(height: 2),
-                Text(text, style: TextStyle(fontSize: 10)),
+                SizedBox(height: 3),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    text,
+                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+                    maxLines: 1,
+                  ),
+                ),
               ],
             ),
           );
@@ -624,10 +632,11 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
               labelColor: AppTheme.primaryBlue,
               unselectedLabelColor: AppTheme.textGray,
               indicatorColor: AppTheme.primaryBlue,
+              indicatorWeight: 3,
               tabs: [
-                _buildTab(Icons.payments_outlined, 'Menunggu Pembayaran', ordersDiBayar.length),
-                _buildTab(Icons.receipt_long_outlined, 'Di Terima', ordersDiterima.length),
-                _buildTab(Icons.engineering_outlined, 'Di Proses', ordersDiproses.length),
+                _buildTab(Icons.payments_outlined, 'Belum Bayar', ordersDiBayar.length),
+                _buildTab(Icons.receipt_long_outlined, 'Diterima', ordersDiterima.length),
+                _buildTab(Icons.engineering_outlined, 'Diproses', ordersDiproses.length),
                 _buildTab(Icons.check_circle_outline, 'Selesai', ordersSelesai.length),
               ],
             ),
