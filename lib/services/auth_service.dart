@@ -7,6 +7,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:http/http.dart' as http;
 import '../models/user_model.dart';
 import '../utils/platform_helper.dart';
+import 'local_cache_service.dart';
 
 class AuthService with ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -332,6 +333,9 @@ class AuthService with ChangeNotifier {
 
   // Sign Out
   Future<void> signOut() async {
+    try {
+      await LocalCacheService.instance.clearAllCache();
+    } catch (_) {}
     await _auth.signOut();
     _currentUserModel = null;
     notifyListeners();

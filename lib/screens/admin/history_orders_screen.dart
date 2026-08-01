@@ -9,6 +9,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../models/order_model.dart';
 import '../../services/database_service.dart';
 import '../../services/whatsapp_service.dart';
+import '../../services/local_cache_service.dart';
 import '../../theme.dart';
 import '../../widgets/invoice_detail_modal.dart';
 import '../../widgets/pagination_bar_widget.dart';
@@ -78,20 +79,39 @@ class _HistoryOrdersScreenState extends State<HistoryOrdersScreen> {
     _fetchPage(1);
   }
 
-  void _fetchPage(int page) {
+  Future<void> _fetchPage(int page) async {
+    // 1. Instant 0ms render from Memory Cache or Persistent Disk Cache (/cache/)
     if (_pageOrdersCache.containsKey(page)) {
       setState(() {
         _currentPage = page;
         _isLoadingPage = false;
+        _isLoadingCount = false;
       });
-      return;
+    } else {
+      final cachedData = await LocalCacheService.instance.getHistoryPageCache(
+        page: page,
+        itemsPerPage: _itemsPerPage,
+        statusFilter: _statusFilter,
+      );
+      if (cachedData != null && mounted) {
+        final List<OrderModel> cachedOrders = cachedData['orders'];
+        final int cachedTotal = cachedData['totalCount'];
+        setState(() {
+          _currentPage = page;
+          _pageOrdersCache[page] = cachedOrders;
+          if (cachedTotal > 0) _totalCount = cachedTotal;
+          _isLoadingPage = false;
+          _isLoadingCount = false;
+        });
+      } else {
+        setState(() {
+          _currentPage = page;
+          _isLoadingPage = true;
+        });
+      }
     }
 
-    setState(() {
-      _currentPage = page;
-      _isLoadingPage = true;
-    });
-
+    // 2. Real-time background stream listener from Firestore
     final dbService = Provider.of<DatabaseService>(context, listen: false);
     final DocumentSnapshot? startAfterDoc = page > 1 ? _pageLastDocs[page - 1] : null;
 
@@ -110,7 +130,17 @@ class _HistoryOrdersScreenState extends State<HistoryOrdersScreen> {
           _pageLastDocs[page] = snapshot.docs.last;
         }
         _isLoadingPage = false;
+        _isLoadingCount = false;
       });
+
+      // Save fresh data to local persistent cache
+      LocalCacheService.instance.saveHistoryPageCache(
+        page: page,
+        itemsPerPage: _itemsPerPage,
+        statusFilter: _statusFilter,
+        orders: orders,
+        totalCount: _totalCount,
+      );
     });
 
     _subscriptions.add(sub);
