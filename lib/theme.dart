@@ -130,6 +130,36 @@ class AppTheme {
           side: BorderSide(color: Color(0xFFE2E8F0), width: 1),
         ),
       ),
+      datePickerTheme: DatePickerThemeData(
+        backgroundColor: Color(0xFFFFFFFF),
+        headerBackgroundColor: primaryBlue,
+        headerForegroundColor: Color(0xFFFFFFFF),
+        surfaceTintColor: Colors.transparent,
+        dayForegroundColor: MaterialStateProperty.resolveWith((states) {
+          if (states.contains(MaterialState.selected)) return Color(0xFFFFFFFF);
+          if (states.contains(MaterialState.disabled)) return Color(0xFF94A3B8);
+          return Color(0xFF0A2540);
+        }),
+        dayBackgroundColor: MaterialStateProperty.resolveWith((states) {
+          if (states.contains(MaterialState.selected)) return primaryBlue;
+          return null;
+        }),
+        todayForegroundColor: MaterialStateProperty.all(primaryBlue),
+        todayBorder: BorderSide(color: primaryBlue),
+        yearForegroundColor: MaterialStateProperty.resolveWith((states) {
+          if (states.contains(MaterialState.selected)) return Color(0xFFFFFFFF);
+          return Color(0xFF0A2540);
+        }),
+        yearBackgroundColor: MaterialStateProperty.resolveWith((states) {
+          if (states.contains(MaterialState.selected)) return primaryBlue;
+          return null;
+        }),
+        rangePickerBackgroundColor: Color(0xFFFFFFFF),
+        rangePickerHeaderBackgroundColor: primaryBlue,
+        rangePickerHeaderForegroundColor: Color(0xFFFFFFFF),
+        rangePickerSurfaceTintColor: Colors.transparent,
+        rangeSelectionBackgroundColor: primaryBlue.withOpacity(0.15),
+      ),
     );
   }
 
@@ -145,6 +175,8 @@ class AppTheme {
         secondary: secondaryBlue,
         background: Color(0xFF0F172A),
         surface: Color(0xFF1E293B), // Slate 800
+        onSurface: Color(0xFFF8FAFC),
+        onPrimary: Color(0xFFFFFFFF),
       ),
       appBarTheme: AppBarTheme(
         backgroundColor: Colors.transparent,
@@ -209,6 +241,36 @@ class AppTheme {
           borderRadius: BorderRadius.circular(20),
           side: BorderSide(color: Color(0xFF334155), width: 1), // Slate 700
         ),
+      ),
+      datePickerTheme: DatePickerThemeData(
+        backgroundColor: Color(0xFF1E293B), // Slate 800
+        headerBackgroundColor: Color(0xFF0F172A), // Slate 900
+        headerForegroundColor: Color(0xFFF8FAFC), // Slate 50
+        surfaceTintColor: Colors.transparent,
+        dayForegroundColor: MaterialStateProperty.resolveWith((states) {
+          if (states.contains(MaterialState.selected)) return Color(0xFFFFFFFF);
+          if (states.contains(MaterialState.disabled)) return Color(0xFF64748B);
+          return Color(0xFFF8FAFC); // Clear white text on dark background
+        }),
+        dayBackgroundColor: MaterialStateProperty.resolveWith((states) {
+          if (states.contains(MaterialState.selected)) return primaryBlue;
+          return null;
+        }),
+        todayForegroundColor: MaterialStateProperty.all(secondaryBlue),
+        todayBorder: BorderSide(color: secondaryBlue),
+        yearForegroundColor: MaterialStateProperty.resolveWith((states) {
+          if (states.contains(MaterialState.selected)) return Color(0xFFFFFFFF);
+          return Color(0xFFF8FAFC);
+        }),
+        yearBackgroundColor: MaterialStateProperty.resolveWith((states) {
+          if (states.contains(MaterialState.selected)) return primaryBlue;
+          return null;
+        }),
+        rangePickerBackgroundColor: Color(0xFF1E293B),
+        rangePickerHeaderBackgroundColor: Color(0xFF0F172A),
+        rangePickerHeaderForegroundColor: Color(0xFFF8FAFC),
+        rangePickerSurfaceTintColor: Colors.transparent,
+        rangeSelectionBackgroundColor: secondaryBlue.withOpacity(0.2),
       ),
     );
   }

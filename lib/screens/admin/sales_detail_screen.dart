@@ -126,6 +126,7 @@ class _SalesDetailScreenState extends State<SalesDetailScreen> {
   }
 
   Future<void> _selectSearchDate(BuildContext context) async {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final DateTime? picked = await showDatePicker(
       context: context,
       initialDate: _selectedSearchDate ?? DateTime.now(),
@@ -134,11 +135,19 @@ class _SalesDetailScreenState extends State<SalesDetailScreen> {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.light(
-              primary: widget.themeColor,
-              onPrimary: Colors.white,
-              onSurface: AppTheme.darkBlueText,
-            ),
+            colorScheme: isDark
+                ? ColorScheme.dark(
+                    primary: widget.themeColor,
+                    onPrimary: Colors.white,
+                    surface: Color(0xFF1E293B),
+                    onSurface: Color(0xFFF8FAFC),
+                  )
+                : ColorScheme.light(
+                    primary: widget.themeColor,
+                    onPrimary: Colors.white,
+                    surface: Colors.white,
+                    onSurface: Color(0xFF0A2540),
+                  ),
           ),
           child: child!,
         );

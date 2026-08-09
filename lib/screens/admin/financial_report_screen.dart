@@ -336,6 +336,7 @@ class _FinancialReportScreenState extends State<FinancialReportScreen> {
   }
 
   Future<void> _selectCustomDateRange() async {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final DateTimeRange? picked = await showDateRangePicker(
       context: context,
       firstDate: DateTime(2020),
@@ -347,11 +348,19 @@ class _FinancialReportScreenState extends State<FinancialReportScreen> {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.light(
-              primary: AppTheme.primaryBlue,
-              onPrimary: Colors.white,
-              onSurface: AppTheme.darkBlueText,
-            ),
+            colorScheme: isDark
+                ? ColorScheme.dark(
+                    primary: AppTheme.primaryBlue,
+                    onPrimary: Colors.white,
+                    surface: Color(0xFF1E293B),
+                    onSurface: Color(0xFFF8FAFC),
+                  )
+                : ColorScheme.light(
+                    primary: AppTheme.primaryBlue,
+                    onPrimary: Colors.white,
+                    surface: Colors.white,
+                    onSurface: Color(0xFF0A2540),
+                  ),
           ),
           child: child!,
         );
