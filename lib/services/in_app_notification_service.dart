@@ -116,19 +116,21 @@ class InAppNotificationService {
 
     // 1. Order listener
     if (role == 'owner' || role == 'staff' || role == 'developer') {
-      // Listen to all orders
+      // Listen only to the 20 most recent orders for notification updates
       _orderSubscription = db
           .collection('orders')
           .orderBy('updatedAt', descending: true)
+          .limit(20)
           .snapshots()
           .listen((snapshot) {
         _handleOrderSnapshot(context, snapshot.docs, isAdminView: true);
       });
 
-      // Listen to all chat rooms for new customer messages
+      // Listen to the 15 most recent active chat rooms
       _chatSubscription = db
           .collection('chat_rooms')
           .orderBy('lastMessageTime', descending: true)
+          .limit(15)
           .snapshots()
           .listen((snapshot) {
         _handleChatSnapshot(context, snapshot.docs, isAdminView: true);
@@ -138,16 +140,18 @@ class InAppNotificationService {
       if (role == 'developer') {
         _billingSubscription = db
             .collection('developer_billing_invoices')
+            .limit(10)
             .snapshots()
             .listen((snapshot) {
           _handleBillingSnapshot(context, snapshot.docs);
         });
       }
     } else {
-      // Customer: Listen only to their own orders
+      // Customer: Listen only to their own recent orders
       _orderSubscription = db
           .collection('orders')
           .where('customerId', isEqualTo: userId)
+          .limit(20)
           .snapshots()
           .listen((snapshot) {
         _handleOrderSnapshot(context, snapshot.docs, isAdminView: false);

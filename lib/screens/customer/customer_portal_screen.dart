@@ -2636,6 +2636,7 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
       stream: FirebaseFirestore.instance
           .collection('orders')
           .where('status', whereIn: ['Selesai', 'Diambil', 'Selesai Dibayar'])
+          .limit(30)
           .snapshots(),
       builder: (context, snapshot) {
         int totalOrders = 0;
@@ -2757,6 +2758,7 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
           stream: FirebaseFirestore.instance
               .collection('orders')
               .where('showOnWeb', isEqualTo: true)
+              .limit(15)
               .snapshots()
               .map((snap) {
             final list = snap.docs

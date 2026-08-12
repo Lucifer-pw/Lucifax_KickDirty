@@ -26,31 +26,16 @@ class AutoBackupService {
 
   /// Start scheduled background check for automatic backup
   void startChecking(String role) {
-    if (role != 'owner' && role != 'developer') {
-      print("AutoBackup: Skipped starting for role: $role");
-      return;
-    }
-
-    _timer?.cancel();
-    
-    // Run immediate check on startup (10s delay to let app initialize)
-    Timer(const Duration(seconds: 10), () {
-      checkAndRunBackup();
-    });
-
-    // Check periodically every 30 minutes
-    _timer = Timer.periodic(const Duration(minutes: 30), (_) {
-      checkAndRunBackup();
-    });
-    
-    print("AutoBackup: Scheduler started for $role");
+    // Client-side auto-backup is completely deprecated in favor of Google Apps Script
+    // to guarantee 100% Rp 0 and zero internet egress cost.
+    stopChecking();
+    print("AutoBackup: Client-side auto-backup disabled (Handled by Cloud Google Apps Script).");
   }
 
   /// Stop the background check timer
   void stopChecking() {
     _timer?.cancel();
     _timer = null;
-    print("AutoBackup: Scheduler stopped");
   }
 
   /// Perform the checks and run backup if due
