@@ -25,8 +25,8 @@ class PresenceService with WidgetsBindingObserver {
     // Set online immediately
     _setPresence(true);
 
-    // Start heartbeat timer every 30 seconds
-    _heartbeatTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
+    // Start heartbeat timer every 3 minutes (180 seconds)
+    _heartbeatTimer = Timer.periodic(const Duration(minutes: 3), (timer) {
       _keepAlive();
     });
   }
@@ -77,7 +77,7 @@ class PresenceService with WidgetsBindingObserver {
       _setPresence(true);
       // Restart heartbeat if cancelled
       _heartbeatTimer?.cancel();
-      _heartbeatTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
+      _heartbeatTimer = Timer.periodic(const Duration(minutes: 3), (timer) {
         _keepAlive();
       });
     } else if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
