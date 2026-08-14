@@ -998,9 +998,6 @@ class DatabaseService with ChangeNotifier {
   // Get stream of all categories
   Stream<List<CategoryModel>> getCategories() {
     return _db.collection('categories').orderBy('createdAt', descending: false).snapshots().map((snapshot) {
-      if (snapshot.docs.isEmpty) {
-        _seedDefaultCategory();
-      }
       return snapshot.docs.map((doc) => CategoryModel.fromMap(doc.data(), doc.id)).toList();
     });
   }
@@ -1017,14 +1014,14 @@ class DatabaseService with ChangeNotifier {
     });
   }
 
-  // Seed default category helper
+  // Seed default category helper using fixed doc ID to avoid duplicates
   void _seedDefaultCategory() {
-    _db.collection('categories').add({
+    _db.collection('categories').doc('default_sepatu').set({
       'name': 'Sepatu',
       'description': 'Layanan cuci dan perawatan sepatu',
       'isActive': true,
       'createdAt': FieldValue.serverTimestamp(),
-    }).catchError((_) {});
+    }, SetOptions(merge: true)).catchError((_) {});
   }
 
   // Add category
