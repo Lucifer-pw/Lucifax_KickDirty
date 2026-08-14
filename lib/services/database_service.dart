@@ -543,8 +543,22 @@ class DatabaseService with ChangeNotifier {
     int totalPhotosMigrated = 0;
 
     try {
-      final snapshot = await _db.collection('orders').get();
+      // Force fetching from server to avoid empty offline local cache
+      QuerySnapshot snapshot;
+      try {
+        snapshot = await _db.collection('orders').get(const GetOptions(source: Source.server));
+      } catch (e) {
+        // Fallback to default if offline
+        snapshot = await _db.collection('orders').get();
+      }
+
       totalOrders = snapshot.docs.length;
+      if (totalOrders == 0) {
+        // Retry once after 2 seconds if connection was establishing
+        await Future.delayed(const Duration(seconds: 2));
+        snapshot = await _db.collection('orders').get();
+        totalOrders = snapshot.docs.length;
+      }
 
       for (int docIdx = 0; docIdx < snapshot.docs.length; docIdx++) {
         if (onProgress != null) {
@@ -552,7 +566,7 @@ class DatabaseService with ChangeNotifier {
         }
 
         final doc = snapshot.docs[docIdx];
-        final data = doc.data();
+        final data = doc.data() as Map<String, dynamic>? ?? {};
         final orderId = doc.id;
         bool docModified = false;
         final Map<String, dynamic> updatePayload = {};
