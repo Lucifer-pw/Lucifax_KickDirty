@@ -547,6 +547,10 @@ class DatabaseService with ChangeNotifier {
       totalOrders = snapshot.docs.length;
 
       for (int docIdx = 0; docIdx < snapshot.docs.length; docIdx++) {
+        if (onProgress != null) {
+          onProgress(docIdx + 1, totalOrders);
+        }
+
         final doc = snapshot.docs[docIdx];
         final data = doc.data();
         final orderId = doc.id;
@@ -621,10 +625,6 @@ class DatabaseService with ChangeNotifier {
         if (docModified) {
           await _db.collection('orders').doc(orderId).update(updatePayload);
           migratedCount++;
-        }
-
-        if (onProgress != null) {
-          onProgress(docIdx + 1, totalOrders);
         }
       }
 

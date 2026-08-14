@@ -20,12 +20,12 @@ class ImageService {
         contentType: contentType,
         cacheControl: 'public, max-age=31536000', // 1 year browser cache
       );
-      final uploadTask = await ref.putData(bytes, metadata);
-      final downloadUrl = await uploadTask.ref.getDownloadURL();
+      final uploadTask = await ref.putData(bytes, metadata).timeout(const Duration(seconds: 15));
+      final downloadUrl = await uploadTask.ref.getDownloadURL().timeout(const Duration(seconds: 10));
       return downloadUrl;
     } catch (e) {
       if (kDebugMode) {
-        print("ImageService.uploadBytes error: $e");
+        print("ImageService.uploadBytes error on $storagePath: $e");
       }
       return null;
     }
