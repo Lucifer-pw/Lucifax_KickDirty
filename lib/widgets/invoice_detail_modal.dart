@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -520,74 +521,94 @@ class InvoiceDetailModal extends StatelessWidget {
     );
   }
 
-  Widget _buildImageThumbnail(BuildContext context, String base64Str, String label) {
-    try {
-      String cleanBase64 = base64Str;
-      if (base64Str.contains(',')) {
-        cleanBase64 = base64Str.split(',')[1];
-      }
-      final bytes = base64Decode(cleanBase64);
-      return GestureDetector(
-        onTap: () {
-          // Open fullscreen zoom
-          showDialog(
-            context: context,
-            builder: (context) => Dialog(
-              backgroundColor: Colors.transparent,
-              insetPadding: EdgeInsets.all(12),
-              child: Stack(
-                alignment: Alignment.topRight,
-                children: [
-                  InteractiveViewer(
-                    panEnabled: true,
-                    minScale: 0.5,
-                    maxScale: 4.0,
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(16),
-                      child: Image.memory(bytes, fit: BoxFit.contain),
-                    ),
-                  ),
-                  Positioned(
-                    top: 8,
-                    right: 8,
-                    child: CircleAvatar(
-                      backgroundColor: Colors.black.withOpacity(0.6),
-                      child: IconButton(
-                        icon: Icon(Icons.close, color: Colors.white),
-                        onPressed: () => Navigator.pop(context),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              height: 100,
-              width: double.infinity,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(10),
-                image: DecorationImage(
-                  image: MemoryImage(bytes),
-                  fit: BoxFit.cover,
-                ),
-              ),
-            ),
-            SizedBox(height: 4),
-            Text(label, style: TextStyle(fontSize: 10, color: AppTheme.textGray, fontWeight: FontWeight.w500)),
-          ],
-        ),
-      );
-    } catch (e) {
+  Widget _buildImageThumbnail(BuildContext context, String imageSource, String label) {
+    final bool isUrl = imageSource.startsWith('http://') || imageSource.startsWith('https://');
+    Uint8List? memoryBytes;
+    if (!isUrl) {
+      try {
+        String cleanBase64 = imageSource;
+        if (imageSource.contains(',')) {
+          cleanBase64 = imageSource.split(',')[1];
+        }
+        cleanBase64 = cleanBase64.replaceAll(RegExp(r'\s+'), '');
+        memoryBytes = base64Decode(cleanBase64);
+      } catch (_) {}
+    }
+
+    ImageProvider? imageProvider;
+    if (isUrl) {
+      imageProvider = NetworkImage(imageSource);
+    } else if (memoryBytes != null) {
+      imageProvider = MemoryImage(memoryBytes);
+    }
+
+    if (imageProvider == null) {
       return Container(
         height: 100,
-        color: AppTheme.lightGray,
+        decoration: BoxDecoration(
+          color: AppTheme.lightGray,
+          borderRadius: BorderRadius.circular(10),
+        ),
         child: Center(child: Icon(Icons.broken_image, color: AppTheme.textGray)),
       );
     }
+
+    return GestureDetector(
+      onTap: () {
+        // Open fullscreen zoom
+        showDialog(
+          context: context,
+          builder: (context) => Dialog(
+            backgroundColor: Colors.transparent,
+            insetPadding: EdgeInsets.all(12),
+            child: Stack(
+              alignment: Alignment.topRight,
+              children: [
+                InteractiveViewer(
+                  panEnabled: true,
+                  minScale: 0.5,
+                  maxScale: 4.0,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: isUrl
+                        ? Image.network(imageSource, fit: BoxFit.contain)
+                        : Image.memory(memoryBytes!, fit: BoxFit.contain),
+                  ),
+                ),
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: CircleAvatar(
+                    backgroundColor: Colors.black.withOpacity(0.6),
+                    child: IconButton(
+                      icon: Icon(Icons.close, color: Colors.white),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            height: 100,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(10),
+              image: DecorationImage(
+                image: imageProvider,
+                fit: BoxFit.cover,
+              ),
+            ),
+          ),
+          SizedBox(height: 4),
+          Text(label, style: TextStyle(fontSize: 10, color: AppTheme.textGray, fontWeight: FontWeight.w500)),
+        ],
+      ),
+    );
   }
 }

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -1132,67 +1133,21 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
     );
   }
 
-  Widget _buildBase64Image(String base64Str, String label, {double height = 110}) {
-    try {
-      String cleanBase64 = base64Str;
-      if (base64Str.contains(',')) {
-        cleanBase64 = base64Str.split(',')[1];
-      }
-      final bytes = base64Decode(cleanBase64);
-      return GestureDetector(
-        onTap: () {
-          showDialog(
-            context: context,
-            builder: (context) => Dialog(
-              backgroundColor: Colors.black.withOpacity(0.9),
-              insetPadding: EdgeInsets.all(16),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  AppBar(
-                    backgroundColor: Colors.transparent,
-                    elevation: 0,
-                    title: Text(label, style: TextStyle(color: Colors.white)),
-                    leading: IconButton(
-                      icon: Icon(Icons.close, color: Colors.white),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                  ),
-                  Expanded(
-                    child: Padding(
-                      padding: EdgeInsets.all(16.0),
-                      child: InteractiveViewer(
-                        child: Image.memory(
-                          bytes,
-                          fit: BoxFit.contain,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(12),
-          child: Container(
-            height: height,
-            width: 120,
-            decoration: BoxDecoration(
-              border: Border.all(color: AppTheme.lightGray),
-            ),
-            child: Image.memory(
-              bytes,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) => Center(
-                child: Icon(Icons.broken_image, color: Colors.grey),
-              ),
-            ),
-          ),
-        ),
-      );
-    } catch (e) {
+  Widget _buildBase64Image(String imageSource, String label, {double height = 110}) {
+    final bool isUrl = imageSource.startsWith('http://') || imageSource.startsWith('https://');
+    Uint8List? memoryBytes;
+    if (!isUrl) {
+      try {
+        String cleanBase64 = imageSource;
+        if (imageSource.contains(',')) {
+          cleanBase64 = imageSource.split(',')[1];
+        }
+        cleanBase64 = cleanBase64.replaceAll(RegExp(r'\s+'), '');
+        memoryBytes = base64Decode(cleanBase64);
+      } catch (_) {}
+    }
+
+    if (!isUrl && memoryBytes == null) {
       return Container(
         height: height,
         width: 120,
@@ -1203,6 +1158,70 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
         child: Icon(Icons.broken_image, color: Colors.grey),
       );
     }
+
+    return GestureDetector(
+      onTap: () {
+        showDialog(
+          context: context,
+          builder: (context) => Dialog(
+            backgroundColor: Colors.black.withOpacity(0.9),
+            insetPadding: EdgeInsets.all(16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                AppBar(
+                  backgroundColor: Colors.transparent,
+                  elevation: 0,
+                  title: Text(label, style: TextStyle(color: Colors.white)),
+                  leading: IconButton(
+                    icon: Icon(Icons.close, color: Colors.white),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ),
+                Expanded(
+                  child: Padding(
+                    padding: EdgeInsets.all(16.0),
+                    child: InteractiveViewer(
+                      child: isUrl
+                          ? Image.network(imageSource, fit: BoxFit.contain)
+                          : Image.memory(
+                              memoryBytes!,
+                              fit: BoxFit.contain,
+                            ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          height: height,
+          width: 120,
+          decoration: BoxDecoration(
+            border: Border.all(color: AppTheme.lightGray),
+          ),
+          child: isUrl
+              ? Image.network(
+                  imageSource,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) => Center(
+                    child: Icon(Icons.broken_image, color: Colors.grey),
+                  ),
+                )
+              : Image.memory(
+                  memoryBytes!,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) => Center(
+                    child: Icon(Icons.broken_image, color: Colors.grey),
+                  ),
+                ),
+        ),
+      ),
+    );
   }
 }
 

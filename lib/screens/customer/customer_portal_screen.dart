@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -3746,110 +3747,137 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
     );
   }
 
-  Widget _buildBase64Image(String base64Str, String label, {double height = 110}) {
-    try {
-      String cleanBase64 = base64Str;
-      if (base64Str.contains(',')) {
-        cleanBase64 = base64Str.split(',')[1];
-      }
-      final bytes = base64Decode(cleanBase64);
-      return GestureDetector(
-        onTap: () => _showFullScreenImage(base64Str, label),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(12),
-          child: Container(
-            height: height,
-            width: double.infinity,
-            decoration: BoxDecoration(
-              border: Border.all(color: AppTheme.lightGray),
-            ),
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                Image.memory(
-                  bytes,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => Center(
-                    child: Icon(Icons.broken_image, color: Colors.grey),
-                  ),
-                ),
-                Positioned(
-                  bottom: 0,
-                  left: 0,
-                  right: 0,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [Colors.black.withOpacity(0.6), Colors.transparent],
-                        begin: Alignment.bottomCenter,
-                        end: Alignment.topCenter,
-                      ),
-                    ),
-                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    child: Text(
-                      label,
-                      style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-    } catch (e) {
+  Widget _buildBase64Image(String imageSource, String label, {double height = 110}) {
+    return _buildSinglePhotoPreview(imageSource, label, height: height);
+  }
+
+  Widget _buildSinglePhotoPreview(String imageSource, String label, {double height = 120}) {
+    final bool isUrl = imageSource.startsWith('http://') || imageSource.startsWith('https://');
+    Uint8List? memoryBytes;
+    if (!isUrl) {
+      try {
+        String cleanBase64 = imageSource;
+        if (imageSource.contains(',')) {
+          cleanBase64 = imageSource.split(',')[1];
+        }
+        cleanBase64 = cleanBase64.replaceAll(RegExp(r'\s+'), '');
+        memoryBytes = base64Decode(cleanBase64);
+      } catch (_) {}
+    }
+
+    if (!isUrl && memoryBytes == null) {
       return Container(
         height: height,
         decoration: BoxDecoration(
           color: Colors.grey[200],
           borderRadius: BorderRadius.circular(12),
         ),
-        child: Icon(Icons.broken_image, color: Colors.grey),
+        child: Center(child: Icon(Icons.broken_image, color: Colors.grey)),
       );
     }
-  }
 
-  void _showFullScreenImage(String base64Str, String title) {
-    try {
-      String cleanBase64 = base64Str;
-      if (base64Str.contains(',')) {
-        cleanBase64 = base64Str.split(',')[1];
-      }
-      final bytes = base64Decode(cleanBase64);
-      showDialog(
-        context: context,
-        builder: (context) => Dialog(
-          backgroundColor: Colors.black.withOpacity(0.9),
-          insetPadding: EdgeInsets.all(16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+    return GestureDetector(
+      onTap: () => _showFullScreenImage(imageSource, label),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          height: height,
+          width: double.infinity,
+          decoration: BoxDecoration(
+            border: Border.all(color: AppTheme.lightGray),
+          ),
+          child: Stack(
+            fit: StackFit.expand,
             children: [
-              AppBar(
-                backgroundColor: Colors.transparent,
-                elevation: 0,
-                title: Text(title, style: TextStyle(color: Colors.white)),
-                leading: IconButton(
-                  icon: Icon(Icons.close, color: Colors.white),
-                  onPressed: () => Navigator.pop(context),
-                ),
-              ),
-              Expanded(
-                child: Padding(
-                  padding: EdgeInsets.all(16.0),
-                  child: InteractiveViewer(
-                    child: Image.memory(
-                      bytes,
-                      fit: BoxFit.contain,
+              isUrl
+                  ? Image.network(
+                      imageSource,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => Center(
+                        child: Icon(Icons.broken_image, color: Colors.grey),
+                      ),
+                    )
+                  : Image.memory(
+                      memoryBytes!,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => Center(
+                        child: Icon(Icons.broken_image, color: Colors.grey),
+                      ),
                     ),
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [Colors.black.withOpacity(0.6), Colors.transparent],
+                      begin: Alignment.bottomCenter,
+                      end: Alignment.topCenter,
+                    ),
+                  ),
+                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  child: Text(
+                    label,
+                    style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                    textAlign: TextAlign.center,
                   ),
                 ),
               ),
             ],
           ),
         ),
-      );
-    } catch (_) {}
+      ),
+    );
+  }
+
+  void _showFullScreenImage(String imageSource, String title) {
+    final bool isUrl = imageSource.startsWith('http://') || imageSource.startsWith('https://');
+    Uint8List? memoryBytes;
+    if (!isUrl) {
+      try {
+        String cleanBase64 = imageSource;
+        if (imageSource.contains(',')) {
+          cleanBase64 = imageSource.split(',')[1];
+        }
+        cleanBase64 = cleanBase64.replaceAll(RegExp(r'\s+'), '');
+        memoryBytes = base64Decode(cleanBase64);
+      } catch (_) {}
+    }
+
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.black.withOpacity(0.9),
+        insetPadding: EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AppBar(
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              title: Text(title, style: TextStyle(color: Colors.white)),
+              leading: IconButton(
+                icon: Icon(Icons.close, color: Colors.white),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ),
+            Expanded(
+              child: Padding(
+                padding: EdgeInsets.all(16.0),
+                child: InteractiveViewer(
+                  child: isUrl
+                      ? Image.network(imageSource, fit: BoxFit.contain)
+                      : (memoryBytes != null
+                          ? Image.memory(memoryBytes, fit: BoxFit.contain)
+                          : Center(child: Icon(Icons.broken_image, color: Colors.white))),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _buildProgressStepper(String currentStatus) {
