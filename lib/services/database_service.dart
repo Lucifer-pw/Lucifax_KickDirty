@@ -7,6 +7,7 @@ import '../models/category_model.dart';
 import '../models/voucher_model.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'whatsapp_service.dart';
+import 'image_service.dart';
 
 class DatabaseService with ChangeNotifier {
   FirebaseFirestore get _db => FirebaseFirestore.instance;
@@ -403,11 +404,25 @@ class DatabaseService with ChangeNotifier {
     _triggerWA(orderId, newStatus);
   }
 
-  // Update order status with after photo
+  // Update order status with after photo (auto uploaded to Firebase Storage)
   Future<void> updateOrderStatusWithPhoto(String orderId, String newStatus, List<String> afterPhotos) async {
+    List<String> finalAfterUrls = [];
+    for (int i = 0; i < afterPhotos.length; i++) {
+      final img = afterPhotos[i];
+      if (img.startsWith('http://') || img.startsWith('https://')) {
+        finalAfterUrls.add(img);
+      } else {
+        final uploadedUrl = await ImageService.uploadBase64(
+          base64Str: img,
+          storagePath: 'orders/$orderId/after_$i.jpg',
+        );
+        finalAfterUrls.add(uploadedUrl ?? img);
+      }
+    }
+
     await _db.collection('orders').doc(orderId).update({
       'status': newStatus,
-      'photoAfter': afterPhotos,
+      'photoAfter': finalAfterUrls,
       'statusTimeline.$newStatus': FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),
     });
@@ -466,10 +481,19 @@ class DatabaseService with ChangeNotifier {
     }
   }
 
-  // Update order payment proof and change status to 'dibayar'
-  Future<void> updateOrderPaymentProof(String orderId, String paymentProofBase64) async {
+  // Update order payment proof and change status to 'dibayar' (auto uploaded to Firebase Storage)
+  Future<void> updateOrderPaymentProof(String orderId, String paymentProof) async {
+    String finalProofUrl = paymentProof;
+    if (!paymentProof.startsWith('http://') && !paymentProof.startsWith('https://') && paymentProof.isNotEmpty) {
+      final uploadedUrl = await ImageService.uploadBase64(
+        base64Str: paymentProof,
+        storagePath: 'orders/$orderId/payment_proof.jpg',
+      );
+      if (uploadedUrl != null) finalProofUrl = uploadedUrl;
+    }
+
     await _db.collection('orders').doc(orderId).update({
-      'paymentProof': paymentProofBase64,
+      'paymentProof': finalProofUrl,
       'status': 'dibayar',
       'statusTimeline.dibayar': FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),
@@ -477,8 +501,17 @@ class DatabaseService with ChangeNotifier {
     _triggerWA(orderId, 'dibayar');
   }
 
-  // Update payment proof and mark as paid (sudah_bayar) for offline orders
-  Future<void> updateOfflineOrderPayment(String orderId, String paymentProofBase64) async {
+  // Update payment proof and mark as paid (sudah_bayar) for offline orders (auto uploaded to Firebase Storage)
+  Future<void> updateOfflineOrderPayment(String orderId, String paymentProof) async {
+    String finalProofUrl = paymentProof;
+    if (!paymentProof.startsWith('http://') && !paymentProof.startsWith('https://') && paymentProof.isNotEmpty) {
+      final uploadedUrl = await ImageService.uploadBase64(
+        base64Str: paymentProof,
+        storagePath: 'orders/$orderId/payment_proof.jpg',
+      );
+      if (uploadedUrl != null) finalProofUrl = uploadedUrl;
+    }
+
     try {
       DocumentSnapshot orderDoc = await _db.collection('orders').doc(orderId).get();
       if (orderDoc.exists) {
@@ -492,13 +525,124 @@ class DatabaseService with ChangeNotifier {
     }
 
     await _db.collection('orders').doc(orderId).update({
-      'paymentProof': paymentProofBase64,
+      'paymentProof': finalProofUrl,
       'paymentStatus': 'sudah_bayar',
       'statusTimeline.sudah_bayar': FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),
     });
 
     _triggerWA(orderId, 'dibayar');
+  }
+
+  // Migrate all legacy Base64 photos in Firestore orders to Firebase Storage
+  Future<Map<String, dynamic>> migrateAllPhotosToStorage({
+    Function(int current, int total)? onProgress,
+  }) async {
+    int totalOrders = 0;
+    int migratedCount = 0;
+    int totalPhotosMigrated = 0;
+
+    try {
+      final snapshot = await _db.collection('orders').get();
+      totalOrders = snapshot.docs.length;
+
+      for (int docIdx = 0; docIdx < snapshot.docs.length; docIdx++) {
+        final doc = snapshot.docs[docIdx];
+        final data = doc.data();
+        final orderId = doc.id;
+        bool docModified = false;
+        final Map<String, dynamic> updatePayload = {};
+
+        // 1. Migrate photoBefore
+        final rawBefore = List<String>.from(data['photoBefore'] ?? []);
+        List<String> newBefore = [];
+        for (int i = 0; i < rawBefore.length; i++) {
+          final img = rawBefore[i];
+          if (img.startsWith('data:image') || (!img.startsWith('http://') && !img.startsWith('https://') && img.length > 200)) {
+            final url = await ImageService.uploadBase64(
+              base64Str: img,
+              storagePath: 'orders/$orderId/before_$i.jpg',
+            );
+            if (url != null) {
+              newBefore.add(url);
+              totalPhotosMigrated++;
+              docModified = true;
+            } else {
+              newBefore.add(img);
+            }
+          } else {
+            newBefore.add(img);
+          }
+        }
+        if (docModified) {
+          updatePayload['photoBefore'] = newBefore;
+        }
+
+        // 2. Migrate photoAfter
+        final rawAfter = List<String>.from(data['photoAfter'] ?? []);
+        List<String> newAfter = [];
+        for (int i = 0; i < rawAfter.length; i++) {
+          final img = rawAfter[i];
+          if (img.startsWith('data:image') || (!img.startsWith('http://') && !img.startsWith('https://') && img.length > 200)) {
+            final url = await ImageService.uploadBase64(
+              base64Str: img,
+              storagePath: 'orders/$orderId/after_$i.jpg',
+            );
+            if (url != null) {
+              newAfter.add(url);
+              totalPhotosMigrated++;
+              docModified = true;
+            } else {
+              newAfter.add(img);
+            }
+          } else {
+            newAfter.add(img);
+          }
+        }
+        if (newAfter.isNotEmpty && docModified) {
+          updatePayload['photoAfter'] = newAfter;
+        }
+
+        // 3. Migrate paymentProof
+        final rawProof = data['paymentProof'] as String? ?? '';
+        if (rawProof.startsWith('data:image') || (!rawProof.startsWith('http://') && !rawProof.startsWith('https://') && rawProof.length > 200)) {
+          final url = await ImageService.uploadBase64(
+            base64Str: rawProof,
+            storagePath: 'orders/$orderId/payment_proof.jpg',
+          );
+          if (url != null) {
+            updatePayload['paymentProof'] = url;
+            totalPhotosMigrated++;
+            docModified = true;
+          }
+        }
+
+        // Apply update if document had Base64 photos
+        if (docModified) {
+          await _db.collection('orders').doc(orderId).update(updatePayload);
+          migratedCount++;
+        }
+
+        if (onProgress != null) {
+          onProgress(docIdx + 1, totalOrders);
+        }
+      }
+
+      return {
+        'status': 'success',
+        'totalOrders': totalOrders,
+        'migratedOrders': migratedCount,
+        'photosUploaded': totalPhotosMigrated,
+      };
+    } catch (e) {
+      if (kDebugMode) print("migrateAllPhotosToStorage error: $e");
+      return {
+        'status': 'error',
+        'message': e.toString(),
+        'totalOrders': totalOrders,
+        'migratedOrders': migratedCount,
+      };
+    }
   }
 
   // ==========================================

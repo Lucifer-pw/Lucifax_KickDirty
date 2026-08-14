@@ -1,0 +1,24 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Orders folder: allow public read (for digital receipts & customer portal)
+    // and allow write for orders photos
+    match /orders/{allPaths=**} {
+      allow read: if true;
+      allow write: if request.resource.size < 5 * 1024 * 1024;
+    }
+
+    // Billing & proof folder: allow read and write
+    match /billing/{allPaths=**} {
+      allow read: if true;
+      allow write: if request.resource.size < 5 * 1024 * 1024;
+    }
+
+    // Default rule for other files
+    match /{allPaths=**} {
+      allow read: if true;
+      allow write: if request.resource.size < 5 * 1024 * 1024;
+    }
+  }
+}

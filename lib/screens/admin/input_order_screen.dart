@@ -652,34 +652,6 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
       return;
     }
 
-    int totalSize = _photoBeforeList.fold(0, (sum, img) => sum + (img.length * 3 / 4).round());
-    if (totalSize > 850 * 1024) {
-      showDialog(
-        context: context,
-        builder: (BuildContext context) => AlertDialog(
-          title: Row(
-            children: [
-              Icon(Icons.warning_amber_rounded, color: Colors.orange),
-              SizedBox(width: 8),
-              Text('Ukuran Total Foto Terlalu Besar'),
-            ],
-          ),
-          content: Text(
-            'Total ukuran ${_photoBeforeList.length} foto sebelum cuci adalah ${(totalSize / 1024).toStringAsFixed(1)} KB.\n\n'
-            'Batas maksimal total untuk semua foto adalah 850 KB agar dapat disimpan di database. '
-            'Silakan hapus sebagian foto atau gunakan foto berukuran lebih kecil.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text('OK'),
-            ),
-          ],
-        ),
-      );
-      return;
-    }
-
     setState(() {
       _isSubmitting = true;
     });
@@ -702,6 +674,21 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
       // Generate invoice ID deterministically using helper
       String invoiceId = await dbService.generateInvoiceId();
 
+      // Upload all photos to Firebase Storage so Firestore stores only lightweight URLs (~50 bytes)
+      List<String> finalPhotoUrls = [];
+      for (int i = 0; i < _photoBeforeList.length; i++) {
+        final img = _photoBeforeList[i];
+        if (img.startsWith('http://') || img.startsWith('https://')) {
+          finalPhotoUrls.add(img);
+        } else {
+          final uploadedUrl = await ImageService.uploadBase64(
+            base64Str: img,
+            storagePath: 'orders/$invoiceId/before_$i.jpg',
+          );
+          finalPhotoUrls.add(uploadedUrl ?? img);
+        }
+      }
+
       OrderModel order = OrderModel(
         id: invoiceId,
         idempotencyToken: _idempotencyToken,
@@ -718,7 +705,7 @@ class _InputOrderScreenState extends State<InputOrderScreen> {
         deliveryType: _deliveryType,
         deliveryAddress: requiresAddress ? _deliveryAddressController.text.trim() : '',
         deliveryFee: _deliveryFee,
-        photoBefore: _photoBeforeList,
+        photoBefore: finalPhotoUrls,
         photoAfter: [],
         pointsRedeemed: _usePointsRedemption ? 10 : 0,
         mapsLink: customerMapsLink,

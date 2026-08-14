@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../services/auth_service.dart';
+import '../../services/database_service.dart';
 import '../../services/image_service.dart';
 import '../../theme.dart';
 import 'package:http/http.dart' as http;
@@ -39,6 +40,11 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
   bool _enableAutoBackup = false;
   int _autoBackupHour = 2; // Default to 2 AM (Dini Hari)
   Timestamp? _lastAutoBackupTime;
+
+  // Photo migration to storage fields
+  bool _isMigratingPhotos = false;
+  double _migrationProgress = 0.0;
+  String _migrationStatusText = '';
 
   @override
   void initState() {
@@ -358,6 +364,106 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
       setState(() {
         _isRestoring = false;
       });
+    }
+  }
+
+  Future<void> _runPhotoMigration() async {
+    final bool? confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.cloud_upload, color: Colors.green),
+            SizedBox(width: 8),
+            Text('Migrasi Foto ke Storage'),
+          ],
+        ),
+        content: Text(
+          'Proses ini akan memindahkan semua foto sepatu (Base64) di dokumen Firestore lama ke Firebase Storage.\n\n'
+          'Keuntungan:\n'
+          '• Ukuran dokumen pesanan berkurang dari 1,5 MB menjadi ~2 KB.\n'
+          '• Kuota internet Firestore tidak boros lagi (Rp 0).\n'
+          '• Foto-foto lama pelanggan tetap aman dan utuh.\n\n'
+          'Lanjutkan migrasi?',
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text('Batal')),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+            child: Text('Mulai Migrasi', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    setState(() {
+      _isMigratingPhotos = true;
+      _migrationProgress = 0.0;
+      _migrationStatusText = 'Memulai migrasi...';
+    });
+
+    try {
+      final dbService = Provider.of<DatabaseService>(context, listen: false);
+      final result = await dbService.migrateAllPhotosToStorage(
+        onProgress: (current, total) {
+          if (mounted) {
+            setState(() {
+              _migrationProgress = total > 0 ? (current / total) : 0.0;
+              _migrationStatusText = 'Memproses $current dari $total pesanan...';
+            });
+          }
+        },
+      );
+
+      if (mounted) {
+        setState(() {
+          _isMigratingPhotos = false;
+        });
+
+        if (result['status'] == 'success') {
+          showDialog(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              title: Row(
+                children: [
+                  Icon(Icons.check_circle, color: Colors.green),
+                  SizedBox(width: 8),
+                  Text('Migrasi Sukses!'),
+                ],
+              ),
+              content: Text(
+                'Berhasil memproses ${result['totalOrders']} pesanan.\n'
+                '• ${result['migratedOrders']} dokumen pesanan berhasil dirampingkan.\n'
+                '• ${result['photosUploaded']} file foto berhasil diunggah ke Firebase Storage.\n\n'
+                'Dokumen Firestore Anda sekarang sudah bersih dan ringan (~2 KB)!',
+              ),
+              actions: [
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+                  child: Text('Tutup', style: TextStyle(color: Colors.white)),
+                ),
+              ],
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Terjadi kesalahan saat migrasi: ${result['message']}')),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isMigratingPhotos = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal menjalankan migrasi: $e')),
+        );
+      }
     }
   }
 
@@ -1566,6 +1672,52 @@ class _DeveloperBillingScreenState extends State<DeveloperBillingScreen> {
                               minimumSize: Size(double.infinity, 38),
                             ),
                           ),
+                          SizedBox(height: 16),
+                          Divider(),
+                          SizedBox(height: 8),
+
+                          // 4. Migrasi Foto ke Firebase Storage (Hemat Kuota Rp 0)
+                          Row(
+                            children: [
+                              Icon(Icons.cloud_upload, size: 16, color: Colors.green[800]),
+                              SizedBox(width: 6),
+                              Text(
+                                '4. Migrasi Foto ke Storage (Hemat Kuota Rp 0)',
+                                style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.green[800]),
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: 6),
+                          Text(
+                            'Pindahkan semua foto sepatu (Base64) di dokumen Firestore lama ke Firebase Storage. Dokumen Firestore akan menyusut dari 1,5 MB menjadi ~2 KB sehingga biaya kuota internet berhenti ke Rp 0 permanen.',
+                            style: TextStyle(fontSize: 11, color: AppTheme.textGray),
+                          ),
+                          SizedBox(height: 10),
+                          _isMigratingPhotos
+                              ? Column(
+                                  children: [
+                                    LinearProgressIndicator(
+                                      value: _migrationProgress > 0 ? _migrationProgress : null,
+                                      backgroundColor: Colors.grey[200],
+                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
+                                    ),
+                                    SizedBox(height: 6),
+                                    Text(
+                                      _migrationStatusText,
+                                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: Colors.green[800]),
+                                    ),
+                                  ],
+                                )
+                              : ElevatedButton.icon(
+                                  onPressed: _runPhotoMigration,
+                                  icon: Icon(Icons.flash_on, size: 16),
+                                  label: Text('⚡ Migrasi Semua Foto Lama ke Storage'),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.green[700],
+                                    foregroundColor: Colors.white,
+                                    minimumSize: Size(double.infinity, 38),
+                                  ),
+                                ),
                         ],
                       ),
                     ),
