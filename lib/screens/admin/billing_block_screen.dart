@@ -192,9 +192,10 @@ class _BillingBlockScreenState extends State<BillingBlockScreen> {
     final String formattedDate = DateFormat('dd MMMM yyyy').format(widget.dueDate);
 
     final String ownerUid = authService.currentUserModel?.uid ?? '';
+    final bool isDark = AppTheme.isDarkMode;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: isDark ? const Color(0xFF0F172A) : Colors.white,
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
             .collection('developer_billing_invoices')
@@ -277,10 +278,14 @@ class _BillingBlockScreenState extends State<BillingBlockScreen> {
                       Container(
                         padding: EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: status == 'menunggu_konfirmasi' ? Colors.orange.shade50 : Colors.red.shade50,
+                          color: status == 'menunggu_konfirmasi'
+                              ? (isDark ? Colors.orange.withOpacity(0.15) : Colors.orange.shade50)
+                              : (isDark ? Colors.red.withOpacity(0.15) : Colors.red.shade50),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: status == 'menunggu_konfirmasi' ? Colors.orange.shade100 : Colors.red.shade100,
+                            color: status == 'menunggu_konfirmasi'
+                                ? (isDark ? Colors.orange.withOpacity(0.4) : Colors.orange.shade100)
+                                : (isDark ? Colors.red.withOpacity(0.4) : Colors.red.shade100),
                           ),
                         ),
                         child: Column(
@@ -409,10 +414,10 @@ class _BillingBlockScreenState extends State<BillingBlockScreen> {
                                     margin: EdgeInsets.symmetric(horizontal: 4),
                                     padding: EdgeInsets.symmetric(vertical: 10),
                                     decoration: BoxDecoration(
-                                      color: isSel ? AppTheme.primaryBlue : Colors.grey[100],
+                                      color: isSel ? AppTheme.primaryBlue : (isDark ? const Color(0xFF1E293B) : Colors.grey[100]),
                                       borderRadius: BorderRadius.circular(10),
                                       border: Border.all(
-                                        color: isSel ? AppTheme.primaryBlue : Colors.grey[300]!,
+                                        color: isSel ? AppTheme.primaryBlue : (isDark ? const Color(0xFF334155) : Colors.grey[300]!),
                                         width: 1.5,
                                       ),
                                     ),
@@ -479,13 +484,16 @@ class _BillingBlockScreenState extends State<BillingBlockScreen> {
                                 Container(
                                   padding: EdgeInsets.all(12),
                                   decoration: BoxDecoration(
-                                    color: AppTheme.lightGray,
+                                    color: isDark ? const Color(0xFF1E293B) : AppTheme.lightGray,
                                     borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: isDark ? const Color(0xFF334155) : Colors.transparent,
+                                    ),
                                   ),
                                   child: Row(
                                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
-                                      Text('Total Tagihan Baru:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                                      Text('Total Tagihan Baru:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.darkBlueText)),
                                       Text('Rp $formattedCalculatedAmount', style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primaryBlue, fontSize: 14)),
                                     ],
                                   ),
@@ -496,7 +504,14 @@ class _BillingBlockScreenState extends State<BillingBlockScreen> {
                                   style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.darkBlueText),
                                 ),
                                 SizedBox(height: 12),
-                                _buildBase64Image(widget.qrImage, height: 240),
+                                Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  child: _buildBase64Image(widget.qrImage, height: 240),
+                                ),
                                 SizedBox(height: 20),
                                 SizedBox(
                                   width: double.infinity,
